@@ -17,10 +17,10 @@ resources:
   parameters:
     url: "git@github.com:zapatacomputing/z-quantum-optimizers.git"
     branch: "master"
-- name: qe-forest
+- name: qe-qulacs
   type: git
   parameters:
-    url: "git@github.com:zapatacomputing/qe-forest.git"
+    url: "git@github.com:zapatacomputing/qe-qulacs.git"
     branch: "master"
 - name: qe-openfermion
   type: git
@@ -57,7 +57,7 @@ spec:
         template: get-maxcut-hamiltonian
         arguments:
           parameters:
-          - resources: [z-quantum-core, z-quantum-qaoa, qe-openfermion]
+          - resources: [z-quantum-core, qe-openfermion, z-quantum-qaoa]
           - docker-image: "{{workflow.parameters.docker-image}}"
           - docker-tag: "{{workflow.parameters.docker-tag}}"
           artifacts:
@@ -77,7 +77,7 @@ spec:
         template: build-farhi-qaoa-circuit-template
         arguments:
           parameters:
-          - resources: [z-quantum-core, z-quantum-qaoa, qe-openfermion]
+          - resources: [z-quantum-core, qe-openfermion, z-quantum-qaoa]
           - docker-image: "{{workflow.parameters.docker-image}}"
           - docker-tag: "{{workflow.parameters.docker-tag}}"
           artifacts:
@@ -172,10 +172,9 @@ spec:
         template: optimize-variational-circuit
         arguments:
           parameters:    
-          - backend_specs: "{'module_name': 'qeforest.simulator', 'function_name': 'ForestSimulator', 'device_name': 'wavefunction-simulator'}"
-          # - optimizer_specs: "{'module_name': 'zquantum.optimizers.grid_search', 'function_name': 'GridSearchOptimizer'}"
-          - optimizer_specs: "{'module_name': 'zquantum.optimizers.scipy_optimizer', 'function_name': 'ScipyOptimizer', 'method': 'L-BFGS-B'}"
-          - resources: [z-quantum-core, z-quantum-optimizers, qe-forest, z-quantum-qaoa, qe-openfermion]
+          # - optimizer-specs: "{'module_name': 'zquantum.optimizers.grid_search', 'function_name': 'GridSearchOptimizer'}"
+          - optimizer-specs: "{'module_name': 'zquantum.optimizers.scipy_optimizer', 'function_name': 'ScipyOptimizer', 'method': 'L-BFGS-B'}"
+          - resources: [z-quantum-core, qe-openfermion, z-quantum-optimizers, qe-qulacs, z-quantum-qaoa]
           - docker-image: "{{workflow.parameters.docker-image}}"
           - docker-tag: "{{workflow.parameters.docker-tag}}"
           artifacts:
