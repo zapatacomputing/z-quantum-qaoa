@@ -172,7 +172,7 @@ spec:
         template: optimize-variational-circuit
         arguments:
           parameters:
-          - backend_specs: "{'module_name': 'qequlacs.simulator', 'function_name': 'QulacsSimulator'}"    
+          - backend-specs: "{'module_name': 'qequlacs.simulator', 'function_name': 'QulacsSimulator'}"    
           # - optimizer-specs: "{'module_name': 'zquantum.optimizers.grid_search', 'function_name': 'GridSearchOptimizer'}"
           - optimizer-specs: "{'module_name': 'zquantum.optimizers.scipy_optimizer', 'function_name': 'ScipyOptimizer', 'method': 'L-BFGS-B'}"
           - resources: [z-quantum-core, qe-openfermion, z-quantum-optimizers, qe-qulacs, z-quantum-qaoa]
