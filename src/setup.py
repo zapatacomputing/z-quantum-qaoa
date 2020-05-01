@@ -23,6 +23,6 @@ setuptools.setup(
     install_requires=[
         'z-quantum-core',
         'qe-openfermion',
-        'forestopenfermion'
+        'forestopenfermion @ http://github.com/zapatacomputing/forest-openfermion/tarball/fast-op-conversion'
     ]
 )
