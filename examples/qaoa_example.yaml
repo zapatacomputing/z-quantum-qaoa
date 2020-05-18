@@ -6,27 +6,27 @@ resources:
   type: git
   parameters:
     url: "git@github.com:zapatacomputing/z-quantum-core.git"
-    branch: "master"
+    branch: "stable"
 - name: z-quantum-qaoa
   type: git
   parameters:
     url: "git@github.com:zapatacomputing/z-quantum-qaoa.git"
-    branch: "master"
+    branch: "stable"
 - name: z-quantum-optimizers
   type: git
   parameters:
     url: "git@github.com:zapatacomputing/z-quantum-optimizers.git"
-    branch: "master"
-- name: qe-qulacs
+    branch: "stable"
+- name: qe-qhipster
   type: git
   parameters:
-    url: "git@github.com:zapatacomputing/qe-qulacs.git"
-    branch: "master"
+    url: "git@github.com:zapatacomputing/qe-qhipster.git"
+    branch: "stable"
 - name: qe-openfermion
   type: git
   parameters:
     url: "git@github.com:zapatacomputing/qe-openfermion.git"
-    branch: "master"
+    branch: "stable"
 
 
 metadata:
@@ -63,16 +63,16 @@ spec:
           artifacts:
           - graph:
               from: '{{steps.generate-graph.outputs.artifacts.graph}}'
-    # - - name: solve-maxcut-by-exhaustive-search
-    #     template: solve-maxcut-by-exhaustive-search
-    #     arguments:
-    #       parameters:
-    #       - resources: [z-quantum-core, z-quantum-qaoa]
-    #       - docker-image: "{{workflow.parameters.docker-image}}"
-    #       - docker-tag: "{{workflow.parameters.docker-tag}}"
-    #       artifacts:
-    #       - graph:
-    #           from: '{{steps.generate-graph.outputs.artifacts.graph}}'
+      - name: solve-maxcut-by-exhaustive-search
+        template: solve-maxcut-by-exhaustive-search
+        arguments:
+          parameters:
+          - resources: [z-quantum-core, qe-openfermion, z-quantum-qaoa]
+          - docker-image: "{{workflow.parameters.docker-image}}"
+          - docker-tag: "{{workflow.parameters.docker-tag}}"
+          artifacts:
+          - graph:
+              from: '{{steps.generate-graph.outputs.artifacts.graph}}'
     - - name: build-circuit-template
         template: build-farhi-qaoa-circuit-template
         arguments:
@@ -172,12 +172,11 @@ spec:
         template: optimize-variational-circuit
         arguments:
           parameters:
-          - backend-specs: "{'module_name': 'qequlacs.simulator', 'function_name': 'QulacsSimulator'}"    
-          # - optimizer-specs: "{'module_name': 'zquantum.optimizers.grid_search', 'function_name': 'GridSearchOptimizer'}"
-          - optimizer-specs: "{'module_name': 'zquantum.optimizers.scipy_optimizer', 'function_name': 'ScipyOptimizer', 'method': 'L-BFGS-B'}"
-          - resources: [z-quantum-core, qe-openfermion, z-quantum-optimizers, qe-qulacs, z-quantum-qaoa]
-          - docker-image: "{{workflow.parameters.docker-image}}"
-          - docker-tag: "{{workflow.parameters.docker-tag}}"
+          - backend-specs: "{'module_name': 'qeqhipster.simulator', 'function_name': 'QHipsterSimulator'}"
+          - optimizer-specs: "{'module_name': 'zquantum.optimizers.grid_search', 'function_name': 'GridSearchOptimizer'}"
+          - resources: [z-quantum-core, qe-openfermion, z-quantum-optimizers, qe-qhipster, z-quantum-qaoa]
+          - docker-image: qe-qhipster
+          - docker-tag: latest
           artifacts:
           - ansatz: 
               from: '{{inputs.artifacts.ansatz}}'
