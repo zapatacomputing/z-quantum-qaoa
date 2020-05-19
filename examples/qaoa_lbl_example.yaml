@@ -30,16 +30,16 @@ resources:
 
 
 metadata:
-  generateName: qaoa-test-
+  generateName: qaoa-example-
 
 spec:
   entrypoint: main
   arguments:
     parameters:
     - s3-bucket: quantum-engine
-    - s3-key: projects/testing/op/
-    - docker-image: 'open_pack_default'
-    - docker-tag: 'test'
+    - s3-key: projects/qaoa/
+    - docker-image: z-quantum-default
+    - docker-tag: latest
 
   templates:
   - name: main
@@ -63,16 +63,7 @@ spec:
           artifacts:
           - graph:
               from: '{{steps.generate-graph.outputs.artifacts.graph}}'
-      - name: solve-maxcut-by-exhaustive-search
-        template: solve-maxcut-by-exhaustive-search
-        arguments:
-          parameters:
-          - resources: [z-quantum-core, qe-openfermion, z-quantum-qaoa]
-          - docker-image: "{{workflow.parameters.docker-image}}"
-          - docker-tag: "{{workflow.parameters.docker-tag}}"
-          artifacts:
-          - graph:
-              from: '{{steps.generate-graph.outputs.artifacts.graph}}'
+
     - - name: build-circuit-template
         template: build-farhi-qaoa-circuit-template
         arguments:
@@ -131,9 +122,9 @@ spec:
   - name: optimize-lbl
     inputs:
       parameters:
-      - name: n-layers # Number of layers to be added
+      - name: n-layers
       artifacts:
-      - name: params # Parameters for layers already present
+      - name: params
       - name: ansatz
       - name: hamiltonian
       - name: parameter-grid
@@ -173,7 +164,7 @@ spec:
         arguments:
           parameters:
           - backend-specs: "{'module_name': 'qeqhipster.simulator', 'function_name': 'QHipsterSimulator'}"
-          - optimizer-specs: "{'module_name': 'zquantum.optimizers.grid_search', 'function_name': 'GridSearchOptimizer'}"
+          - optimizer-specs: "{'module_name': 'zquantum.optimizers.grid_search', 'function_name': 'GridSearchOptimizer', 'options': {'keep_value_history': True}}"
           - resources: [z-quantum-core, qe-openfermion, z-quantum-optimizers, qe-qhipster, z-quantum-qaoa]
           - docker-image: qe-qhipster
           - docker-tag: latest
