@@ -63,6 +63,7 @@ spec:
           artifacts:
           - graph:
               from: '{{steps.generate-graph.outputs.artifacts.graph}}'
+
     - - name: build-circuit-template
         template: build-farhi-qaoa-circuit-template
         arguments:
