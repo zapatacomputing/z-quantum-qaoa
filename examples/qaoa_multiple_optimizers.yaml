@@ -6,27 +6,27 @@ resources:
   type: git
   parameters:
     url: "git@github.com:zapatacomputing/z-quantum-core.git"
-    branch: "stable"
+    branch: "master"
 - name: z-quantum-qaoa
   type: git
   parameters:
     url: "git@github.com:zapatacomputing/z-quantum-qaoa.git"
-    branch: "stable"
+    branch: "master"
 - name: z-quantum-optimizers
   type: git
   parameters:
     url: "git@github.com:zapatacomputing/z-quantum-optimizers.git"
-    branch: "stable"
+    branch: "master"
 - name: qe-qhipster
   type: git
   parameters:
     url: "git@github.com:zapatacomputing/qe-qhipster.git"
-    branch: "stable"
+    branch: "master"
 - name: qe-openfermion
   type: git
   parameters:
     url: "git@github.com:zapatacomputing/qe-openfermion.git"
-    branch: "stable"
+    branch: "master"
 
 metadata:
   generateName: qaoa-example-
