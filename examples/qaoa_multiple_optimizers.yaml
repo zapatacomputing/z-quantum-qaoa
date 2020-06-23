@@ -6,27 +6,27 @@ resources:
   type: git
   parameters:
     url: "git@github.com:zapatacomputing/z-quantum-core.git"
-    branch: "stable"
+    branch: "master"
 - name: z-quantum-qaoa
   type: git
   parameters:
     url: "git@github.com:zapatacomputing/z-quantum-qaoa.git"
-    branch: "stable"
+    branch: "master"
 - name: z-quantum-optimizers
   type: git
   parameters:
     url: "git@github.com:zapatacomputing/z-quantum-optimizers.git"
-    branch: "stable"
+    branch: "master"
 - name: qe-qhipster
   type: git
   parameters:
     url: "git@github.com:zapatacomputing/qe-qhipster.git"
-    branch: "stable"
+    branch: "master"
 - name: qe-openfermion
   type: git
   parameters:
     url: "git@github.com:zapatacomputing/qe-openfermion.git"
-    branch: "stable"
+    branch: "master"
 
 metadata:
   generateName: qaoa-example-
@@ -106,6 +106,7 @@ spec:
           parameters:
           - backend-specs: "{'module_name': 'qeqhipster.simulator', 'function_name': 'QHipsterSimulator'}"
           - optimizer-specs: "{'module_name': 'zquantum.optimizers.grid_search', 'function_name': 'GridSearchOptimizer', 'options': {'keep_value_history': True}}"
+          - cost-function-specs: "{'module_name': 'zquantum.core.cost_function', 'function_name': 'AnsatzBasedCostFunction'}"
           - resources: [z-quantum-core, qe-openfermion, z-quantum-optimizers, qe-qhipster, z-quantum-qaoa]
           - docker-image: qe-qhipster
           - docker-tag: latest
@@ -125,6 +126,7 @@ spec:
           parameters:
           - backend-specs: "{'module_name': 'qeqhipster.simulator', 'function_name': 'QHipsterSimulator'}"
           - optimizer-specs: "{'module_name': 'zquantum.optimizers.scipy_optimizer', 'function_name': 'ScipyOptimizer', 'method': 'L-BFGS-B', 'options': {'keep_value_history': True}}"
+          - cost-function-specs: "{'module_name': 'zquantum.core.cost_function', 'function_name': 'AnsatzBasedCostFunction'}"
           - resources: [z-quantum-core, qe-openfermion, z-quantum-optimizers, qe-qhipster, z-quantum-qaoa]
           - docker-image: qe-qhipster
           - docker-tag: latest
@@ -142,6 +144,7 @@ spec:
           parameters:
           - backend-specs: "{'module_name': 'qeqhipster.simulator', 'function_name': 'QHipsterSimulator'}"
           - optimizer-specs: "{'module_name': 'zquantum.optimizers.scipy_optimizer', 'function_name': 'ScipyOptimizer', 'method': 'Nelder-Mead', 'options': {'keep_value_history': True}}"
+          - cost-function-specs: "{'module_name': 'zquantum.core.cost_function', 'function_name': 'AnsatzBasedCostFunction'}"
           - resources: [z-quantum-core, qe-openfermion, z-quantum-optimizers, qe-qhipster, z-quantum-qaoa]
           - docker-image: qe-qhipster
           - docker-tag: latest
@@ -159,6 +162,7 @@ spec:
           parameters:
           - backend-specs: "{'module_name': 'qeqhipster.simulator', 'function_name': 'QHipsterSimulator'}"
           - optimizer-specs: "{'module_name': 'zquantum.optimizers.cma_es_optimizer', 'function_name': 'CMAESOptimizer', 'options': {'popsize': 5, 'sigma_0': 0.1, 'tolx': 1e-3, 'keep_value_history': True}}"
+          - cost-function-specs: "{'module_name': 'zquantum.core.cost_function', 'function_name': 'AnsatzBasedCostFunction'}"
           - resources: [z-quantum-core, qe-openfermion, z-quantum-optimizers, qe-qhipster, z-quantum-qaoa]
           - docker-image: qe-qhipster
           - docker-tag: latest
