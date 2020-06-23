@@ -165,6 +165,7 @@ spec:
           parameters:
           - backend-specs: "{'module_name': 'qeqhipster.simulator', 'function_name': 'QHipsterSimulator'}"
           - optimizer-specs: "{'module_name': 'zquantum.optimizers.grid_search', 'function_name': 'GridSearchOptimizer', 'options': {'keep_value_history': True}}"
+          - cost-function-specs: "{'module_name': 'zquantum.core.cost_function', 'function_name': 'AnsatzBasedCostFunction'}"
           - resources: [z-quantum-core, qe-openfermion, z-quantum-optimizers, qe-qhipster, z-quantum-qaoa]
           - docker-image: qe-qhipster
           - docker-tag: latest

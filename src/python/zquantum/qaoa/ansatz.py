@@ -15,6 +15,7 @@ from forestopenfermion import qubitop_to_pyquilpauli
 import itertools
 import networkx as nx
 
+
 def build_farhi_qaoa_circuit_template(hamiltonian):
     """Constructs a circuit template for a QAOA ansatz.
 
@@ -29,22 +30,25 @@ def build_farhi_qaoa_circuit_template(hamiltonian):
 
     diffusion_op = QubitOperator()
     for i in range(n_qubits):
-        diffusion_op += QubitOperator((i, 'X'))
+        diffusion_op += QubitOperator((i, "X"))
 
-    ansatz = {'ansatz_type': 'singlet UCCSD',
-             'ansatz_module': 'zquantum.qaoa.ansatz',
-             'ansatz_func' : 'build_qaoa_circuit',
-            'ansatz_grad_func': 'build_qaoa_circuit_grads',
-            'supports_simple_shift_rule': False,
-             'ansatz_kwargs' : {
-                 'hamiltonians': [
-                     convert_qubitop_to_dict(hamiltonian),
-                     convert_qubitop_to_dict(diffusion_op)]
-                 },
-             'n_params': [2]
-            }
-    
-    return(ansatz)
+    ansatz = {
+        "ansatz_type": "singlet UCCSD",
+        "ansatz_module": "zquantum.qaoa.ansatz",
+        "ansatz_func": "build_qaoa_circuit",
+        "ansatz_grad_func": "build_qaoa_circuit_grads",
+        "supports_simple_shift_rule": False,
+        "ansatz_kwargs": {
+            "hamiltonians": [
+                convert_qubitop_to_dict(hamiltonian),
+                convert_qubitop_to_dict(diffusion_op),
+            ]
+        },
+        "n_params": [2],
+    }
+
+    return ansatz
+
 
 def build_qaoa_circuit(params, hamiltonians):
     """Generates a circuit for QAOA. This is not only for QAOA proposed by Farhi
@@ -70,8 +74,11 @@ def build_qaoa_circuit(params, hamiltonians):
     """
 
     if mod(len(params), len(hamiltonians)) != 0:
-        raise Warning('There are {} input parameters and {} Hamiltonians. Since {} does not divide {} the last layer will be incomplete.'.\
-            format(len(params), len(hamiltonians), len(params), len(hamiltonians)))
+        raise Warning(
+            "There are {} input parameters and {} Hamiltonians. Since {} does not divide {} the last layer will be incomplete.".format(
+                len(params), len(hamiltonians), len(params), len(hamiltonians)
+            )
+        )
 
     # Convert qubit operators from dicts to QubitOperator objects, if needed
     for index, hamiltonian in enumerate(hamiltonians):
@@ -85,7 +92,7 @@ def build_qaoa_circuit(params, hamiltonians):
     qubits = [Qubit(qubit_index) for qubit_index in range(n_qubits)]
     output.qubits = qubits
     for qubit_index in range(n_qubits):
-        output.gates.append(Gate('H', (qubits[qubit_index],)))
+        output.gates.append(Gate("H", (qubits[qubit_index],)))
 
     # Add time evolution layers
     for i in range(params.shape[0]):
@@ -94,6 +101,7 @@ def build_qaoa_circuit(params, hamiltonians):
         output += time_evolution(current_hamiltonian, params[i])
 
     return output
+
 
 def build_qaoa_circuit_grads(params, hamiltonians):
     """ Generates gradient circuits and corresponding factors for the QAOA ansatz
@@ -119,8 +127,11 @@ def build_qaoa_circuit_grads(params, hamiltonians):
             values of the list of circuits.
     """
     if mod(len(params), len(hamiltonians)) != 0:
-        raise Warning('There are {} input parameters and {} Hamiltonians. Since {} does not divide {} the last layer will be incomplete.'.\
-            format(len(params), len(hamiltonians), len(params), len(hamiltonians)))
+        raise Warning(
+            "There are {} input parameters and {} Hamiltonians. Since {} does not divide {} the last layer will be incomplete.".format(
+                len(params), len(hamiltonians), len(params), len(hamiltonians)
+            )
+        )
 
     # Convert qubit operators from dicts to QubitOperator objects, if needed
     for index, hamiltonian in enumerate(hamiltonians):
@@ -134,23 +145,23 @@ def build_qaoa_circuit_grads(params, hamiltonians):
     qubits = [Qubit(qubit_index) for qubit_index in range(n_qubits)]
     hadamard_layer.qubits = qubits
     for qubit_index in range(n_qubits):
-        hadamard_layer.gates.append(Gate('H', (qubits[qubit_index],)))
+        hadamard_layer.gates.append(Gate("H", (qubits[qubit_index],)))
 
     # Add time evolution layers
     gradient_circuits = []
     circuit_factors = []
-    
+
     for index1 in range(params.shape[0]):
 
         hamiltonian_index1 = mod(index1, len(hamiltonians))
         current_hamiltonian = qubitop_to_pyquilpauli(hamiltonians[hamiltonian_index1])
         derivative_circuits_for_index1, factors = time_evolution_derivatives(
-            current_hamiltonian,
-            params[index1])
+            current_hamiltonian, params[index1]
+        )
         param_circuits = []
 
         for derivative_circuit in derivative_circuits_for_index1:
-            
+
             output_circuit = Circuit()
             output_circuit.qubits = qubits
             output_circuit += hadamard_layer
@@ -160,10 +171,14 @@ def build_qaoa_circuit_grads(params, hamiltonians):
                 if index2 == index1:
                     output_circuit += derivative_circuit
                 else:
-                    current_hamiltonian = qubitop_to_pyquilpauli(hamiltonians[hamiltonian_index2])
-                    output_circuit += time_evolution(current_hamiltonian, params[index2])
+                    current_hamiltonian = qubitop_to_pyquilpauli(
+                        hamiltonians[hamiltonian_index2]
+                    )
+                    output_circuit += time_evolution(
+                        current_hamiltonian, params[index2]
+                    )
             param_circuits.append(output_circuit)
-        
+
         circuit_factors.append(factors)
         gradient_circuits.append(param_circuits)
 
