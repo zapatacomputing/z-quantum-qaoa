@@ -2,6 +2,7 @@ from zquantum.core.interfaces.ansatz import Ansatz, ansatz_property
 from zquantum.core.circuit import Circuit, Qubit, create_layer_of_gates
 from zquantum.core.evolution import time_evolution
 
+from .utils import create_all_x_mixer_hamiltonian
 from openfermion import QubitOperator, IsingOperator
 from openfermion.utils import count_qubits
 from forestopenfermion import qubitop_to_pyquilpauli
@@ -21,7 +22,7 @@ class QAOAFarhiAnsatz(Ansatz):
         self,
         number_of_layers: int,
         cost_hamiltonian: Union[QubitOperator, IsingOperator],
-        mixer_hamiltonian: Union[QubitOperator, IsingOperator],
+        mixer_hamiltonian: Optional[Union[QubitOperator, IsingOperator]] = None,
     ):
         """ 
         Ansatz class representing QAOA ansatz as described in "A Quantum Approximate Optimization Algorithm" by E. Farhi and J. Goldstone (https://arxiv.org/abs/1411.4028)
@@ -37,6 +38,8 @@ class QAOAFarhiAnsatz(Ansatz):
         """
         super().__init__(number_of_layers)
         self._cost_hamiltonian = cost_hamiltonian
+        if mixer_hamiltonian is None:
+            mixer_hamiltonian = create_all_x_mixer_hamiltonian(self.number_of_qubits)
         self._mixer_hamiltonian = mixer_hamiltonian
 
     @property
