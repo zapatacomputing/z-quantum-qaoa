@@ -24,13 +24,12 @@ class QAOAFarhiAnsatz(Ansatz):
         cost_hamiltonian: Union[QubitOperator, IsingOperator],
         mixer_hamiltonian: Optional[Union[QubitOperator, IsingOperator]] = None,
     ):
-        """ 
-        Ansatz class representing QAOA ansatz as described in "A Quantum Approximate Optimization Algorithm" by E. Farhi and J. Goldstone (https://arxiv.org/abs/1411.4028)
+        """Ansatz class representing QAOA ansatz as described in "A Quantum Approximate Optimization Algorithm" by E. Farhi and J. Goldstone (https://arxiv.org/abs/1411.4028)
 
         Args:
             number_of_layers: number of layers of the ansatz. Also refered to as "p" in the paper.
-            cost_hamiltonian: TODO.
-            mixer_hamiltonian: TODO
+            cost_hamiltonian: Hamiltonian representing the cost function
+            mixer_hamiltonian: Mixer hamiltonian for the QAOA. If not provided, will default to basic operator consisting of single X terms.
 
         Attributes:
             number_of_qubits: number of qubits required for the ansatz circuit.
@@ -44,17 +43,20 @@ class QAOAFarhiAnsatz(Ansatz):
 
     @property
     def number_of_qubits(self):
+        """Returns number of qubits used for the ansatz circuit.
+        """
         return count_qubits(self._cost_hamiltonian)
 
     @property
     def number_of_params(self) -> int:
-        """
-        Returns number of parameters in the ansatz.
+        """Returns number of parameters in the ansatz.
         """
         return 2 * self.number_of_layers
 
     @property
     def parametrized_circuit(self) -> Circuit:
+        """Returns a parametrized circuit representing QAOA ansatz.
+        """
         if self._parametrized_circuit is None:
             if self.supports_parametrized_circuits:
                 return self._generate_circuit()
@@ -71,8 +73,8 @@ class QAOAFarhiAnsatz(Ansatz):
 
     @overrides
     def _generate_circuit(self, params: Optional[np.ndarray] = None) -> Circuit:
-        """
-        Returns a parametrizable circuit represention of the ansatz.
+        """Returns a parametrizable circuit represention of the ansatz.
+
         Args:
             params: parameters of the circuit. 
         """
