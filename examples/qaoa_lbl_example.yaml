@@ -41,6 +41,7 @@ spec:
     - docker-image: z-quantum-default
     - docker-tag: latest
     - n-nodes: "5"
+    - total-n-layers: "3"
 
   templates:
   - name: main
@@ -65,18 +66,7 @@ spec:
           - graph:
               from: '{{steps.generate-graph.outputs.artifacts.graph}}'
 
-    - - name: generate-random-ansatz-params
-        template: generate-random-ansatz-params
-        arguments:
-          parameters:
-          - number-of-params: "2"
-          - min-val: "-0.01"
-          - max-val: "0.01"
-          - resources: [z-quantum-core]
-          - docker-image: "{{workflow.parameters.docker-image}}"
-          - docker-tag: "{{workflow.parameters.docker-tag}}"
-
-    - - name: build-uniform-parameter-grid
+      - name: build-uniform-parameter-grid
         template: build-uniform-parameter-grid
         arguments:
           parameters:
@@ -89,15 +79,41 @@ spec:
           - docker-image: "{{workflow.parameters.docker-image}}"
           - docker-tag: "{{workflow.parameters.docker-tag}}"
 
+
+    - - name: generate-random-initial-ansatz-params
+        template: generate-random-ansatz-params
+        arguments:
+          parameters:
+          - number-of-params: "2"
+          - min-val: "-0.01"
+          - max-val: "0.01"
+          - resources: [z-quantum-core]
+          - docker-image: "{{workflow.parameters.docker-image}}"
+          - docker-tag: "{{workflow.parameters.docker-tag}}"
+
+      - name: generate-fixed-ansatz-params
+        template: generate-random-ansatz-params
+        arguments:
+          parameters:
+          - number-of-params: "0"
+          - min-val: "-0.01"
+          - max-val: "0.01"
+          - resources: [z-quantum-core]
+          - docker-image: "{{workflow.parameters.docker-image}}"
+          - docker-tag: "{{workflow.parameters.docker-tag}}"
+
+
     - - name: optimize-lbl
         template: optimize-lbl
         arguments:
           parameters:
-          - total-n-layers: "2"
+          - total-n-layers: "{{workflow.parameters.total-n-layers}}"
           - current-n-layers: "1"
           artifacts:
           - params:
-              from: '{{steps.generate-random-ansatz-params.outputs.artifacts.params}}'
+              from: '{{steps.generate-random-initial-ansatz-params.outputs.artifacts.params}}'
+          - fixed-params:
+              from: '{{steps.generate-fixed-ansatz-params.outputs.artifacts.params}}'
           - hamiltonian:
               from:  '{{steps.get-maxcut-hamiltonian.outputs.artifacts.hamiltonian}}'
           - parameter-grid:
@@ -111,6 +127,7 @@ spec:
       - name: current-n-layers
       artifacts:
       - name: params
+      - name: fixed-params
       - name: hamiltonian
       - name: parameter-grid
 
@@ -130,13 +147,15 @@ spec:
           artifacts:
           - initial-parameters:
               from: '{{inputs.artifacts.params}}'
+          - fixed-parameters:
+              from: '{{inputs.artifacts.fixed-params}}'
           - qubit-operator:
               from: '{{inputs.artifacts.hamiltonian}}'
           - parameter-grid:
               from: '{{inputs.artifacts.parameter-grid}}'
 
     # Check if we have added the number of layers requested
-    - - name: check-if-done
+      - name: check-if-done
         template: evaluate-python-expression
         arguments:
           parameters:
@@ -166,10 +185,9 @@ spec:
           - resources: [z-quantum-core]
           - docker-image: "{{workflow.parameters.docker-image}}"
           - docker-tag: "{{workflow.parameters.docker-tag}}"
-        when: '{{steps.check-if-done.outputs.parameters.result}} == False'
 
     # Append the parameters for the active layer to parameters for previous layers
-    - - name: combine-ansatz-params
+      - name: combine-fixed-ansatz-params
         template: combine-ansatz-params
         arguments:
           parameters:
@@ -178,10 +196,9 @@ spec:
           - docker-tag: "{{workflow.parameters.docker-tag}}"
           artifacts:
           - params1:
-              from: '{{inputs.artifacts.params}}'
+              from: '{{inputs.artifacts.fixed-params}}'
           - params2:
-              from: '{{steps.generate-random-ansatz-params.outputs.artifacts.params}}'
-        when: '{{steps.check-if-done.outputs.parameters.result}} == False'
+              from: '{{steps.optimize-variational-circuit.outputs.artifacts.optimized-parameters}}'
 
 
     # Recursively call another optimization if there are more layers to add
@@ -193,7 +210,9 @@ spec:
             - current-n-layers: '{{steps.increment-current-n-layers.outputs.parameters.result}}'
           artifacts:
           - params:
-              from: '{{steps.combine-ansatz-params.outputs.artifacts.combined-params}}'
+              from: '{{steps.generate-random-ansatz-params.outputs.artifacts.params}}'
+          - fixed-params:
+              from: '{{steps.combine-fixed-ansatz-params.outputs.artifacts.combined-params}}'
           - hamiltonian:
               from: '{{inputs.artifacts.hamiltonian}}'
           - parameter-grid:
