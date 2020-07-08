@@ -70,8 +70,8 @@ spec:
         arguments:
           parameters:
           - number-of-params: "2"
-          - min-val: "-0.01"
-          - max-val: "0.01"
+          - min-val: "1"
+          - max-val: "2"
           - resources: [z-quantum-core]
           - docker-image: "{{workflow.parameters.docker-image}}"
           - docker-tag: "{{workflow.parameters.docker-tag}}"
