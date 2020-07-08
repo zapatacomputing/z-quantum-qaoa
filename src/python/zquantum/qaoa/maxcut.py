@@ -9,17 +9,24 @@ from zquantum.core.utils import dec2bin
 from zquantum.core.graph import generate_graph_node_dict
 
 
-def get_maxcut_hamiltonian(graph):
+def get_maxcut_hamiltonian(graph, scaling = 1., shifted = False):
     """Converts a MAXCUT instance, as described by a weighted graph, to an Ising 
+    Hamiltonian. It allows for different convention in the choice of the
     Hamiltonian.
 
     Args:
         graph (networkx.Graph): undirected weighted graph describing the MAXCUT 
         instance.
-    
+        
+        scaling (float): scaling of the terms of the Hamiltonian
+            
+        constant (bool): if True include a shift. Default: False
+                
     Returns:
         zquantum.core.qubitoperator.QubitOperator object describing the 
-        Hamiltonian.
+        Hamiltonian 
+        H = \sum_{<i,j>} w_{i,j} * scaling * (Z_i Z_j - shift I).
+    
     """
 
     output = QubitOperator()
@@ -27,12 +34,13 @@ def get_maxcut_hamiltonian(graph):
     nodes_dict = generate_graph_node_dict(graph)
 
     for edge in graph.edges:
-        coeff = graph.edges[edge[0], edge[1]]["weight"]
+        coeff = graph.edges[edge[0],edge[1]]['weight'] * scaling
         node_index1 = nodes_dict[edge[0]]
         node_index2 = nodes_dict[edge[1]]
         ZZ_term_str = "Z" + str(node_index1) + " Z" + str(node_index2)
         output += QubitOperator(ZZ_term_str, coeff)
-
+        if shifted:
+            output += QubitOperator('', -coeff) # constant term, i.e I
     return output
 
 
