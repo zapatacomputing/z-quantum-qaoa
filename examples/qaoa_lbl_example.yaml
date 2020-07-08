@@ -123,7 +123,6 @@ spec:
   - name: optimize-lbl
     inputs:
       parameters:
-      - name: total-n-layers
       - name: current-n-layers
       artifacts:
       - name: params
@@ -153,27 +152,6 @@ spec:
               from: '{{inputs.artifacts.hamiltonian}}'
           - parameter-grid:
               from: '{{inputs.artifacts.parameter-grid}}'
-
-    # Check if we have added the number of layers requested
-      - name: check-if-done
-        template: evaluate-python-expression
-        arguments:
-          parameters:
-          - expression: '{{inputs.parameters.current-n-layers}} == {{inputs.parameters.total-n-layers}}'
-          - resources: [z-quantum-core]
-          - docker-image: "{{workflow.parameters.docker-image}}"
-          - docker-tag: "{{workflow.parameters.docker-tag}}"
-
-    # Increment current number of layers
-    - - name: increment-current-n-layers
-        template: evaluate-python-expression
-        arguments:
-          parameters:
-          - expression: '{{inputs.parameters.current-n-layers}} + 1'
-          - resources: [z-quantum-core]
-          - docker-image: "{{workflow.parameters.docker-image}}"
-          - docker-tag: "{{workflow.parameters.docker-tag}}"
-          when: '{{steps.check-if-done.outputs.parameters.result}} == False'
 
     - - name: generate-random-ansatz-params
         template: generate-random-ansatz-params
@@ -206,8 +184,7 @@ spec:
         template: optimize-lbl
         arguments:
           parameters:
-            - total-n-layers: '{{inputs.parameters.total-n-layers}}'
-            - current-n-layers: '{{steps.increment-current-n-layers.outputs.parameters.result}}'
+            - current-n-layers: '{{inputs.parameters.current-n-layers}} + 1'
           artifacts:
           - params:
               from: '{{steps.generate-random-ansatz-params.outputs.artifacts.params}}'
@@ -217,4 +194,4 @@ spec:
               from: '{{inputs.artifacts.hamiltonian}}'
           - parameter-grid:
               from: '{{inputs.artifacts.parameter-grid}}'
-        when: '{{steps.check-if-done.outputs.parameters.result}} == False'
+        when: '{{workflow.parameters.total-n-layers}} != {{inputs.parameters.current-n-layers}}'
