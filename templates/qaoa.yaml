@@ -30,6 +30,10 @@ spec:
       parameters:
       - name: command
         value: python3 main_script.py
+      - name: scaling
+        default: "1.0"
+      - name: shifted
+        default: "False"
       artifacts:
       - name: graph
         path: /app/graph.json
@@ -41,12 +45,13 @@ spec:
             from zquantum.qaoa.maxcut import get_maxcut_hamiltonian
             from qeopenfermion import save_qubit_operator
             graph = load_graph('graph.json')
-            hamiltonian = get_maxcut_hamiltonian(graph)
+            hamiltonian = get_maxcut_hamiltonian(graph, scaling={{inputs.parameters.scaling}}, shifted={{inputs.parameters.shifted}})
             save_qubit_operator(hamiltonian,'hamiltonian.json')
     outputs:
       artifacts:
       - name: hamiltonian
         path: /app/hamiltonian.json
+
 
   - name: solve-maxcut-by-exhaustive-search
     parent: generic-task
