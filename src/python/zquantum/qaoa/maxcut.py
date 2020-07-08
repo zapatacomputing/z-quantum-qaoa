@@ -25,7 +25,7 @@ def get_maxcut_hamiltonian(graph, scaling = 1., shifted = False):
     Returns:
         zquantum.core.qubitoperator.QubitOperator object describing the 
         Hamiltonian 
-        H = \sum_{<i,j>} w_{i,j} * scaling * (Z_i Z_j - shift I).
+        H = \sum_{<i,j>} w_{i,j} * scaling * (Z_i Z_j - shifted * I).
     
     """
 
