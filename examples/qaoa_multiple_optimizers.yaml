@@ -39,6 +39,8 @@ spec:
     - s3-key: projects/qaoa/
     - docker-image: z-quantum-default
     - docker-tag: latest
+    - n-layers: "1"
+    - n-nodes: "6"
 
   templates:
   - name: main
@@ -47,7 +49,7 @@ spec:
         template: generate-erdos-renyi-graph
         arguments:
           parameters:
-            - n-nodes: "5"
+            - n-nodes: "{{workflow.parameters.n-nodes}}"
             - edge-probability: "0.8"
             - resources: [z-quantum-core]
             - docker-image: "{{workflow.parameters.docker-image}}"
@@ -62,57 +64,43 @@ spec:
           artifacts:
           - graph:
               from: '{{steps.generate-graph.outputs.artifacts.graph}}'
-    - - name: build-circuit-template
-        template: build-farhi-qaoa-circuit-template
-        arguments:
-          parameters:
-          - resources: [z-quantum-core, qe-openfermion, z-quantum-qaoa]
-          - docker-image: "{{workflow.parameters.docker-image}}"
-          - docker-tag: "{{workflow.parameters.docker-tag}}"
-          artifacts:
-          - hamiltonian:
-              from: '{{steps.get-maxcut-hamiltonian.outputs.artifacts.hamiltonian}}'
+
     - - name: generate-random-ansatz-params
         template: generate-random-ansatz-params
         arguments:
           parameters:
+          - number-of-params: "2"
           - min-val: "1"
           - max-val: "2"
-          - n-layers: "1"
           - resources: [z-quantum-core]
           - docker-image: "{{workflow.parameters.docker-image}}"
           - docker-tag: "{{workflow.parameters.docker-tag}}"
-          artifacts:
-          - ansatz:
-              from: '{{steps.build-circuit-template.outputs.artifacts.ansatz}}'
 
-      - name: build-uniform-parameter-grid
+    - - name: build-uniform-parameter-grid
         template: build-uniform-parameter-grid
         arguments:
           parameters:
+          - number-of-params-per-layer: "2"
           - n-layers: "1"
           - min-value: "0"
-          - max-value: "3.14159265359+0.05"
+          - max-value: "3.14159265359 + 0.01"
           - step: "0.1047197551"
           - resources: [z-quantum-core]
           - docker-image: "{{workflow.parameters.docker-image}}"
           - docker-tag: "{{workflow.parameters.docker-tag}}"
-          artifacts:
-          - ansatz:
-              from: '{{steps.build-circuit-template.outputs.artifacts.ansatz}}'
+
     - - name: optimize-variational-circuit-grid-search
         template: optimize-variational-circuit
         arguments:
           parameters:
+          - ansatz-specs: "{'module_name': 'zquantum.qaoa.farhi_ansatz', 'function_name': 'QAOAFarhiAnsatz', 'number_of_layers': {{workflow.parameters.n-layers}}}"
           - backend-specs: "{'module_name': 'qeqhipster.simulator', 'function_name': 'QHipsterSimulator'}"
           - optimizer-specs: "{'module_name': 'zquantum.optimizers.grid_search', 'function_name': 'GridSearchOptimizer', 'options': {'keep_value_history': True}}"
-          - cost-function-specs: "{'module_name': 'zquantum.core.cost_function', 'function_name': 'AnsatzBasedCostFunction'}"
+          - cost-function-specs: "{'module_name': 'zquantum.core.cost_function', 'function_name': 'AnsatzBasedCostFunction', 'estimator-specs': { 'module_name': 'zquantum.core.estimator', 'function_name': 'ExactEstimator'}}"
           - resources: [z-quantum-core, qe-openfermion, z-quantum-optimizers, qe-qhipster, z-quantum-qaoa]
           - docker-image: qe-qhipster
           - docker-tag: latest
           artifacts:
-          - ansatz: 
-              from: '{{steps.build-circuit-template.outputs.artifacts.ansatz}}'
           - initial-parameters:
               from: '{{steps.generate-random-ansatz-params.outputs.artifacts.params}}'
           - qubit-operator:
@@ -124,15 +112,14 @@ spec:
         template: optimize-variational-circuit
         arguments:
           parameters:
+          - ansatz-specs: "{'module_name': 'zquantum.qaoa.farhi_ansatz', 'function_name': 'QAOAFarhiAnsatz', 'number_of_layers': {{workflow.parameters.n-layers}}}"
           - backend-specs: "{'module_name': 'qeqhipster.simulator', 'function_name': 'QHipsterSimulator'}"
           - optimizer-specs: "{'module_name': 'zquantum.optimizers.scipy_optimizer', 'function_name': 'ScipyOptimizer', 'method': 'L-BFGS-B', 'options': {'keep_value_history': True}}"
-          - cost-function-specs: "{'module_name': 'zquantum.core.cost_function', 'function_name': 'AnsatzBasedCostFunction'}"
+          - cost-function-specs: "{'module_name': 'zquantum.core.cost_function', 'function_name': 'AnsatzBasedCostFunction', 'estimator-specs': { 'module_name': 'zquantum.core.estimator', 'function_name': 'ExactEstimator'}}"
           - resources: [z-quantum-core, qe-openfermion, z-quantum-optimizers, qe-qhipster, z-quantum-qaoa]
           - docker-image: qe-qhipster
           - docker-tag: latest
           artifacts:
-          - ansatz: 
-              from: '{{steps.build-circuit-template.outputs.artifacts.ansatz}}'
           - initial-parameters:
               from: '{{steps.generate-random-ansatz-params.outputs.artifacts.params}}'
           - qubit-operator:
@@ -142,15 +129,14 @@ spec:
         template: optimize-variational-circuit
         arguments:
           parameters:
+          - ansatz-specs: "{'module_name': 'zquantum.qaoa.farhi_ansatz', 'function_name': 'QAOAFarhiAnsatz', 'number_of_layers': {{workflow.parameters.n-layers}}}"
           - backend-specs: "{'module_name': 'qeqhipster.simulator', 'function_name': 'QHipsterSimulator'}"
           - optimizer-specs: "{'module_name': 'zquantum.optimizers.scipy_optimizer', 'function_name': 'ScipyOptimizer', 'method': 'Nelder-Mead', 'options': {'keep_value_history': True}}"
-          - cost-function-specs: "{'module_name': 'zquantum.core.cost_function', 'function_name': 'AnsatzBasedCostFunction'}"
+          - cost-function-specs: "{'module_name': 'zquantum.core.cost_function', 'function_name': 'AnsatzBasedCostFunction', 'estimator-specs': { 'module_name': 'zquantum.core.estimator', 'function_name': 'ExactEstimator'}}"
           - resources: [z-quantum-core, qe-openfermion, z-quantum-optimizers, qe-qhipster, z-quantum-qaoa]
           - docker-image: qe-qhipster
           - docker-tag: latest
           artifacts:
-          - ansatz: 
-              from: '{{steps.build-circuit-template.outputs.artifacts.ansatz}}'
           - initial-parameters:
               from: '{{steps.generate-random-ansatz-params.outputs.artifacts.params}}'
           - qubit-operator:
@@ -160,15 +146,14 @@ spec:
         template: optimize-variational-circuit
         arguments:
           parameters:
+          - ansatz-specs: "{'module_name': 'zquantum.qaoa.farhi_ansatz', 'function_name': 'QAOAFarhiAnsatz', 'number_of_layers': {{workflow.parameters.n-layers}}}"
           - backend-specs: "{'module_name': 'qeqhipster.simulator', 'function_name': 'QHipsterSimulator'}"
           - optimizer-specs: "{'module_name': 'zquantum.optimizers.cma_es_optimizer', 'function_name': 'CMAESOptimizer', 'options': {'popsize': 5, 'sigma_0': 0.1, 'tolx': 1e-3, 'keep_value_history': True}}"
-          - cost-function-specs: "{'module_name': 'zquantum.core.cost_function', 'function_name': 'AnsatzBasedCostFunction'}"
+          - cost-function-specs: "{'module_name': 'zquantum.core.cost_function', 'function_name': 'AnsatzBasedCostFunction', 'estimator-specs': { 'module_name': 'zquantum.core.estimator', 'function_name': 'ExactEstimator'}}"
           - resources: [z-quantum-core, qe-openfermion, z-quantum-optimizers, qe-qhipster, z-quantum-qaoa]
           - docker-image: qe-qhipster
           - docker-tag: latest
           artifacts:
-          - ansatz: 
-              from: '{{steps.build-circuit-template.outputs.artifacts.ansatz}}'
           - initial-parameters:
               from: '{{steps.generate-random-ansatz-params.outputs.artifacts.params}}'
           - qubit-operator:
