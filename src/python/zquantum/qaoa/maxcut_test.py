@@ -28,7 +28,7 @@ class TestMaxcut(unittest.TestCase):
         # Then
         self.assertEqual(hamiltonian, target_hamiltonian)
 
-
+    def test_get_maxcut_hamiltonian_scaled_and_shifted(self):
         # Given
         graph = nx.Graph()
         graph.add_edge(1, 2, weight=0.4)
