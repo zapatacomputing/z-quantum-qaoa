@@ -2,7 +2,7 @@ from zquantum.core.interfaces.ansatz import Ansatz, ansatz_property
 from zquantum.core.circuit import Circuit, Qubit, create_layer_of_gates
 from zquantum.core.evolution import time_evolution
 
-from .utils import create_all_x_mixer_hamiltonian
+from utils import create_all_x_mixer_hamiltonian
 from openfermion import QubitOperator, IsingOperator
 from openfermion.utils import count_qubits
 from forestopenfermion import qubitop_to_pyquilpauli
@@ -107,6 +107,6 @@ class QAOAFarhiAnsatz(Ansatz):
         """
         symbols = []
         for i in range(self.number_of_layers):
-            symbols.append(sympy.Symbol("beta_" + str(i)))
             symbols.append(sympy.Symbol("gamma_" + str(i)))
+            symbols.append(sympy.Symbol("beta_" + str(i)))
         return symbols
