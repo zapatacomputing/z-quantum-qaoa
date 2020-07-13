@@ -6,10 +6,47 @@ from random import uniform
 
 from openfermion import QubitOperator
 from zquantum.core.utils import dec2bin
-from zquantum.core.graph import generate_graph_node_dict
+from zquantum.core.graph import generate_graph_node_dict, generate_graph_from_specs
+from typing import Dict, List, Union
 
 
-def get_maxcut_hamiltonian(graph, scaling = 1., shifted = False):
+def get_random_maxcut_hamiltonians(
+    graph_specs: Dict,
+    number_of_instances: int,
+    number_of_qubits: Union[int, List[int]],
+    **kwargs
+):
+    """Generates random maxcut hamiltonians based on the input graph description for a range 
+    of number of qubits and a set number of instances.
+
+    Args:
+        graph_specs (dict): Specifications of the graph to generate. It should contain at 
+            least an entry with key 'type_graph' (Note: 'num_nodes' key will be overwritten)
+        number_of_instances (int): The number of hamiltonians to generate
+        number_of_qubits (int or List[int]): The number of qubits in the hamiltonian. If this is a list, then
+            a random value will be picked to generate each instance.
+                
+    Returns:
+        List of zquantum.core.qubitoperator.QubitOperator object describing the 
+        Hamiltonians
+        H = \sum_{<i,j>} w_{i,j} * scaling * (Z_i Z_j - shifted * I).
+    
+    """
+    if type(number_of_qubits) is int:
+        number_of_qubits = [number_of_qubits]
+
+    hamiltonians = []
+    for _ in range(number_of_instances):
+        graph_specs["num_nodes"] = np.random.choice(number_of_qubits)
+        graph = generate_graph_from_specs(graph_specs)
+
+        hamiltonian = get_maxcut_hamiltonian(graph, **kwargs)
+        hamiltonians.append(hamiltonian)
+
+    return hamiltonians
+
+
+def get_maxcut_hamiltonian(graph, scaling=1.0, shifted=False):
     """Converts a MAXCUT instance, as described by a weighted graph, to an Ising 
     Hamiltonian. It allows for different convention in the choice of the
     Hamiltonian.
@@ -34,13 +71,13 @@ def get_maxcut_hamiltonian(graph, scaling = 1., shifted = False):
     nodes_dict = generate_graph_node_dict(graph)
 
     for edge in graph.edges:
-        coeff = graph.edges[edge[0],edge[1]]['weight'] * scaling
+        coeff = graph.edges[edge[0], edge[1]]["weight"] * scaling
         node_index1 = nodes_dict[edge[0]]
         node_index2 = nodes_dict[edge[1]]
         ZZ_term_str = "Z" + str(node_index1) + " Z" + str(node_index2)
         output += QubitOperator(ZZ_term_str, coeff)
         if shifted:
-            output += QubitOperator('', -coeff) # constant term, i.e I
+            output += QubitOperator("", -coeff)  # constant term, i.e I
     return output
 
 
