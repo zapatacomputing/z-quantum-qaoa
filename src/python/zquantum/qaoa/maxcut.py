@@ -2,12 +2,33 @@ import networkx as nx
 import numpy as np
 from itertools import combinations
 from random import uniform
-
-
 from openfermion import QubitOperator
 from zquantum.core.utils import dec2bin
 from zquantum.core.graph import generate_graph_node_dict, generate_graph_from_specs
 from typing import Dict, List, Union
+
+from .farhi_ansatz import QAOAFarhiAnsatz
+
+
+def create_farhi_qaoa_circuits(
+    hamiltonians: List[QubitOperator], number_of_layers: int
+):
+    """Creates parameterizable quantum circuits based on the farhi qaoa ansatz for each 
+    hamiltonian in the input list using the set number of layers. 
+
+    Args:
+        hamiltonians (List[QubitOperator]): List of hamiltonians for constructing the
+            circuits
+        number_of_layers (int): The number of layers of the ansatz in the circuit
+                
+    Returns:
+        List of zquantum.core.circuit.Circuit
+    """
+    circuitset = []
+    for hamiltonian in hamiltonians:
+        ansatz = QAOAFarhiAnsatz(number_of_layers, hamiltonian)
+        circuitset.append(ansatz.parametrized_circuit)
+    return circuitset
 
 
 def get_random_maxcut_hamiltonians(

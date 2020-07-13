@@ -8,7 +8,9 @@ from .maxcut import (
     get_solution_cut_size,
     solve_maxcut_by_exhaustive_search,
     get_random_maxcut_hamiltonians,
+    create_farhi_qaoa_circuits,
 )
+from zquantum.core.circuit import Circuit
 
 
 class TestMaxcut(unittest.TestCase):
@@ -135,3 +137,21 @@ class TestMaxcut(unittest.TestCase):
             # Then
             for hamiltonian in hamiltonians:
                 self.assertIn(count_qubits(hamiltonian), number_of_qubits)
+
+    def test_create_farhi_qaoa_circuits(self):
+        # Given
+        hamiltonians = [
+            QubitOperator("Z0 Z1"),
+            QubitOperator("Z0") + QubitOperator("Z1"),
+        ]
+        number_of_layers = 2
+
+        # When
+        circuits = create_farhi_qaoa_circuits(hamiltonians, number_of_layers)
+
+        # Then
+        self.assertEqual(len(circuits), len(hamiltonians))
+
+        for circuit in circuits:
+            self.assertEqual(type(circuit), Circuit)
+
