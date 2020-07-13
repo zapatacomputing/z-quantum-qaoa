@@ -111,11 +111,10 @@ class TestQAOAFarhiAnsatz(unittest.TestCase, AnsatzTests):
     def test_get_symbols(self):
         # Given
         target_symbols = [
-            sympy.Symbol("gamma_0"),
             sympy.Symbol("beta_0"),
-            sympy.Symbol("gamma_1"),
+            sympy.Symbol("gamma_0"),
             sympy.Symbol("beta_1"),
-
+            sympy.Symbol("gamma_1"),
         ]
         self.ansatz.number_of_layers = 2
 
