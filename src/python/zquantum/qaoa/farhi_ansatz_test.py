@@ -27,12 +27,12 @@ class TestQAOAFarhiAnsatz(unittest.TestCase, AnsatzTests):
         self.symbols_map = [(self.beta, beta_value), (self.gamma, gamma_value)]
         self.target_circuit = Circuit()
         self.target_circuit.gates = []
-        self.target_circuit.gates.append(Gate("Rx", [Qubit(0)], [2.0 * self.beta]))
-        self.target_circuit.gates.append(Gate("Rx", [Qubit(1)], [2.0 * self.beta]))
-        self.target_circuit.gates.append(Gate("Rz", [Qubit(0)], [2.0 * self.gamma]))
-        self.target_circuit.gates.append(Gate("Rz", [Qubit(1)], [2.0 * self.gamma]))
         self.target_circuit.gates.append(Gate("H", [Qubit(0)]))
         self.target_circuit.gates.append(Gate("H", [Qubit(1)]))
+        self.target_circuit.gates.append(Gate("Rz", [Qubit(0)], [2.0 * self.gamma]))
+        self.target_circuit.gates.append(Gate("Rz", [Qubit(1)], [2.0 * self.gamma]))
+        self.target_circuit.gates.append(Gate("Rx", [Qubit(0)], [2.0 * self.beta]))
+        self.target_circuit.gates.append(Gate("Rx", [Qubit(1)], [2.0 * self.beta]))
         self.target_unitary = self.target_circuit.evaluate(
             self.symbols_map
         ).to_unitary()
