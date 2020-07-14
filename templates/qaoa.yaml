@@ -35,9 +35,9 @@ spec:
       parameters:
       - name: command
         value: python3 main_script.py
-      - name: graph_specs
-      - name: number_of_instances
-      - name: number_of_qubits
+      - name: graph-specs
+      - name: number-of-instances
+      - name: number-of-qubits
       - name: shifted
         default: "False"
       - name: scaling
@@ -50,9 +50,9 @@ spec:
             from zquantum.qaoa.maxcut import get_random_maxcut_hamiltonians
             from qeopenfermion import save_qubit_operator_set
             hamiltonians = get_random_maxcut_hamiltonians(
-                                    {{inputs.parameters.graph_specs}},
-                                    {{inputs.parameters.number_of_instances}},
-                                    {{inputs.parameters.number_of_qubits}},
+                                    {{inputs.parameters.graph-specs}},
+                                    {{inputs.parameters.number-of-instances}},
+                                    {{inputs.parameters.number-of-qubits}},
                                     shifted = {{inputs.parameters.shifted}},
                                     scaling = {{inputs.parameters.scaling}}
                                 )
