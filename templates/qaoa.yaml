@@ -70,10 +70,10 @@ spec:
         value: python3 main_script.py
       - name: number-of-layers
       artifacts:
-      - name: main-script
-        path: /app/main_script.py
       - name: hamiltonians
-        path: /app/hamiltonians.json    
+        path: /app/hamiltonians.json   
+      - name: main-script
+        path: /app/main_script.py 
         raw:
           data: |
             from zquantum.core.circuit import save_circuit_set
