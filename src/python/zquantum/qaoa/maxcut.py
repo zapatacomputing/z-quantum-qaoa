@@ -75,9 +75,7 @@ def get_maxcut_hamiltonian(graph, scaling=1.0, shifted=False):
     Args:
         graph (networkx.Graph): undirected weighted graph describing the MAXCUT 
         instance.
-        
-        scaling (float): scaling of the terms of the Hamiltonian
-            
+        scaling (float): scaling of the terms of the Hamiltonian            
         constant (bool): if True include a shift. Default: False
                 
     Returns:
