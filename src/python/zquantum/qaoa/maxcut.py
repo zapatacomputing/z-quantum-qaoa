@@ -34,7 +34,7 @@ def create_farhi_qaoa_circuits(
 def get_random_maxcut_hamiltonians(
     graph_specs: Dict,
     number_of_instances: int,
-    number_of_qubits: Union[int, List[int]],
+    possible_number_of_qubits: List[int],
     **kwargs
 ):
     """Generates random maxcut hamiltonians based on the input graph description for a range 
@@ -44,8 +44,9 @@ def get_random_maxcut_hamiltonians(
         graph_specs (dict): Specifications of the graph to generate. It should contain at 
             least an entry with key 'type_graph' (Note: 'num_nodes' key will be overwritten)
         number_of_instances (int): The number of hamiltonians to generate
-        number_of_qubits (int or List[int]): The number of qubits in the hamiltonian. If this is a list, then
-            a random value will be picked to generate each instance.
+        possible_number_of_qubits (List[int]): A list containing the number of 
+            qubits in the hamiltonian. If it contains more than one value, then a 
+            random value from the list will be picked to generate each instance.
                 
     Returns:
         List of zquantum.core.qubitoperator.QubitOperator object describing the 
@@ -53,12 +54,9 @@ def get_random_maxcut_hamiltonians(
         H = \sum_{<i,j>} w_{i,j} * scaling * (Z_i Z_j - shifted * I).
     
     """
-    if type(number_of_qubits) is int:
-        number_of_qubits = [number_of_qubits]
-
     hamiltonians = []
     for _ in range(number_of_instances):
-        graph_specs["num_nodes"] = np.random.choice(number_of_qubits)
+        graph_specs["num_nodes"] = np.random.choice(possible_number_of_qubits)
         graph = generate_graph_from_specs(graph_specs)
 
         hamiltonian = get_maxcut_hamiltonian(graph, **kwargs)
