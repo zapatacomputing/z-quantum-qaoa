@@ -106,37 +106,23 @@ class TestMaxcut(unittest.TestCase):
             # Then
             self.assertEqual(len(hamiltonians), number_of_instances)
 
-    def test_get_random_maxcut_hamiltonians_num_qubits_is_expected(self):
-        # Given
-        graph_specs = {"type_graph": "complete"}
-        number_of_instances = 10
-        number_of_qubits_list = [2, 4, 8]
 
-        # When
-        for number_of_qubits in number_of_qubits_list:
-            hamiltonians = get_random_maxcut_hamiltonians(
-                graph_specs, number_of_instances, number_of_qubits
-            )
-
-            # Then
-            for hamiltonian in hamiltonians:
-                self.assertEqual(count_qubits(hamiltonian), number_of_qubits)
 
     def test_get_random_maxcut_hamiltonians_num_qubits_is_in_range(self):
         # Given
         graph_specs = {"type_graph": "complete"}
         number_of_instances = 10
-        number_of_qubits_list = [[2, 3, 4], [2, 8]]
+        list_possible_number_of_qubits = [[2, 3, 4], [2, 8]]
 
         # When
-        for number_of_qubits in number_of_qubits_list:
+        for possible_number_of_qubits in list_possible_number_of_qubits:
             hamiltonians = get_random_maxcut_hamiltonians(
-                graph_specs, number_of_instances, number_of_qubits
+                graph_specs, number_of_instances, possible_number_of_qubits
             )
 
             # Then
             for hamiltonian in hamiltonians:
-                self.assertIn(count_qubits(hamiltonian), number_of_qubits)
+                self.assertIn(count_qubits(hamiltonian), possible_number_of_qubits)
 
     def test_create_farhi_qaoa_circuits(self):
         # Given
