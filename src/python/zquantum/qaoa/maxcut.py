@@ -2,14 +2,70 @@ import networkx as nx
 import numpy as np
 from itertools import combinations
 from random import uniform
-
-
 from openfermion import QubitOperator
 from zquantum.core.utils import dec2bin
-from zquantum.core.graph import generate_graph_node_dict
+from zquantum.core.graph import generate_graph_node_dict, generate_graph_from_specs
+from typing import Dict, List, Union
+
+from .farhi_ansatz import QAOAFarhiAnsatz
 
 
-def get_maxcut_hamiltonian(graph, scaling = 1., shifted = False):
+def create_farhi_qaoa_circuits(
+    hamiltonians: List[QubitOperator], number_of_layers: int
+):
+    """Creates parameterizable quantum circuits based on the farhi qaoa ansatz for each 
+    hamiltonian in the input list using the set number of layers. 
+
+    Args:
+        hamiltonians (List[QubitOperator]): List of hamiltonians for constructing the
+            circuits
+        number_of_layers (int): The number of layers of the ansatz in the circuit
+                
+    Returns:
+        List of zquantum.core.circuit.Circuit
+    """
+    circuitset = []
+    for hamiltonian in hamiltonians:
+        ansatz = QAOAFarhiAnsatz(number_of_layers, hamiltonian)
+        circuitset.append(ansatz.parametrized_circuit)
+    return circuitset
+
+
+def get_random_maxcut_hamiltonians(
+    graph_specs: Dict,
+    number_of_instances: int,
+    possible_number_of_qubits: List[int],
+    **kwargs
+):
+    """Generates random maxcut hamiltonians based on the input graph description for a range 
+    of number of qubits and a set number of instances.
+
+    Args:
+        graph_specs (dict): Specifications of the graph to generate. It should contain at 
+            least an entry with key 'type_graph' (Note: 'num_nodes' key will be overwritten)
+        number_of_instances (int): The number of hamiltonians to generate
+        possible_number_of_qubits (List[int]): A list containing the number of 
+            qubits in the hamiltonian. If it contains more than one value, then a 
+            random value from the list will be picked to generate each instance.
+                
+    Returns:
+        List of zquantum.core.qubitoperator.QubitOperator object describing the 
+        Hamiltonians
+        H = \sum_{<i,j>} w_{i,j} * scaling * (Z_i Z_j - shifted * I).
+    
+    """
+    hamiltonians = []
+    for _ in range(number_of_instances):
+        graph_specs["num_nodes"] = np.random.choice(possible_number_of_qubits)
+        graph = generate_graph_from_specs(graph_specs)
+
+        hamiltonian = get_maxcut_hamiltonian(graph, **kwargs)
+        hamiltonians.append(hamiltonian)
+
+    return hamiltonians
+
+
+def get_maxcut_hamiltonian(graph, scaling=1.0, shifted=False):
     """Converts a MAXCUT instance, as described by a weighted graph, to an Ising 
     Hamiltonian. It allows for different convention in the choice of the
     Hamiltonian.
@@ -32,13 +88,13 @@ def get_maxcut_hamiltonian(graph, scaling = 1., shifted = False):
     nodes_dict = generate_graph_node_dict(graph)
 
     for edge in graph.edges:
-        coeff = graph.edges[edge[0],edge[1]]['weight'] * scaling
+        coeff = graph.edges[edge[0], edge[1]]["weight"] * scaling
         node_index1 = nodes_dict[edge[0]]
         node_index2 = nodes_dict[edge[1]]
         ZZ_term_str = "Z" + str(node_index1) + " Z" + str(node_index2)
         output += QubitOperator(ZZ_term_str, coeff)
         if shifted:
-            output += QubitOperator('', -coeff) # constant term, i.e I
+            output += QubitOperator("", -coeff)  # constant term, i.e I
     return output
 
 
