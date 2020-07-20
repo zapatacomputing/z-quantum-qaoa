@@ -62,7 +62,7 @@ spec:
       - name: hamiltonians
         path: /app/hamiltonians.json
         
-  - name: generate-list-ansatzes-from-hamiltonians
+  - name: create-circuits-from-hamiltonians-for-farhi-ansatz
     parent: generic-task
     inputs:
       parameters:
