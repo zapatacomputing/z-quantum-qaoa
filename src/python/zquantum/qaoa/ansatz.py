@@ -50,7 +50,7 @@ def build_farhi_qaoa_circuit_template(hamiltonian):
     return ansatz
 
 
-def build_qaoa_circuit(params, hamiltonians):
+def build_qaoa_circuit(params, hamiltonians, nonzero=False):
     """Generates a circuit for QAOA. This is not only for QAOA proposed by Farhi
     et al., but also general ansatz where alternating layers of time evolution under 
     two different Hamiltonians H1 and H2 are considered.
@@ -80,13 +80,14 @@ def build_qaoa_circuit(params, hamiltonians):
             )
         )
 
-    new_params = []
-    for parameter in params:
-        if parameter == 0.0:
-            new_params.append(0.0000001)
-        else:
-            new_params.append(parameter)
-    params = np.asarray(new_params)
+    if nonzero:
+        new_params = []
+        for parameter in params:
+            if parameter == 0.0:
+                new_params.append(0.0000001)
+            else:
+                new_params.append(parameter)
+        params = np.asarray(new_params)
 
     # Convert qubit operators from dicts to QubitOperator objects, if needed
     for index, hamiltonian in enumerate(hamiltonians):
@@ -111,7 +112,7 @@ def build_qaoa_circuit(params, hamiltonians):
     return output
 
 
-def build_qaoa_circuit_grads(params, hamiltonians):
+def build_qaoa_circuit_grads(params, hamiltonians, nonzero=False):
     """ Generates gradient circuits and corresponding factors for the QAOA ansatz
         defined in the function build_qaoa_circuit.
 
@@ -141,13 +142,14 @@ def build_qaoa_circuit_grads(params, hamiltonians):
             )
         )
 
-    new_params = []
-    for parameter in params:
-        if parameter == 0.0:
-            new_params.append(0.0000001)
-        else:
-            new_params.append(parameter)
-    params = np.asarray(new_params)
+    if nonzero:
+        new_params = []
+        for parameter in params:
+            if parameter == 0.0:
+                new_params.append(0.0000001)
+            else:
+                new_params.append(parameter)
+        params = np.asarray(new_params)
 
     # Convert qubit operators from dicts to QubitOperator objects, if needed
     for index, hamiltonian in enumerate(hamiltonians):
