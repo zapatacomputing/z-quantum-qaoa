@@ -83,7 +83,7 @@ def build_qaoa_circuit(params, hamiltonians):
     new_params = []
     for parameter in params:
         if parameter == 0.0:
-            new_params.append(0.0001)
+            new_params.append(0.0000001)
         else:
             new_params.append(parameter)
     params = np.asarray(new_params)
@@ -144,7 +144,7 @@ def build_qaoa_circuit_grads(params, hamiltonians):
     new_params = []
     for parameter in params:
         if parameter == 0.0:
-            new_params.append(0.0001)
+            new_params.append(0.0000001)
         else:
             new_params.append(parameter)
     params = np.asarray(new_params)
