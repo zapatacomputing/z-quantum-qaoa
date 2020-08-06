@@ -80,6 +80,14 @@ def build_qaoa_circuit(params, hamiltonians):
             )
         )
 
+    new_params = []
+    for parameter in params:
+        if parameter == 0.0:
+            new_params.append(0.0001)
+        else:
+            new_params.append(parameter)
+    params = np.asarray(new_params)
+
     # Convert qubit operators from dicts to QubitOperator objects, if needed
     for index, hamiltonian in enumerate(hamiltonians):
         if isinstance(hamiltonian, dict):
@@ -132,6 +140,14 @@ def build_qaoa_circuit_grads(params, hamiltonians):
                 len(params), len(hamiltonians), len(params), len(hamiltonians)
             )
         )
+
+    new_params = []
+    for parameter in params:
+        if parameter == 0.0:
+            new_params.append(0.0001)
+        else:
+            new_params.append(parameter)
+    params = np.asarray(new_params)
 
     # Convert qubit operators from dicts to QubitOperator objects, if needed
     for index, hamiltonian in enumerate(hamiltonians):
