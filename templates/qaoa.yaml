@@ -1,32 +1,5 @@
 spec:
   templates:
-  - name: get-maxcut-hamiltonian
-    parent: generic-task
-    inputs:
-      parameters:
-      - name: command
-        value: python3 main_script.py
-      - name: scaling
-        default: "1.0"
-      - name: shifted
-        default: "False"
-      artifacts:
-      - name: graph
-        path: /app/graph.json
-      - name: main-script
-        path: /app/main_script.py
-        raw:
-          data: |
-            from zquantum.core.graph import load_graph
-            from zquantum.qaoa.maxcut import get_maxcut_hamiltonian
-            from qeopenfermion import save_qubit_operator
-            graph = load_graph('graph.json')
-            hamiltonian = get_maxcut_hamiltonian(graph, scaling={{inputs.parameters.scaling}}, shifted={{inputs.parameters.shifted}})
-            save_qubit_operator(hamiltonian,'hamiltonian.json')
-    outputs:
-      artifacts:
-      - name: hamiltonian
-        path: /app/hamiltonian.json
 
 
   - name: generate-list-maxcut-hamiltonians
@@ -62,6 +35,32 @@ spec:
       - name: hamiltonians
         path: /app/hamiltonians.json
         
+  - name: build-farhi-qaoa-ansatz-circuit
+    parent: generic-task
+    inputs:
+      parameters:
+      - name: command
+        value: python3 main_script.py
+      - name: number-of-layers
+      artifacts:
+      - name: hamiltonian
+        path: /app/hamiltonian.json   
+      - name: main-script
+        path: /app/main_script.py 
+        raw:
+          data: |
+            from zquantum.core.circuit import save_circuit
+            from zquantum.qaoa.maxcut import create_farhi_qaoa_circuits
+            from qeopenfermion import load_qubit_operator
+            
+            hamiltonian = load_qubit_operator('hamiltonian.json')
+            circuit = create_farhi_qaoa_circuits([hamiltonian], {{inputs.parameters.number-of-layers}})[0]
+            save_circuit(circuit, 'circuit.json')
+    outputs:
+      artifacts:
+      - name: circuit
+        path: /app/circuit.json     
+        
   - name: create-circuits-from-hamiltonians-for-farhi-ansatz
     parent: generic-task
     inputs:
@@ -86,7 +85,7 @@ spec:
     outputs:
       artifacts:
       - name: circuits
-        path: /app/circuits.json        
+        path: /app/circuits.json     
 
   - name: get-maxcut-hamiltonian
     parent: generic-task
