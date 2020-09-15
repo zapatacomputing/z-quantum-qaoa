@@ -20,7 +20,11 @@ def generate_list_maxcut_hamiltonians(
 ):
     graph_specs_dict = json.loads(graph_specs)
     hamiltonians = get_random_maxcut_hamiltonians(
-        graph_specs_dict, number_of_instances, number_of_qubits, shifted, scaling
+        graph_specs_dict,
+        number_of_instances,
+        number_of_qubits,
+        shifted=shifted,
+        scaling=scaling,
     )
     save_qubit_operator_set(hamiltonians, "hamiltonians.json")
 
