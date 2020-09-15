@@ -41,9 +41,9 @@ def create_circuits_from_hamiltonians_for_farhi_ansatz(number_of_layers, hamilto
     save_circuit_set(circuits, "circuits.json")
 
 
-def get_maxcut_hamiltonian(graph, scaling=1.0, shifted=False):
+def get_maxcut_hamiltonian_operator(graph, scaling=1.0, shifted=False):
     graph_object = load_graph(graph)
-    hamiltonian = get_maxcut_hamiltonian(graph_object, scaling, shifted)
+    hamiltonian = get_maxcut_hamiltonian(graph_object, scaling=scaling, shifted=shifted)
     save_qubit_operator(hamiltonian, "hamiltonian.json")
 
 
