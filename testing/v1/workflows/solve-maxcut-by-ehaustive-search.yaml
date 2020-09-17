@@ -1,0 +1,66 @@
+# Workflow API version
+apiVersion: io.orquestra.workflow/1.0.0
+
+# Prefix for workflow ID
+name: maxcut-exhaustive-search
+
+imports:
+- name: z-quantum-core
+  type: git
+  parameters:
+    repository: "git@github.com:zapatacomputing/z-quantum-core.git"
+    branch: "workflow-v1"
+- name: z-quantum-qaoa
+  type: git
+  parameters:
+    repository: "git@github.com:zapatacomputing/z-quantum-qaoa.git"
+    branch: "workflow-v1"
+- name: qe-openfermion
+  type: git
+  parameters:
+    repository: "git@github.com:zapatacomputing/qe-openfermion.git"
+    branch: "workflow-v1"
+
+steps:
+- name: generate-graph
+  config:
+    runtime:
+      type: python3
+      imports: [z-quantum-core]
+      parameters:
+        file: z-quantum-core/tasks/graph.py
+        function: generate_erdos_renyi_graph
+    resources:
+      cpu: "1000m"
+      memory: "1Gi"
+      disk: "10Gi"
+  inputs:
+    - number_of_nodes: 10
+      type: int
+    - edge_probability: 0.5
+      type: float
+    - random_weights: False
+      type: bool
+    - seed: 24
+      type: int
+  outputs:
+    - name: graph
+      type: erdos-renyi-graph
+- name: test
+  passed: [generate-graph]
+  config:
+    runtime:
+      type: python3
+      imports: [z-quantum-core, qe-openfermion, z-quantum-qaoa]
+      parameters:
+        file: z-quantum-qaoa/tasks/qaoa.py
+        function: solve_maxcut_problem_by_exhaustive_search
+    resources:
+      cpu: "1000m"
+      memory: "1Gi"
+      disk: "10Gi"
+  inputs:
+    - graph: ((generate-graph.graph))
+      type: erdos-renyi-graph
+types:
+  - erdos-renyi-graph
