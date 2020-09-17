@@ -28,7 +28,7 @@ steps:
       type: python3
       imports: [z-quantum-core, qe-openfermion, z-quantum-qaoa]
       parameters:
-        file: z-quantum-qaoa/tasks/qaoa_tasks.py
+        file: z-quantum-qaoa/tasks/qaoa.py
         function: generate_list_maxcut_hamiltonians
     resources:
       cpu: "1000m"
@@ -55,7 +55,7 @@ steps:
       type: python3
       imports: [z-quantum-core, qe-openfermion, z-quantum-qaoa]
       parameters:
-        file: z-quantum-qaoa/tasks/qaoa_tasks.py
+        file: z-quantum-qaoa/tasks/qaoa.py
         function: create_circuits_from_hamiltonians_for_farhi_ansatz
     resources:
       cpu: "1000m"
