@@ -30,10 +30,10 @@ imports:
   parameters:
     repository: "git@github.com:zapatacomputing/z-quantum-estimators.git"
     branch: "workflow-v1"
-- name: qe-qhipster
+- name: qe-forest
   type: git
   parameters:
-    repository: "git@github.com:zapatacomputing/qe-qhipster.git"
+    repository: "git@github.com:zapatacomputing/qe-forest.git"
     branch: "workflow-v1"
 
 steps:
@@ -43,7 +43,7 @@ steps:
       type: python3
       imports: [z-quantum-core]
       parameters:
-        file: z-quantum-core/tasks/graph_tasks.py
+        file: z-quantum-core/tasks/graph.py
         function: generate_erdos_renyi_graph
     resources:
       cpu: "1000m"
@@ -69,7 +69,7 @@ steps:
       type: python3
       imports: [z-quantum-core, qe-openfermion, z-quantum-qaoa]
       parameters:
-        file: z-quantum-qaoa/tasks/qaoa_tasks.py
+        file: z-quantum-qaoa/tasks/qaoa.py
         function: get_maxcut_hamiltonian_operator
     resources:
       cpu: "1000m"
@@ -92,7 +92,7 @@ steps:
       type: python3
       imports: [z-quantum-core]
       parameters:
-        file: z-quantum-core/tasks/circuit_tasks.py
+        file: z-quantum-core/tasks/circuit.py
         function: build_uniform_parameter_grid
     resources:
       cpu: "1000m"
@@ -121,7 +121,7 @@ steps:
       type: python3
       imports: [z-quantum-core]
       parameters:
-        file: z-quantum-core/tasks/circuit_tasks.py
+        file: z-quantum-core/tasks/circuit.py
         function: generate_random_ansatz_params
     resources:
       cpu: "1000m"
@@ -148,7 +148,7 @@ steps:
       type: python3
       imports: [z-quantum-core]
       parameters:
-        file: z-quantum-core/tasks/circuit_tasks.py
+        file: z-quantum-core/tasks/circuit.py
         function: generate_random_ansatz_params
     resources:
       cpu: "1000m"
@@ -174,9 +174,9 @@ steps:
   config:
     runtime:
       type: python3
-      imports: [z-quantum-core, z-quantum-optimizers, z-quantum-estimators, qe-openfermion, qe-qhipster, z-quantum-qaoa]
+      imports: [z-quantum-core, z-quantum-optimizers, z-quantum-estimators, qe-openfermion, qe-forest, z-quantum-qaoa]
       parameters:
-        file: z-quantum-optimizers/tasks/optimizers_tasks.py
+        file: z-quantum-optimizers/tasks/optimizers.py
         function: optimize_variational_circuit
     resources:
       cpu: "1000m"
@@ -185,9 +185,9 @@ steps:
   inputs:
   - ansatz_specs: "{\"module_name\": \"zquantum.qaoa.farhi_ansatz\", \"function_name\": \"QAOAFarhiAnsatz\", \"number_of_layers\": 1}"
     type: string
-  - backend_specs: "{\"module_name\": \"qeqhipster.simulator\", \"function_name\": \"QHipsterSimulator\"}"
+  - backend_specs: "{\"module_name\": \"qeforest.simulator\", \"function_name\": \"ForestSimulator\", \"device_name\": \"wavefunction-simulator\"}"
     type: string
-  - optimizer_specs: "{\"module_name\": \"zquantum.optimizers.grid_search\", \"function_name\": \"GridSearchOptimizer\", \"options\": {\"keep_value_history\": True}}"
+  - optimizer_specs: "{\"module_name\": \"zquantum.optimizers.grid_search\", \"function_name\": \"GridSearchOptimizer\", \"options\": {\"keep_value_history\": true}}"
     type: string
   - cost_function_specs: "{\"module_name\": \"zquantum.core.cost_function\", \"function_name\": \"AnsatzBasedCostFunction\", \"estimator-specs\": { \"module_name\": \"zquantum.core.estimator\", \"function_name\": \"ExactEstimator\"}}"
     type: string
@@ -206,7 +206,9 @@ steps:
   - constraint_operator: "None"
     type: string
   outputs:
-  - name: params
+  - name: optimization-results
+    type: optimization-results
+  - name: optimized-parameters
     type: parameters
 
 types:
@@ -214,3 +216,4 @@ types:
 - grid
 - graph
 - parameters
+- optimization-results
