@@ -1,4 +1,4 @@
-# Workflow API version
+steps# Workflow API version
 apiVersion: io.orquestra.workflow/1.0.0
 
 # Prefix for workflow ID
@@ -19,16 +19,16 @@ imports:
   type: git
   parameters:
     repository: "git@github.com:zapatacomputing/qe-openfermion.git"
-    branch: "workflow-v1"
+    branch: "v1-revisions"
 
 steps:
 - name: generate-graph
   config:
     runtime:
-      type: python3
+      language: python3
       imports: [z-quantum-core]
       parameters:
-        file: z-quantum-core/tasks/graph.py
+        file: z-quantum-core/steps/graph.py
         function: generate_erdos_renyi_graph
     resources:
       cpu: "1000m"
@@ -50,10 +50,10 @@ steps:
   passed: [generate-graph]
   config:
     runtime:
-      type: python3
+      language: python3
       imports: [z-quantum-core, qe-openfermion, z-quantum-qaoa]
       parameters:
-        file: z-quantum-qaoa/tasks/qaoa.py
+        file: z-quantum-qaoa/steps/qaoa.py
         function: get_maxcut_hamiltonian_operator
     resources:
       cpu: "1000m"
@@ -73,10 +73,10 @@ steps:
   passed: [get-hamiltonian]
   config:
     runtime:
-      type: python3
+      language: python3
       imports: [z-quantum-core, qe-openfermion, z-quantum-qaoa]
       parameters:
-        file: z-quantum-qaoa/tasks/qaoa.py
+        file: z-quantum-qaoa/steps/qaoa.py
         function: build_farhi_qaoa_ansatz_circuit
     resources:
       cpu: "1000m"
