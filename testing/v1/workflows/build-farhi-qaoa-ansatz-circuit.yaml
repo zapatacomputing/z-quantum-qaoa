@@ -1,4 +1,4 @@
-steps# Workflow API version
+# Workflow API version
 apiVersion: io.orquestra.workflow/1.0.0
 
 # Prefix for workflow ID
