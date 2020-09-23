@@ -2,7 +2,7 @@
 apiVersion: io.orquestra.workflow/1.0.0
 
 # Prefix for workflow ID
-name: generate-list-maxcut-ham
+name: create-circs-farhi-ansatz
 
 imports:
 - name: z-quantum-core
@@ -22,14 +22,14 @@ imports:
     branch: "v1-revisions"
 
 steps:
-- name: test
+- name: generate-list-of-hamiltonians
   config:
     runtime:
       language: python3
       imports: [z-quantum-core, qe-openfermion, z-quantum-qaoa]
       parameters:
         file: z-quantum-qaoa/steps/qaoa.py
-        function: generate_list_maxcut_hamiltonians
+        function: get_random_maxcut_hamiltonians
     resources:
       cpu: "1000m"
       memory: "1Gi"
@@ -48,5 +48,27 @@ steps:
   outputs:
     - name: hamiltonians
       type: operator-set
+- name: test
+  passed: [generate-list-of-hamiltonians]
+  config:
+    runtime:
+      language: python3
+      imports: [z-quantum-core, qe-openfermion, z-quantum-qaoa]
+      parameters:
+        file: z-quantum-qaoa/steps/qaoa.py
+        function: create_farhi_qaoa_circuits
+    resources:
+      cpu: "1000m"
+      memory: "1Gi"
+      disk: "10Gi"
+  inputs:
+    - number_of_layers: 2
+      type: int
+    - hamiltonians: ((generate-list-of-hamiltonians.hamiltonians))
+      type: operator-set
+  outputs:
+    - name: circuits
+      type: circuit-set
 types:
   - operator-set
+  - circuit-set
