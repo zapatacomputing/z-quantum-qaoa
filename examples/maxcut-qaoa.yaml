@@ -9,42 +9,42 @@ imports:
   type: git
   parameters:
     repository: "git@github.com:zapatacomputing/z-quantum-core.git"
-    branch: "workflow-v1"
+    branch: "master"
 - name: qe-openfermion
   type: git
   parameters:
     repository: "git@github.com:zapatacomputing/qe-openfermion.git"
-    branch: "workflow-v1"
+    branch: "master"
 - name: z-quantum-qaoa
   type: git
   parameters:
     repository: "git@github.com:zapatacomputing/z-quantum-qaoa.git"
-    branch: "workflow-v1"
+    branch: "master"
 - name: z-quantum-optimizers
   type: git
   parameters:
     repository: "git@github.com:zapatacomputing/z-quantum-optimizers.git"
-    branch: "workflow-v1"
+    branch: "master"
 - name: z-quantum-estimators
   type: git
   parameters:
     repository: "git@github.com:zapatacomputing/z-quantum-estimators.git"
-    branch: "workflow-v1"
+    branch: "master"
 - name: qe-forest
   type: git
   parameters:
     repository: "git@github.com:zapatacomputing/qe-forest.git"
-    branch: "workflow-v1"
+    branch: "master"
 
 steps:
 - name: generate-graph
   config:
     runtime:
-      type: python3
+      language: python3
       imports: [z-quantum-core]
       parameters:
-        file: z-quantum-core/tasks/graph.py
-        function: generate_erdos_renyi_graph
+        file: z-quantum-core/steps/graph.py
+        function: generate_random_graph_erdos_renyi
     resources:
       cpu: "1000m"
       memory: "1Gi"
@@ -66,11 +66,11 @@ steps:
   passed: [generate-graph]
   config:
     runtime:
-      type: python3
+      language: python3
       imports: [z-quantum-core, qe-openfermion, z-quantum-qaoa]
       parameters:
-        file: z-quantum-qaoa/tasks/qaoa.py
-        function: get_maxcut_hamiltonian_operator
+        file: z-quantum-qaoa/steps/qaoa.py
+        function: get_maxcut_hamiltonian
     resources:
       cpu: "1000m"
       memory: "1Gi"
@@ -89,11 +89,11 @@ steps:
 - name: get-grid
   config:
     runtime:
-      type: python3
+      language: python3
       imports: [z-quantum-core]
       parameters:
-        file: z-quantum-core/tasks/circuit.py
-        function: build_uniform_parameter_grid
+        file: z-quantum-core/steps/circuit.py
+        function: build_uniform_param_grid
     resources:
       cpu: "1000m"
       memory: "1Gi"
@@ -118,10 +118,10 @@ steps:
 - name: generate-random-initial-ansatz-params
   config:
     runtime:
-      type: python3
+      language: python3
       imports: [z-quantum-core]
       parameters:
-        file: z-quantum-core/tasks/circuit.py
+        file: z-quantum-core/steps/circuit.py
         function: generate_random_ansatz_params
     resources:
       cpu: "1000m"
@@ -145,10 +145,10 @@ steps:
 - name: generate-fixed-ansatz-params
   config:
     runtime:
-      type: python3
+      language: python3
       imports: [z-quantum-core]
       parameters:
-        file: z-quantum-core/tasks/circuit.py
+        file: z-quantum-core/steps/circuit.py
         function: generate_random_ansatz_params
     resources:
       cpu: "1000m"
@@ -173,10 +173,10 @@ steps:
   passed: [get-maxcut-hamiltonian, get-grid, generate-random-initial-ansatz-params, generate-fixed-ansatz-params]
   config:
     runtime:
-      type: python3
+      language: python3
       imports: [z-quantum-core, z-quantum-optimizers, z-quantum-estimators, qe-openfermion, qe-forest, z-quantum-qaoa]
       parameters:
-        file: z-quantum-optimizers/tasks/optimizers.py
+        file: z-quantum-optimizers/steps/optimizers.py
         function: optimize_variational_circuit
     resources:
       cpu: "1000m"

@@ -12,30 +12,39 @@ Currently it includes the following features:
 ## Usage
 
 ### Workflow
-In order to use `z-quantum-qaoa` in your workflow, you need to add it as a resource:
+In order to use `z-quantum-qaoa` in your workflow, you need to add it as an `import` in your Orquestra workflow:
 
-```
-resources:
+```yaml
+imports:
 - name: z-quantum-qaoa
   type: git
   parameters:
-    url: "git@github.com:zapatacomputing/z-quantum-qaoa.git"
+    repository: "git@github.com:zapatacomputing/z-quantum-qaoa.git"
     branch: "master"
 ```
 
-and then import in a specific step:
+and then add it in the `imports` argument of your `step`:
 
+```yaml
+- name: my-step
+  config:
+    runtime:
+      language: python3
+      imports: [z-quantum-qaoa]
 ```
-- - name: my-task
-    template: template-1
-    arguments:
+
+Once that is done you can:
+- use any `z-quantum-qaoa` function by specifying its name and path as follows:
+```yaml
+- name: get-maxcut-hamiltonian
+  config:
+    runtime:
+      language: python3
+      imports: [z-quantum-qaoa]
       parameters:
-      - param_1: 1
-      - resources: [z-quantum-qaoa]
+        file: z-quantum-qaoa/steps/qaoa.py
+        function: get_maxcut_hamiltonian
 ```
-
-Once it's done you can:
-- use any template from `templates/` directory
 - use tasks which import `zquantum.qaoa` in the python code (see below).
 
 ### Python

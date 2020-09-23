@@ -2,34 +2,34 @@
 apiVersion: io.orquestra.workflow/1.0.0
 
 # Prefix for workflow ID
-name: create-circs-farhi-ansatz
+name: get-maxcut-ham-list
 
 imports:
 - name: z-quantum-core
   type: git
   parameters:
     repository: "git@github.com:zapatacomputing/z-quantum-core.git"
-    branch: "workflow-v1"
+    branch: "dev"
 - name: z-quantum-qaoa
   type: git
   parameters:
     repository: "git@github.com:zapatacomputing/z-quantum-qaoa.git"
-    branch: "workflow-v1"
+    branch: "dev"
 - name: qe-openfermion
   type: git
   parameters:
     repository: "git@github.com:zapatacomputing/qe-openfermion.git"
-    branch: "workflow-v1"
+    branch: "dev"
 
 steps:
-- name: generate-list-of-hamiltonians
+- name: test
   config:
     runtime:
-      type: python3
+      language: python3
       imports: [z-quantum-core, qe-openfermion, z-quantum-qaoa]
       parameters:
-        file: z-quantum-qaoa/tasks/qaoa.py
-        function: generate_list_maxcut_hamiltonians
+        file: z-quantum-qaoa/steps/qaoa.py
+        function: get_random_maxcut_hamiltonians
     resources:
       cpu: "1000m"
       memory: "1Gi"
@@ -48,27 +48,5 @@ steps:
   outputs:
     - name: hamiltonians
       type: operator-set
-- name: test
-  passed: [generate-list-of-hamiltonians]
-  config:
-    runtime:
-      type: python3
-      imports: [z-quantum-core, qe-openfermion, z-quantum-qaoa]
-      parameters:
-        file: z-quantum-qaoa/tasks/qaoa.py
-        function: create_circuits_from_hamiltonians_for_farhi_ansatz
-    resources:
-      cpu: "1000m"
-      memory: "1Gi"
-      disk: "10Gi"
-  inputs:
-    - number_of_layers: 2
-      type: int
-    - hamiltonians: ((generate-list-of-hamiltonians.hamiltonians))
-      type: operator-set
-  outputs:
-    - name: circuits
-      type: circuit-set
 types:
   - operator-set
-  - circuit-set
