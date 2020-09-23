@@ -47,11 +47,3 @@ def get_maxcut_hamiltonian(graph, scaling=1.0, shifted=False):
         graph_object, scaling=scaling, shifted=shifted
     )
     save_qubit_operator(hamiltonian, "hamiltonian.json")
-
-
-def solve_maxcut_by_exhaustive_search(graph):
-    graph_object = load_graph(graph)
-    maxcut, solution_set = _solve_maxcut_by_exhaustive_search(graph_object)
-    print(maxcut)
-    print(solution_set)
-    # TODO : save artifacts?!
