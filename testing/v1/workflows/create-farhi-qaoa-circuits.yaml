@@ -9,17 +9,17 @@ imports:
   type: git
   parameters:
     repository: "git@github.com:zapatacomputing/z-quantum-core.git"
-    branch: "workflow-v1"
+    branch: "dev"
 - name: z-quantum-qaoa
   type: git
   parameters:
     repository: "git@github.com:zapatacomputing/z-quantum-qaoa.git"
-    branch: "workflow-v1"
+    branch: "dev"
 - name: qe-openfermion
   type: git
   parameters:
     repository: "git@github.com:zapatacomputing/qe-openfermion.git"
-    branch: "v1-revisions"
+    branch: "dev"
 
 steps:
 - name: generate-list-of-hamiltonians
