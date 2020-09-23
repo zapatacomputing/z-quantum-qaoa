@@ -44,7 +44,7 @@ steps:
       imports: [z-quantum-core]
       parameters:
         file: z-quantum-core/steps/graph.py
-        function: generate_erdos_renyi_graph
+        function: generate_random_graph_erdos_renyi
     resources:
       cpu: "1000m"
       memory: "1Gi"
@@ -70,7 +70,7 @@ steps:
       imports: [z-quantum-core, qe-openfermion, z-quantum-qaoa]
       parameters:
         file: z-quantum-qaoa/steps/qaoa.py
-        function: get_maxcut_hamiltonian_operator
+        function: get_maxcut_hamiltonian
     resources:
       cpu: "1000m"
       memory: "1Gi"
@@ -93,7 +93,7 @@ steps:
       imports: [z-quantum-core]
       parameters:
         file: z-quantum-core/steps/circuit.py
-        function: build_uniform_parameter_grid
+        function: build_uniform_param_grid
     resources:
       cpu: "1000m"
       memory: "1Gi"
