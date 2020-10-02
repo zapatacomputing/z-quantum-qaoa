@@ -99,7 +99,7 @@ def get_maxcut_hamiltonian(graph, scaling=1.0, shifted=False, l1_normalized = Fa
         output += QubitOperator(ZZ_term_str, coeff)
         if shifted:
             output += QubitOperator("", -coeff)  # constant term, i.e I
-    if l1_normalized:
+    if l1_normalized and (l1_norm>0):
         output /= l1_norm             
     return output
 

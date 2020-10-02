@@ -69,6 +69,18 @@ class TestMaxcut(unittest.TestCase):
         # Then
         self.assertEqual(hamiltonian, target_hamiltonian)
 
+    def test_no_edge_l1normalized(self):
+        # Given
+        graph = nx.Graph()
+        target_hamiltonian = QubitOperator()
+
+        # When
+        hamiltonian = get_maxcut_hamiltonian(graph, l1_normalized=True)
+
+        # Then
+        self.assertEqual(hamiltonian, target_hamiltonian)
+
+
     def test_maxcut_exhaustive_solution(self):
         # Given
         graph = nx.Graph()
