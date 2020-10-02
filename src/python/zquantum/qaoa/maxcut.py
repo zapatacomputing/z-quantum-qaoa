@@ -65,7 +65,7 @@ def get_random_maxcut_hamiltonians(
     return hamiltonians
 
 
-def get_maxcut_hamiltonian(graph, scaling=1.0, shifted=False):
+def get_maxcut_hamiltonian(graph, scaling=1.0, shifted=False, l1_normalized = False):
     """Converts a MAXCUT instance, as described by a weighted graph, to an Ising 
     Hamiltonian. It allows for different convention in the choice of the
     Hamiltonian.
@@ -74,27 +74,33 @@ def get_maxcut_hamiltonian(graph, scaling=1.0, shifted=False):
         graph (networkx.Graph): undirected weighted graph describing the MAXCUT 
         instance.
         scaling (float): scaling of the terms of the Hamiltonian            
-        constant (bool): if True include a shift. Default: False
+        shifted (bool): if True include a shift. Default: False
+        l1_normalized (bool): normalize the operator using the l1_norm = \sum |w|        
                 
     Returns:
         zquantum.core.qubitoperator.QubitOperator object describing the 
         Hamiltonian 
-        H = \sum_{<i,j>} w_{i,j} * scaling * (Z_i Z_j - shifted * I).
+        H = \sum_{<i,j>} w_{i,j} * scaling * (Z_i Z_j - shifted * I)
+        or H_norm = H / l1_norm if l1_normalized is True.
     
     """
 
     output = QubitOperator()
 
     nodes_dict = generate_graph_node_dict(graph)
-
+    
+    l1_norm = 0
     for edge in graph.edges:
         coeff = graph.edges[edge[0], edge[1]]["weight"] * scaling
+        l1_norm += np.abs(coeff)        
         node_index1 = nodes_dict[edge[0]]
         node_index2 = nodes_dict[edge[1]]
         ZZ_term_str = "Z" + str(node_index1) + " Z" + str(node_index2)
         output += QubitOperator(ZZ_term_str, coeff)
         if shifted:
             output += QubitOperator("", -coeff)  # constant term, i.e I
+    if l1_normalized:
+        output /= l1_norm             
     return output
 
 
