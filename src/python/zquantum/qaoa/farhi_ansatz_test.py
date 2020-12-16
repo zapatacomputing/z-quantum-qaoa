@@ -96,7 +96,7 @@ class TestQAOAFarhiAnsatz(unittest.TestCase, AnsatzTests):
 
         # Then
         self.assertEqual(
-            parametrized_circuit.symbolic_params, set([self.beta, self.gamma])
+            parametrized_circuit.symbolic_params, [self.gamma, self.beta]
         )
 
     def test_generate_circuit(self):
@@ -107,19 +107,3 @@ class TestQAOAFarhiAnsatz(unittest.TestCase, AnsatzTests):
 
         # Then
         self.assertTrue(compare_unitary(final_unitary, self.target_unitary, tol=1e-10))
-
-    def test_get_symbols(self):
-        # Given
-        target_symbols = [
-            sympy.Symbol("beta_0"),
-            sympy.Symbol("gamma_0"),
-            sympy.Symbol("beta_1"),
-            sympy.Symbol("gamma_1"),
-        ]
-        self.ansatz.number_of_layers = 2
-
-        # When
-        symbols = self.ansatz.get_symbols()
-
-        # When/Then
-        self.assertEqual(symbols, target_symbols)

@@ -90,26 +90,12 @@ class QAOAFarhiAnsatz(Ansatz):
         # Prepare initial state
         circuit += create_layer_of_gates(self.number_of_qubits, "H")
 
-        symbols = self.get_symbols()
         # Add time evolution layers
         pyquil_cost_hamiltonian = qubitop_to_pyquilpauli(self._cost_hamiltonian)
         pyquil_mixer_hamiltonian = qubitop_to_pyquilpauli(self._mixer_hamiltonian)
 
         for i in range(self.number_of_layers):
-            circuit += time_evolution(pyquil_cost_hamiltonian, symbols[2 * i + 1])
-            circuit += time_evolution(pyquil_mixer_hamiltonian, symbols[2 * i])
+            circuit += time_evolution(pyquil_cost_hamiltonian, sympy.Symbol(f"gamma_{i}"))
+            circuit += time_evolution(pyquil_mixer_hamiltonian, sympy.Symbol(f"beta_{i}"))
             
         return circuit
-
-    @overrides
-    def get_symbols(self) -> List[sympy.Symbol]:
-        """Returns a list of symbolic parameters used for creating the ansatz.
-        The order of the list is [beta_0, gamma_0, beta_1, gamma_1, ...].
-        Gammas relate to the evolution under the cost Hamiltonian and betas 
-        relate to the mixer Hamiltonian.
-        """
-        symbols = []
-        for i in range(self.number_of_layers):
-            symbols.append(sympy.Symbol("beta_" + str(i)))
-            symbols.append(sympy.Symbol("gamma_" + str(i)))
-        return symbols
