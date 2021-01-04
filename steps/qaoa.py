@@ -6,7 +6,7 @@ from zquantum.qaoa.maxcut import (
 )
 from zquantum.core.circuit import save_circuit, save_circuit_set
 from zquantum.core.graph import load_graph
-from qeopenfermion import (
+from zquantum.core.openfermion import (
     save_qubit_operator_set,
     load_qubit_operator,
     load_qubit_operator_set,
