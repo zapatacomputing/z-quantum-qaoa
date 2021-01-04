@@ -21,7 +21,7 @@ spec:
         raw:
           data: |
             from zquantum.qaoa.maxcut import get_random_maxcut_hamiltonians
-            from qeopenfermion import save_qubit_operator_set
+            from zquantum.core.openfermion import save_qubit_operator_set
             hamiltonians = get_random_maxcut_hamiltonians(
                                     {{inputs.parameters.graph-specs}},
                                     {{inputs.parameters.number-of-instances}},
@@ -51,7 +51,7 @@ spec:
           data: |
             from zquantum.core.circuit import save_circuit
             from zquantum.qaoa.maxcut import create_farhi_qaoa_circuits
-            from qeopenfermion import load_qubit_operator
+            from zquantum.core.openfermion import load_qubit_operator
             
             hamiltonian = load_qubit_operator('hamiltonian.json')
             circuit = create_farhi_qaoa_circuits([hamiltonian], {{inputs.parameters.number-of-layers}})[0]
@@ -77,7 +77,7 @@ spec:
           data: |
             from zquantum.core.circuit import save_circuit_set
             from zquantum.qaoa.maxcut import create_farhi_qaoa_circuits
-            from qeopenfermion import load_qubit_operator_set
+            from zquantum.core.openfermion import load_qubit_operator_set
             
             hamiltonians = load_qubit_operator_set('hamiltonians.json')
             circuits = create_farhi_qaoa_circuits(hamiltonians, {{inputs.parameters.number-of-layers}})
@@ -106,7 +106,7 @@ spec:
           data: |
             from zquantum.core.graph import load_graph
             from zquantum.qaoa.maxcut import get_maxcut_hamiltonian
-            from qeopenfermion import save_qubit_operator
+            from zquantum.core.openfermion import save_qubit_operator
             graph = load_graph('graph.json')
             hamiltonian = get_maxcut_hamiltonian(graph, scaling={{inputs.parameters.scaling}}, shifted={{inputs.parameters.shifted}})
             save_qubit_operator(hamiltonian,'hamiltonian.json')
