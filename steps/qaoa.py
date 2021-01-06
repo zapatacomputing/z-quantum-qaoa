@@ -6,6 +6,7 @@ from zquantum.qaoa.maxcut import (
 )
 from zquantum.core.circuit import save_circuit, save_circuit_set
 from zquantum.core.graph import load_graph
+from zquantum.core.utils import load_list
 from zquantum.core.openfermion import (
     save_qubit_operator_set,
     load_qubit_operator,
@@ -36,7 +37,11 @@ def create_farhi_qaoa_circuit(number_of_layers, hamiltonian):
     save_circuit(circuit, "circuit.json")
 
 
-def create_farhi_qaoa_circuits(number_of_layers: Union[int, List[int]], hamiltonians):
+def create_farhi_qaoa_circuits(
+    number_of_layers: Union[int, List[int], str], hamiltonians
+):
+    if isinstance(number_of_layers, str):
+        number_of_layers = load_list(number_of_layers)
     hamiltonians_objects = load_qubit_operator_set(hamiltonians)
     circuits = _create_farhi_qaoa_circuits(hamiltonians_objects, number_of_layers)
     save_circuit_set(circuits, "circuits.json")
