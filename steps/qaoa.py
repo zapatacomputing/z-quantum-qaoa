@@ -13,6 +13,7 @@ from zquantum.core.openfermion import (
     save_qubit_operator,
 )
 import json
+from typing import List, Union
 
 
 def get_random_maxcut_hamiltonians(
@@ -35,7 +36,7 @@ def create_farhi_qaoa_circuit(number_of_layers, hamiltonian):
     save_circuit(circuit, "circuit.json")
 
 
-def create_farhi_qaoa_circuits(number_of_layers, hamiltonians):
+def create_farhi_qaoa_circuits(number_of_layers: Union[int, List[int]], hamiltonians):
     hamiltonians_objects = load_qubit_operator_set(hamiltonians)
     circuits = _create_farhi_qaoa_circuits(hamiltonians_objects, number_of_layers)
     save_circuit_set(circuits, "circuits.json")
