@@ -25,7 +25,7 @@ def create_farhi_qaoa_circuits(
         List of zquantum.core.circuit.Circuit
     """
     if isinstance(number_of_layers, int):
-        number_of_layers = [number_of_layers for _ in range(hamiltonians)]
+        number_of_layers = [number_of_layers for _ in range(len(hamiltonians))]
     number_of_layers_list = number_of_layers
 
     circuitset = []
