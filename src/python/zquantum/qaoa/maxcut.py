@@ -30,6 +30,7 @@ def create_farhi_qaoa_circuits(
     if isinstance(number_of_layers, int):
         number_of_layers = [number_of_layers for _ in range(len(hamiltonians))]
     number_of_layers_list = number_of_layers
+    assert len(number_of_layers_list) == len(hamiltonians)
 
     circuitset = []
     for number_of_layers, hamiltonian in zip(number_of_layers_list, hamiltonians):
