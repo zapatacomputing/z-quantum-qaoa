@@ -19,7 +19,10 @@ def create_farhi_qaoa_circuits(
     Args:
         hamiltonians (List[QubitOperator]): List of hamiltonians for constructing the
             circuits
-        number_of_layers (int): The number of layers of the ansatz in the circuit
+        number_of_layers (Union[int, List[int]]): The number of layers of the ansatz in the circuit.
+            If an int is passed in, the same number of layers is used for every ansatz circuit, however,
+            if a list of ints is passed in, the number of layers used for the hamiltonian at index i of the hamiltonians
+            list is the integer at index i of the number_of_layers list.
 
     Returns:
         List of zquantum.core.circuit.Circuit
