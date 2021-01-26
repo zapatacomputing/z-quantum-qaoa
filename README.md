@@ -53,7 +53,7 @@ Here's an example how to do use methods from `z-quantum-qaoa` in a python task:
 
 ```python
 from zquantum.qaoa.ansatz import build_farhi_qaoa_circuit_template
-from qeopenfermion import load_qubit_operator
+from zquantum.core.openfermion import load_qubit_operator
 hamiltonian = load_qubit_operator('hamiltonian.json')
 ansatz = build_farhi_qaoa_circuit_template(hamiltonian)
 ```

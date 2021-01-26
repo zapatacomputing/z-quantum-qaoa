@@ -95,9 +95,7 @@ class TestQAOAFarhiAnsatz(unittest.TestCase, AnsatzTests):
         parametrized_circuit = self.ansatz.parametrized_circuit
 
         # Then
-        self.assertEqual(
-            parametrized_circuit.symbolic_params, [self.gamma, self.beta]
-        )
+        self.assertEqual(parametrized_circuit.symbolic_params, [self.gamma, self.beta])
 
     def test_generate_circuit(self):
         # When
