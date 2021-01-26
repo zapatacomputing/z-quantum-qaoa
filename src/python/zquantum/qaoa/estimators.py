@@ -54,7 +54,6 @@ class CvarEstimator(Estimator):
         if type(target_operator) is not IsingOperator:
             raise TypeError("Operator should be of type IsingOperator.")
 
-        # TODO: pseudocode
         measurements = backend.run_circuit_and_measure(circuit)
         distribution = measurements.get_distribution()
         expected_values_per_bitstring = {}
