@@ -106,7 +106,6 @@ class TestCvarEstimator(EstimatorTests):
     def test_cvar_estimator_returns_correct_values(self, estimator, backend, operator):
         # Given
         circuit = Circuit(Program(H(0)))
-        # This n_samples value comes from
         alpha = estimator.alpha
         if alpha <= 0.5:
             target_value = -1
