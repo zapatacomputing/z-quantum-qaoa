@@ -183,14 +183,28 @@ steps:
       memory: "1Gi"
       disk: "10Gi"
   inputs:
-  - ansatz_specs: "{\"module_name\": \"zquantum.qaoa.farhi_ansatz\", \"function_name\": \"QAOAFarhiAnsatz\", \"number_of_layers\": 1}"
-    type: string
-  - backend_specs: "{\"module_name\": \"qeforest.simulator\", \"function_name\": \"ForestSimulator\", \"device_name\": \"wavefunction-simulator\"}"
-    type: string
-  - optimizer_specs: "{\"module_name\": \"zquantum.optimizers.grid_search\", \"function_name\": \"GridSearchOptimizer\", \"options\": {\"keep_value_history\": true}}"
-    type: string
-  - cost_function_specs: "{\"module_name\": \"zquantum.core.cost_function\", \"function_name\": \"AnsatzBasedCostFunction\", \"estimator-specs\": { \"module_name\": \"zquantum.core.estimator\", \"function_name\": \"ExactEstimator\"}}"
-    type: string
+  - ansatz_specs:
+      module_name: zquantum.qaoa.farhi_ansatz
+      function_name: QAOAFarhiAnsatz
+      number_of_layers: 1
+    type: specs
+  - backend_specs:
+      module_name: qeforest.simulator
+      function_name: ForestSimulator
+      device_name: wavefunction-simulator
+    type: specs
+  - optimizer_specs:
+      module_name: zquantum.optimizers.grid_search
+      function_name: GridSearchOptimizer
+      options: {"keep_value_history": true}
+    type: specs
+  - cost_function_specs:
+      module_name: zquantum.core.cost_function
+      function_name: AnsatzBasedCostFunction
+      estimator-specs:
+        module_name: zquantum.core.estimator
+        function_name: ExactEstimator
+    type: specs
   - qubit_operator: ((get-maxcut-hamiltonian.hamiltonian))
     type: qubit-operator
   - initial_parameters: ((generate-random-initial-ansatz-params.params))
@@ -217,3 +231,4 @@ types:
 - graph
 - parameters
 - optimization-results
+- specs
