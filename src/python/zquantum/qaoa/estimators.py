@@ -51,7 +51,7 @@ class CvarEstimator(Estimator):
         if self.alpha > 1 or self.alpha <= 0:
             raise ValueError("alpha needs to be a value between 0 and 1.")
 
-        if type(target_operator) is not IsingOperator:
+        if not isinstance(target_operator, IsingOperator):
             raise TypeError("Operator should be of type IsingOperator.")
 
         measurements = backend.run_circuit_and_measure(circuit)
