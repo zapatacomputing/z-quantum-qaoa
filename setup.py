@@ -19,8 +19,5 @@ setuptools.setup(
         "Programming Language :: Python :: 3",
         "Operating System :: OS Independent",
     ),
-    install_requires=[
-        "z-quantum-core",
-        "forestopenfermion @ http://github.com/zapatacomputing/forest-openfermion/tarball/fast-op-conversion",
-    ],
+    install_requires=["z-quantum-core"],
 )
