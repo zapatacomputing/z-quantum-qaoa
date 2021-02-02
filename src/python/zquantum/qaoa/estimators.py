@@ -54,8 +54,7 @@ class CvarEstimator(Estimator):
         if not isinstance(target_operator, IsingOperator):
             raise TypeError("Operator should be of type IsingOperator.")
 
-        measurements = backend.run_circuit_and_measure(circuit)
-        distribution = measurements.get_distribution()
+        distribution = backend.get_bitstring_distribution(circuit)
         expected_values_per_bitstring = {}
 
         for bitstring in distribution.distribution_dict:
