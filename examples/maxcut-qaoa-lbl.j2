@@ -1,8 +1,14 @@
 # Workflow API version
 apiVersion: io.orquestra.workflow/1.0.0
 
-{% set n_graphs = 2 %}
-{% set n_steps = 2 %}
+# This jinja template shows how to perform layer-by-layer training for MaxCut QAOA.
+# In order to use it with Orquestra you need to install jinja2 and run:
+# $jinja2 maxcut-qaoa-lbl.j2 -o maxcut-qaoa-lbl.yaml
+# And then:
+# $qe submit workflow maxcut-qaoa-lbl.yaml
+
+{% set n_graphs = 4 %}
+{% set n_steps = 4 %}
 
 
 # Prefix for workflow ID
