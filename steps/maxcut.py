@@ -40,7 +40,7 @@ def create_and_run_qaoa_for_maxcut(graph_specs,
     for graph_id in range(number_of_graphs):
         print("Graph", graph_id)
         graph = generate_graph_from_specs(graph_specs)
-        hamiltonian = get_maxcut_hamiltonian(
+        qubit_operator = get_maxcut_hamiltonian(
             graph, scaling=1.0, shifted=False
         )
         graph_output[graph_id]= nx.readwrite.json_graph.node_link_data(graph)
@@ -92,8 +92,6 @@ def optimize_variational_circuit_with_layerwise_optimizer(
     params_min_values,
     params_max_values,
 ):
-    # Load qubit operator
-    operator = load_qubit_operator(qubit_operator)
 
     if isinstance(ansatz_specs, str):
         ansatz_specs_dict = yaml.load(ansatz_specs, Loader=yaml.SafeLoader)
@@ -101,7 +99,7 @@ def optimize_variational_circuit_with_layerwise_optimizer(
         ansatz_specs_dict = ansatz_specs
 
     if ansatz_specs_dict["function_name"] == "QAOAFarhiAnsatz":
-        ansatz = create_object(ansatz_specs_dict, cost_hamiltonian=operator)
+        ansatz = create_object(ansatz_specs_dict, cost_hamiltonian=qubit_operator)
     else:
         ansatz = create_object(ansatz_specs_dict)
 
@@ -130,7 +128,7 @@ def optimize_variational_circuit_with_layerwise_optimizer(
     estimator_specs = cost_function_specs_dict.pop("estimator-specs", None)
     if estimator_specs is not None:
         cost_function_specs_dict["estimator"] = create_object(estimator_specs)
-    cost_function_specs_dict["target_operator"] = operator
+    cost_function_specs_dict["target_operator"] = qubit_operator
     cost_function_specs_dict["ansatz"] = ansatz
     cost_function_specs_dict["backend"] = backend
     cost_function = create_object(cost_function_specs_dict)
