@@ -50,14 +50,6 @@ class TestCvarEstimator(EstimatorTests):
     def n_samples(self, request):
         return 10
 
-    @pytest.fixture()
-    def epsilon(self, request):
-        return None
-
-    @pytest.fixture()
-    def delta(self, request):
-        return None
-
     def test_get_estimated_expectation_values_returns_expectation_values(
         self, estimator, backend, circuit, operator
     ):
