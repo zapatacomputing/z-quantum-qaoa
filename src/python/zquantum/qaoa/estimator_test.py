@@ -25,7 +25,7 @@ class TestCvarEstimator(EstimatorTests):
         return request.param
 
     @pytest.fixture()
-    def operator(self, request):
+    def target_operator(self, request):
         return IsingOperator("Z0")
 
     @pytest.fixture()
@@ -48,12 +48,12 @@ class TestCvarEstimator(EstimatorTests):
         return 10
 
     def test_get_estimated_expectation_values_returns_expectation_values(
-        self, estimator, backend, circuit, operator, alpha
+        self, estimator, backend, circuit, target_operator, alpha
     ):
         value = estimator.get_estimated_expectation_values(
             backend=backend,
             circuit=circuit,
-            target_operator=operator,
+            target_operator=target_operator,
             alpha=alpha,
         )
         # Then
@@ -63,41 +63,41 @@ class TestCvarEstimator(EstimatorTests):
         self, estimator, backend, circuit, alpha
     ):
         # Given
-        operator = QubitOperator("X0")
+        target_operator = QubitOperator("X0")
         with pytest.raises(TypeError):
             value = estimator.get_estimated_expectation_values(
                 backend=backend,
                 circuit=circuit,
-                target_operator=operator,
+                target_operator=target_operator,
                 alpha=alpha,
             ).values
 
     def test_cvar_estimator_raises_exception_if_alpha_less_than_0(
-        self, estimator, backend, circuit, operator
+        self, estimator, backend, circuit, target_operator
     ):
         alpha = -1
         with pytest.raises(ValueError):
             value = estimator.get_estimated_expectation_values(
                 backend=backend,
                 circuit=circuit,
-                target_operator=operator,
+                target_operator=target_operator,
                 alpha=alpha,
             ).values
 
     def test_cvar_estimator_raises_exception_if_alpha_greater_than_1(
-        self, estimator, backend, circuit, operator
+        self, estimator, backend, circuit, target_operator
     ):
         alpha = 2
         with pytest.raises(ValueError):
             value = estimator.get_estimated_expectation_values(
                 backend=backend,
                 circuit=circuit,
-                target_operator=operator,
+                target_operator=target_operator,
                 alpha=alpha,
             ).values
 
     def test_cvar_estimator_returns_correct_values(
-        self, estimator, backend, operator, alpha
+        self, estimator, backend, target_operator, alpha
     ):
         # Given
         circuit = Circuit(Program(H(0)))
@@ -110,7 +110,7 @@ class TestCvarEstimator(EstimatorTests):
         value = estimator.get_estimated_expectation_values(
             backend=backend,
             circuit=circuit,
-            target_operator=operator,
+            target_operator=target_operator,
             alpha=alpha,
         ).values
 
