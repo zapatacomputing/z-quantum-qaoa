@@ -20,16 +20,13 @@ class CvarEstimator(Estimator):
     "Improving Variational Quantum Optimization using CVaR", P. Barkoutsos, G. Nannicini, A. Robert, I. Tavernelli, and S. Woerner
     """
 
-    def __init__(self, alpha):
-        super().__init__()
-        self.alpha = alpha
-
     @overrides
     def get_estimated_expectation_values(
         self,
         backend: QuantumBackend,
         circuit: Circuit,
         target_operator: IsingOperator,
+        alpha: float,
         n_samples: Optional[int] = None,
     ) -> ExpectationValues:
         """Given a circuit, backend, and target operators, this method produces expectation values
@@ -48,13 +45,13 @@ class CvarEstimator(Estimator):
         Returns:
             ExpectationValues: expectation values for each term in the target operator.
         """
-        if self.alpha > 1 or self.alpha <= 0:
+        if alpha > 1 or alpha <= 0:
             raise ValueError("alpha needs to be a value between 0 and 1.")
 
         if not isinstance(target_operator, IsingOperator):
             raise TypeError("Operator should be of type IsingOperator.")
 
-        distribution = backend.get_bitstring_distribution(circuit)
+        distribution = backend.get_bitstring_distribution(circuit, n_samples=n_samples)
         expected_values_per_bitstring = {}
 
         for bitstring in distribution.distribution_dict:
@@ -72,11 +69,11 @@ class CvarEstimator(Estimator):
 
         for bitstring, energy in sorted_expected_values_per_bitstring_list:
             prob = distribution.distribution_dict[bitstring]
-            if cumulative_prob + prob < self.alpha:
+            if cumulative_prob + prob < alpha:
                 cumulative_prob += prob
                 cumulative_value += prob * energy
             else:
-                cumulative_value += (self.alpha - cumulative_prob) * energy
+                cumulative_value += (alpha - cumulative_prob) * energy
                 break
-        final_value = cumulative_value / self.alpha
+        final_value = cumulative_value / alpha
         return ExpectationValues(final_value)
