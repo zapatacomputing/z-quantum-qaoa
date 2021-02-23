@@ -16,11 +16,9 @@ def build_qaoa_ansatz_circuit(
     cost_hamiltonian = load_qubit_operator(cost_hamiltonian)
     if mixer_hamiltonian:
         mixer_hamiltonian = load_qubit_operator(mixer_hamiltonian)
-    ansatz = load_from_specs(
-        ansatz_specs,
-        cost_hamiltonian=cost_hamiltonian,
-        mixer_hamiltonian=mixer_hamiltonian,
-    )
+    ansatz_specs["cost_hamiltonian"] = cost_hamiltonian
+    ansatz_specs["mixer_hamiltonian"] = mixer_hamiltonian
+    ansatz = load_from_specs(ansatz_specs)
     if params is not None:
         if isinstance(params, str):
             params = load_circuit_template_params(params)
