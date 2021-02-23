@@ -36,7 +36,12 @@ class QAOAFarhiAnsatz(Ansatz):
             number_of_params: number of the parameters that need to be set for the ansatz circuit.
         """
         super().__init__(number_of_layers)
-        self._cost_hamiltonian = cost_hamiltonian
+        if isinstance(cost_hamiltonian, IsingOperator):
+            self._cost_hamiltonian = change_operator_type(
+                self._cost_hamiltonian, QubitOperator
+            )
+        else:
+            self._cost_hamiltonian = cost_hamiltonian
         if mixer_hamiltonian is None:
             mixer_hamiltonian = create_all_x_mixer_hamiltonian(self.number_of_qubits)
         self._mixer_hamiltonian = mixer_hamiltonian
@@ -44,12 +49,7 @@ class QAOAFarhiAnsatz(Ansatz):
     @property
     def number_of_qubits(self):
         """Returns number of qubits used for the ansatz circuit."""
-        if isinstance(self._cost_hamiltonian, IsingOperator):
-            return count_qubits(
-                change_operator_type(self._cost_hamiltonian, QubitOperator)
-            )
-        else:
-            return count_qubits(self._cost_hamiltonian)
+        return count_qubits(self._cost_hamiltonian)
 
     @property
     def number_of_params(self) -> int:
