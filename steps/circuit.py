@@ -13,7 +13,7 @@ def build_qaoa_ansatz_circuit(
     mixer_hamiltonian: Union[str, List] = None,
     params: Optional[Union[str, List]] = None,
 ):
-    cost_hamiltonian = load_qubit_operator(qubit_operator)
+    cost_hamiltonian = load_qubit_operator(cost_hamiltonian)
     if mixer_hamiltonian:
         mixer_hamiltonian = load_qubit_operator(mixer_hamiltonian)
     ansatz = load_from_specs(
