@@ -1,0 +1,38 @@
+import numpy as np
+from zquantum.core.circuit import save_circuit, Circuit, load_circuit_template_params
+from zquantum.core.openfermion import load_qubit_operator
+from zquantum.core.utils import create_object, load_from_specs
+from typing import Union, List, Optional, Dict
+
+Specs = Union[str, Dict]
+
+
+def build_qaoa_ansatz_circuit(
+    ansatz_specs: Specs,
+    cost_hamiltonian: Union[str, List],
+    mixer_hamiltonian: Union[str, List] = None,
+    params: Optional[Union[str, List]] = None,
+):
+    cost_hamiltonian = load_qubit_operator(qubit_operator)
+    if mixer_hamiltonian:
+        mixer_hamiltonian = load_qubit_operator(mixer_hamiltonian)
+    ansatz = load_from_specs(
+        ansatz_specs,
+        cost_hamiltonian=cost_hamiltonian,
+        mixer_hamiltonian=mixer_hamiltonian,
+    )
+    if params is not None:
+        if isinstance(params, str):
+            params = load_circuit_template_params(params)
+        else:
+            params = np.array(params)
+        circuit = ansatz.get_executable_circuit(params)
+    elif ansatz.supports_parametrized_circuits:
+        circuit = ansatz.parametrized_circuit
+    else:
+        raise (
+            Exception(
+                "Ansatz is not parametrizable and no parameters has been provided."
+            )
+        )
+    save_circuit(circuit, "circuit.json")
