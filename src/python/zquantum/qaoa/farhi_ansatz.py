@@ -46,7 +46,7 @@ class QAOAFarhiAnsatz(Ansatz):
         """Returns number of qubits used for the ansatz circuit."""
         if isinstance(self._cost_hamiltonian, IsingOperator):
             return count_qubits(
-                change_operator_type(self._cost_hamiltonian, IsingOperator)
+                change_operator_type(self._cost_hamiltonian, QubitOperator)
             )
         else:
             return count_qubits(self._cost_hamiltonian)
