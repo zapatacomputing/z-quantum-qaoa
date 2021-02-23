@@ -38,7 +38,7 @@ class QAOAFarhiAnsatz(Ansatz):
         super().__init__(number_of_layers)
         if isinstance(cost_hamiltonian, IsingOperator):
             self._cost_hamiltonian = change_operator_type(
-                self._cost_hamiltonian, QubitOperator
+                cost_hamiltonian, QubitOperator
             )
         else:
             self._cost_hamiltonian = cost_hamiltonian
