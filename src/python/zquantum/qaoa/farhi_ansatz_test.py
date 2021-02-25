@@ -123,9 +123,10 @@ class TestQAOAFarhiAnsatz(unittest.TestCase, AnsatzTests):
 
     def test_generate_circuit_with_ising_operator(self):
         # When
-        self.cost_hamiltonian = change_operator_type(
-            self.cost_hamiltonian, IsingOperator
+        self.ansatz.cost_hamiltonian = change_operator_type(
+            self.ansatz.cost_hamiltonian, IsingOperator
         )
+
         parametrized_circuit = self.ansatz._generate_circuit()
         evaluated_circuit = parametrized_circuit.evaluate(self.symbols_map)
         final_unitary = evaluated_circuit.to_unitary()
