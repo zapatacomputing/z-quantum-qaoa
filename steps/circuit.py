@@ -3,6 +3,7 @@ from zquantum.core.circuit import save_circuit, Circuit, load_circuit_template_p
 from zquantum.core.openfermion import load_qubit_operator
 from zquantum.core.utils import create_object, load_from_specs
 from typing import Union, List, Optional, Dict
+import json
 
 Specs = Union[str, Dict]
 
@@ -13,6 +14,13 @@ def build_qaoa_ansatz_circuit(
     mixer_hamiltonian: Union[str, List] = None,
     params: Optional[Union[str, List]] = None,
 ):
+
+    if isinstance(ansatz_specs, str):
+        DeprecationWarning(
+            "Loading ansatz_specs as a string will be depreciated in future, please change it to a dictionary."
+        )
+        ansatz_specs = json.loads(ansatz_specs)
+
     cost_hamiltonian = load_qubit_operator(cost_hamiltonian)
     if mixer_hamiltonian:
         mixer_hamiltonian = load_qubit_operator(mixer_hamiltonian)
