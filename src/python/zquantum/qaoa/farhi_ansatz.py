@@ -22,7 +22,7 @@ class QAOAFarhiAnsatz(Ansatz):
         self,
         number_of_layers: int,
         cost_hamiltonian: Union[QubitOperator, IsingOperator],
-        mixer_hamiltonian: Optional[Union[QubitOperator, IsingOperator]] = None,
+        mixer_hamiltonian: Optional[QubitOperator] = None,
     ):
         """Ansatz class representing QAOA ansatz as described in "A Quantum Approximate Optimization Algorithm" by E. Farhi and J. Goldstone (https://arxiv.org/abs/1411.4028)
 
@@ -36,12 +36,7 @@ class QAOAFarhiAnsatz(Ansatz):
             number_of_params: number of the parameters that need to be set for the ansatz circuit.
         """
         super().__init__(number_of_layers)
-        if isinstance(cost_hamiltonian, IsingOperator):
-            self._cost_hamiltonian = change_operator_type(
-                cost_hamiltonian, QubitOperator
-            )
-        else:
-            self._cost_hamiltonian = cost_hamiltonian
+        self._cost_hamiltonian = cost_hamiltonian
         if mixer_hamiltonian is None:
             mixer_hamiltonian = create_all_x_mixer_hamiltonian(self.number_of_qubits)
         self._mixer_hamiltonian = mixer_hamiltonian
@@ -49,7 +44,7 @@ class QAOAFarhiAnsatz(Ansatz):
     @property
     def number_of_qubits(self):
         """Returns number of qubits used for the ansatz circuit."""
-        return count_qubits(self._cost_hamiltonian)
+        return count_qubits(change_operator_type(self._cost_hamiltonian, QubitOperator))
 
     @property
     def number_of_params(self) -> int:
@@ -93,7 +88,9 @@ class QAOAFarhiAnsatz(Ansatz):
         circuit += create_layer_of_gates(self.number_of_qubits, "H")
 
         # Add time evolution layers
-        pyquil_cost_hamiltonian = qubitop_to_pyquilpauli(self._cost_hamiltonian)
+        pyquil_cost_hamiltonian = qubitop_to_pyquilpauli(
+            change_operator_type(self._cost_hamiltonian, QubitOperator)
+        )
         pyquil_mixer_hamiltonian = qubitop_to_pyquilpauli(self._mixer_hamiltonian)
 
         for i in range(self.number_of_layers):
