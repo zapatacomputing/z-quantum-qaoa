@@ -1,8 +1,9 @@
 from zquantum.core.interfaces.ansatz_test import AnsatzTests
 from zquantum.core.circuit import Circuit, Gate, Qubit
 from zquantum.core.utils import compare_unitary
+from zquantum.core.openfermion import change_operator_type
 from .farhi_ansatz import QAOAFarhiAnsatz
-from openfermion import QubitOperator
+from openfermion import QubitOperator, IsingOperator
 import unittest
 import numpy as np
 import sympy
@@ -90,6 +91,20 @@ class TestQAOAFarhiAnsatz(unittest.TestCase, AnsatzTests):
         # Then
         self.assertEqual(self.ansatz.number_of_qubits, target_number_of_qubits)
 
+    def test_get_number_of_qubits_with_ising_hamiltonian(self):
+        # Given
+        new_cost_hamiltonian = (
+            QubitOperator((0, "Z")) + QubitOperator((1, "Z")) + QubitOperator((2, "Z"))
+        )
+        new_cost_hamiltonian = change_operator_type(new_cost_hamiltonian, IsingOperator)
+        target_number_of_qubits = 3
+
+        # When
+        self.ansatz.cost_hamiltonian = new_cost_hamiltonian
+
+        # Then
+        self.assertEqual(self.ansatz.number_of_qubits, target_number_of_qubits)
+
     def test_get_parametrizable_circuit(self):
         # When
         parametrized_circuit = self.ansatz.parametrized_circuit
@@ -99,6 +114,19 @@ class TestQAOAFarhiAnsatz(unittest.TestCase, AnsatzTests):
 
     def test_generate_circuit(self):
         # When
+        parametrized_circuit = self.ansatz._generate_circuit()
+        evaluated_circuit = parametrized_circuit.evaluate(self.symbols_map)
+        final_unitary = evaluated_circuit.to_unitary()
+
+        # Then
+        self.assertTrue(compare_unitary(final_unitary, self.target_unitary, tol=1e-10))
+
+    def test_generate_circuit_with_ising_operator(self):
+        # When
+        self.ansatz.cost_hamiltonian = change_operator_type(
+            self.ansatz.cost_hamiltonian, IsingOperator
+        )
+
         parametrized_circuit = self.ansatz._generate_circuit()
         evaluated_circuit = parametrized_circuit.evaluate(self.symbols_map)
         final_unitary = evaluated_circuit.to_unitary()
