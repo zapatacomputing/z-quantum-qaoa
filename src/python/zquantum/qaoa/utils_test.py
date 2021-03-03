@@ -1,9 +1,8 @@
-import unittest
 from openfermion import QubitOperator
 from .utils import create_all_x_mixer_hamiltonian
 
 
-class TestUtils(unittest.TestCase):
+class TestUtils:
     def test_create_all_x_mixer_hamiltonian(self):
         # Given
         number_of_qubits = 4
@@ -18,4 +17,4 @@ class TestUtils(unittest.TestCase):
         operator = create_all_x_mixer_hamiltonian(number_of_qubits)
 
         # Then
-        self.assertEqual(operator, target_operator)
+        assert operator == target_operator

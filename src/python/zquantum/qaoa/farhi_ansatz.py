@@ -102,3 +102,32 @@ class QAOAFarhiAnsatz(Ansatz):
             )
 
         return circuit
+
+
+def create_farhi_qaoa_circuits(
+    hamiltonians: List[QubitOperator], number_of_layers: Union[int, List[int]]
+):
+    """Creates parameterizable quantum circuits based on the farhi qaoa ansatz for each
+    hamiltonian in the input list using the set number of layers.
+
+    Args:
+        hamiltonians (List[QubitOperator]): List of hamiltonians for constructing the
+            circuits
+        number_of_layers (Union[int, List[int]]): The number of layers of the ansatz in the circuit.
+            If an int is passed in, the same number of layers is used for every ansatz circuit, however,
+            if a list of ints is passed in, the number of layers used for the hamiltonian at index i of the hamiltonians
+            list is the integer at index i of the number_of_layers list.
+
+    Returns:
+        List of zquantum.core.circuit.Circuit
+    """
+    if isinstance(number_of_layers, int):
+        number_of_layers = [number_of_layers for _ in range(len(hamiltonians))]
+    number_of_layers_list = number_of_layers
+    assert len(number_of_layers_list) == len(hamiltonians)
+
+    circuitset = []
+    for number_of_layers, hamiltonian in zip(number_of_layers_list, hamiltonians):
+        ansatz = QAOAFarhiAnsatz(number_of_layers, hamiltonian)
+        circuitset.append(ansatz.parametrized_circuit)
+    return circuitset

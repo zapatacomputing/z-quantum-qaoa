@@ -1,8 +1,10 @@
 from zquantum.qaoa.maxcut import (
     get_random_maxcut_hamiltonians as _get_random_maxcut_hamiltonians,
-    create_farhi_qaoa_circuits as _create_farhi_qaoa_circuits,
     get_maxcut_hamiltonian as _get_maxcut_hamiltonian,
     solve_maxcut_by_exhaustive_search as _solve_maxcut_by_exhaustive_search,
+)
+from zquantum.qaoa.farhi_ansatz import (
+    create_farhi_qaoa_circuits as _create_farhi_qaoa_circuits,
 )
 from zquantum.core.circuit import save_circuit, save_circuit_set
 from zquantum.core.graph import load_graph
