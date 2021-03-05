@@ -1,4 +1,3 @@
-import unittest
 import networkx as nx
 
 from openfermion import QubitOperator
@@ -8,12 +7,11 @@ from .maxcut import (
     get_solution_cut_size,
     solve_maxcut_by_exhaustive_search,
     get_random_maxcut_hamiltonians,
-    create_farhi_qaoa_circuits,
 )
 from zquantum.core.circuit import Circuit
 
 
-class TestMaxcut(unittest.TestCase):
+class TestMaxcut:
     def test_get_maxcut_hamiltonian(self):
         # Given
         graph = nx.Graph()
@@ -30,7 +28,7 @@ class TestMaxcut(unittest.TestCase):
         hamiltonian = get_maxcut_hamiltonian(graph)
 
         # Then
-        self.assertEqual(hamiltonian, target_hamiltonian)
+        assert hamiltonian == target_hamiltonian
 
     def test_get_maxcut_hamiltonian_scaled_and_shifted(self):
         # Given
@@ -49,7 +47,7 @@ class TestMaxcut(unittest.TestCase):
         hamiltonian = get_maxcut_hamiltonian(graph, scaling=0.5, shifted=True)
 
         # Then
-        self.assertEqual(hamiltonian, target_hamiltonian)
+        assert hamiltonian == target_hamiltonian
 
     def test_get_maxcut_hamiltonian_l1normalized(self):
         # Given
@@ -67,7 +65,7 @@ class TestMaxcut(unittest.TestCase):
         hamiltonian = get_maxcut_hamiltonian(graph, l1_normalized=True)
 
         # Then
-        self.assertEqual(hamiltonian, target_hamiltonian)
+        assert hamiltonian == target_hamiltonian
 
     def test_no_edge_l1normalized(self):
         # Given
@@ -78,7 +76,7 @@ class TestMaxcut(unittest.TestCase):
         hamiltonian = get_maxcut_hamiltonian(graph, l1_normalized=True)
 
         # Then
-        self.assertEqual(hamiltonian, target_hamiltonian)
+        assert hamiltonian == target_hamiltonian
 
     def test_maxcut_exhaustive_solution(self):
         # Given
@@ -92,10 +90,10 @@ class TestMaxcut(unittest.TestCase):
         # When
         maxcut, solution_set = solve_maxcut_by_exhaustive_search(graph)
         # Then
-        self.assertEqual(maxcut, 5)
+        assert maxcut == 5
         for solution in solution_set:
-            cut = get_solution_cut_size(solution, graph)
-            self.assertEqual(cut, 5)
+            cut_size = get_solution_cut_size(solution, graph)
+            assert cut_size == 5
 
     def test_get_solution_cut_size(self):
         # Given
@@ -116,9 +114,9 @@ class TestMaxcut(unittest.TestCase):
         cut_size_3 = get_solution_cut_size(solution_3, graph)
 
         # Then
-        self.assertEqual(cut_size_1, 0)
-        self.assertEqual(cut_size_2, 2)
-        self.assertEqual(cut_size_3, 3)
+        assert cut_size_1 == 0
+        assert cut_size_2 == 2
+        assert cut_size_3 == 3
 
     def test_get_random_maxcut_hamiltonians_num_instances(self):
         # Given
@@ -133,7 +131,7 @@ class TestMaxcut(unittest.TestCase):
             )
 
             # Then
-            self.assertEqual(len(hamiltonians), number_of_instances)
+            assert len(hamiltonians) == number_of_instances
 
     def test_get_random_maxcut_hamiltonians_num_qubits_is_in_range(self):
         # Given
@@ -149,52 +147,4 @@ class TestMaxcut(unittest.TestCase):
 
             # Then
             for hamiltonian in hamiltonians:
-                self.assertIn(count_qubits(hamiltonian), possible_number_of_qubits)
-
-    def test_create_farhi_qaoa_circuits(self):
-        # Given
-        hamiltonians = [
-            QubitOperator("Z0 Z1"),
-            QubitOperator("Z0") + QubitOperator("Z1"),
-        ]
-        number_of_layers = 2
-
-        # When
-        circuits = create_farhi_qaoa_circuits(hamiltonians, number_of_layers)
-
-        # Then
-        self.assertEqual(len(circuits), len(hamiltonians))
-
-        for circuit in circuits:
-            self.assertEqual(type(circuit), Circuit)
-
-    def test_create_farhi_qaoa_circuits_when_number_of_layers_is_list(self):
-        # Given
-        hamiltonians = [
-            QubitOperator("Z0 Z1"),
-            QubitOperator("Z0") + QubitOperator("Z1"),
-        ]
-        number_of_layers = [2, 3]
-
-        # When
-        circuits = create_farhi_qaoa_circuits(hamiltonians, number_of_layers)
-
-        # Then
-        self.assertEqual(len(circuits), len(hamiltonians))
-
-        for circuit in circuits:
-            self.assertEqual(type(circuit), Circuit)
-
-    def test_create_farhi_qaoa_circuits_fails_when_length_of_inputs_is_not_equal(self):
-        # Given
-        hamiltonians = [
-            QubitOperator("Z0 Z1"),
-            QubitOperator("Z0") + QubitOperator("Z1"),
-        ]
-        number_of_layers = [2]
-
-        # When
-        self.assertRaises(
-            AssertionError,
-            lambda: create_farhi_qaoa_circuits(hamiltonians, number_of_layers),
-        )
+                assert count_qubits(hamiltonian) in possible_number_of_qubits
