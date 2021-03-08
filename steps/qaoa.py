@@ -3,7 +3,7 @@ from zquantum.qaoa.maxcut import (
     get_maxcut_hamiltonian as _get_maxcut_hamiltonian,
     solve_maxcut_by_exhaustive_search as _solve_maxcut_by_exhaustive_search,
 )
-from zquantum.qaoa.farhi_ansatz import (
+from zquantum.qaoa.ansatzes.farhi_ansatz import (
     create_farhi_qaoa_circuits as _create_farhi_qaoa_circuits,
 )
 from zquantum.core.circuit import save_circuit, save_circuit_set
