@@ -51,23 +51,6 @@ class QAOAFarhiAnsatz(Ansatz):
         """Returns number of parameters in the ansatz."""
         return 2 * self.number_of_layers
 
-    @property
-    def parametrized_circuit(self) -> Circuit:
-        """Returns a parametrized circuit representing QAOA ansatz."""
-        if self._parametrized_circuit is None:
-            if self.supports_parametrized_circuits:
-                return self._generate_circuit()
-            else:
-                raise (
-                    NotImplementedError(
-                        "{0} does not support parametrized circuits.".format(
-                            type(self).__name__
-                        )
-                    )
-                )
-        else:
-            return self._parametrized_circuit
-
     @overrides
     def _generate_circuit(self, params: Optional[np.ndarray] = None) -> Circuit:
         """Returns a parametrizable circuit represention of the ansatz.
