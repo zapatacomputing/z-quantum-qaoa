@@ -3,7 +3,6 @@ from zquantum.core.circuit import Circuit, Qubit, create_layer_of_gates
 from zquantum.core.evolution import time_evolution
 from zquantum.core.openfermion import qubitop_to_pyquilpauli, change_operator_type
 
-from .utils import create_all_x_mixer_hamiltonian
 from openfermion import QubitOperator, IsingOperator
 from openfermion.utils import count_qubits
 from typing import Union, Optional, List
@@ -114,3 +113,10 @@ def create_farhi_qaoa_circuits(
         ansatz = QAOAFarhiAnsatz(number_of_layers, hamiltonian)
         circuitset.append(ansatz.parametrized_circuit)
     return circuitset
+
+
+def create_all_x_mixer_hamiltonian(number_of_qubits):
+    mixer_hamiltonian = QubitOperator()
+    for i in range(number_of_qubits):
+        mixer_hamiltonian += QubitOperator((i, "X"))
+    return mixer_hamiltonian
