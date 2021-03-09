@@ -198,7 +198,7 @@ def test_create_farhi_qaoa_circuits_fails_when_length_of_inputs_is_not_equal():
         create_farhi_qaoa_circuits(hamiltonians, number_of_layers)
 
 
-def test_create_all_x_mixer_hamiltonian(self):
+def test_create_all_x_mixer_hamiltonian():
     # Given
     number_of_qubits = 4
     target_operator = (
