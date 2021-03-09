@@ -158,7 +158,7 @@ steps:
       disk: "10Gi"
   inputs:
   - ansatz_specs:
-      module_name: zquantum.qaoa.farhi_ansatz
+      module_name: zquantum.qaoa.ansatzes.farhi_ansatz
       function_name: QAOAFarhiAnsatz
       number_of_layers: 1
     type: specs
