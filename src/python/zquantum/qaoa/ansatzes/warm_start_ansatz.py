@@ -100,7 +100,7 @@ def convert_relaxed_solution_to_angles(
         epsilon: regularization constant.
 
     Returns:
-        np.ndarray: conveerted values.
+        np.ndarray: converted values.
     """
     if not ((relaxed_solution >= 0) & (relaxed_solution <= 1)).all():
         raise ValueError("Relaxed solution must consist of values between 0 and 1.")
