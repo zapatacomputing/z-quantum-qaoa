@@ -2,7 +2,7 @@ from zquantum.core.interfaces.ansatz_test import AnsatzTests
 from zquantum.core.circuit import Circuit, Gate, Qubit
 from zquantum.core.utils import compare_unitary
 from zquantum.core.openfermion import change_operator_type
-from .warm_start_ansatz import WarmStartQAOAAnsatz
+from .warm_start_ansatz import WarmStartQAOAAnsatz, convert_relaxed_solution_to_angles
 from openfermion import QubitOperator, IsingOperator
 import pytest
 import numpy as np
@@ -151,3 +151,28 @@ class TestQAOAFarhiAnsatz(AnsatzTests):
 
         # Then
         assert compare_unitary(final_unitary, target_unitary, tol=1e-10)
+
+
+def test_convert_relaxed_solution_to_angles():
+    relaxed_solution = np.array([0, 0.5, 1])
+    epsilon = 0.1
+    target_converted_solution = np.array(
+        [
+            2 * np.arcsin(np.sqrt(epsilon)),
+            2 * np.arcsin(np.sqrt(0.5)),
+            2 * np.arcsin(np.sqrt(1 - epsilon)),
+        ]
+    )
+    converted_solution = convert_relaxed_solution_to_angles(
+        relaxed_solution, epsilon=epsilon
+    )
+    assert np.allclose(converted_solution, target_converted_solution)
+
+
+def test_convert_relaxed_solution_to_angles_throws_exception_for_invalid_parameters():
+    relaxed_solution = np.array([-1, 2, 1])
+
+    with pytest.raises(ValueError):
+        converted_solution = convert_relaxed_solution_to_angles(
+            relaxed_solution, epsilon=0.1
+        )

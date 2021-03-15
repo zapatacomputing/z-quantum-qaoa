@@ -86,3 +86,32 @@ class WarmStartQAOAAnsatz(Ansatz):
             circuit += create_layer_of_gates(self.number_of_qubits, "Ry", self._thetas)
 
         return circuit
+
+
+def convert_relaxed_solution_to_angles(
+    relaxed_solution: np.ndarray, epsilon: float = 0.5
+) -> np.ndarray:
+    """
+    Maps solution to a QP problem from values between 0 to 1 to values between 0-2pi.
+    It uses method presented in section 2B in https://arxiv.org/abs/2009.10095v3 .
+
+    Args:
+        relaxed_solution: relaxed solution.
+        epsilon: regularization constant.
+
+    Returns:
+        np.ndarray: conveerted values.
+    """
+    if not ((relaxed_solution >= 0) & (relaxed_solution <= 1)).all():
+        raise ValueError("Relaxed solution must consist of values between 0 and 1.")
+
+    converted_solution = []
+    for value in relaxed_solution:
+        if value > epsilon and value < 1 - epsilon:
+            regularized_value = 2 * np.arcsin(np.sqrt(value))
+        elif value <= epsilon:
+            regularized_value = 2 * np.arcsin(np.sqrt(epsilon))
+        else:
+            regularized_value = 2 * np.arcsin(np.sqrt(1 - epsilon))
+        converted_solution.append(regularized_value)
+    return np.array(converted_solution)
