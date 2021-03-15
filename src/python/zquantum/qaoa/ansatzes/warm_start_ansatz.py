@@ -23,12 +23,15 @@ class WarmStartQAOAAnsatz(Ansatz):
         cost_hamiltonian: Union[QubitOperator, IsingOperator],
         thetas: np.ndarray,
     ):
-        """TODO
+        """
+        This is implementationg of the warm-start QAOA Ansatz from https://arxiv.org/abs/2009.10095v3 .
+        It has slightly modified mixer Hamiltonian and initial state, which are based on the relaxed
+        (i.e. allowing for continuous values) solution of the problem defined by Ising Hamiltonian.
 
         Args:
             number_of_layers: number of layers of the ansatz. Also refered to as "p" in the paper.
             cost_hamiltonian: Hamiltonian representing the cost function
-            mixer_hamiltonian: Mixer hamiltonian for the QAOA. If not provided, will default to basic operator consisting of single X terms.
+            thetas: array of floats representing angles based on the solution of relaxed problems.
 
         Attributes:
             number_of_qubits: number of qubits required for the ansatz circuit.
@@ -51,8 +54,6 @@ class WarmStartQAOAAnsatz(Ansatz):
     @overrides
     def _generate_circuit(self, params: Optional[np.ndarray] = None) -> Circuit:
         """Returns a parametrizable circuit represention of the ansatz.
-        By convention the initial state is taken to be the |+..+> state and is
-        evolved first under the cost Hamiltonian and then the mixer Hamiltonian.
         Args:
             params: parameters of the circuit.
         """
@@ -67,11 +68,11 @@ class WarmStartQAOAAnsatz(Ansatz):
         # Prepare initial state
         circuit += create_layer_of_gates(self.number_of_qubits, "Ry", self._thetas)
 
-        # Add time evolution layers
         pyquil_cost_hamiltonian = qubitop_to_pyquilpauli(
             change_operator_type(self._cost_hamiltonian, QubitOperator)
         )
 
+        # Add time evolution layers
         for i in range(self.number_of_layers):
             circuit += time_evolution(
                 pyquil_cost_hamiltonian, sympy.Symbol(f"gamma_{i}")
