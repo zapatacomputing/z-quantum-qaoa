@@ -50,7 +50,7 @@ def create_and_run_qaoa_for_maxcut(graph_specs,
             )
             optimal_value, optimal_solution = solve_maxcut_by_exhaustive_search(graph)
         else:
-            raise ValueError("Unknown problem type")8
+            raise ValueError("Unknown problem type")
         graph_output[graph_id] = {}
         graph_output[graph_id]['graph'] = nx.readwrite.json_graph.node_link_data(graph)
         graph_output[graph_id]['optimal_value'] = optimal_value
