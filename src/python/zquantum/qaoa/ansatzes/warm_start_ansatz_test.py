@@ -9,7 +9,7 @@ import numpy as np
 import sympy
 
 
-class TestQAOAFarhiAnsatz(AnsatzTests):
+class TestWarmStartQAOAAnsatz(AnsatzTests):
     @pytest.fixture
     def thetas(self):
         return np.array([0.5, 0.5])
