@@ -95,6 +95,9 @@ def create_and_run_qaoa_for_maxcut(graph_specs,
         json.dump(final_results, outfile)
     with open("optimized-parameters-aggregated.json", "w") as outfile:
         json.dump(final_parameters, outfile)
+    with open("bitstring-distributions-aggregated.json", "w") as outfile:
+        json.dump(final_bitstrings, outfile)
+
 
 
 def optimize_variational_circuit_with_layerwise_optimizer(
