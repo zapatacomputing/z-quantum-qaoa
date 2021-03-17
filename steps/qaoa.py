@@ -61,7 +61,8 @@ def get_maxcut_hamiltonian(graph, scaling=1.0, shifted=False):
     save_qubit_operator(hamiltonian, "hamiltonian.json")
 
 
-def convert_relaxed_solution_to_angles(solution, epsilon=0.5):
-    solution = np.array(load_list(solution))
+def convert_relaxed_solution_to_angles(solution, epsilon=0.5, decimals=8):
+    solution = np.around(load_list(solution), decimals=decimals)
+
     thetas = _convert_relaxed_solution_to_angles(solution, epsilon)
     save_list(thetas, "thetas")
