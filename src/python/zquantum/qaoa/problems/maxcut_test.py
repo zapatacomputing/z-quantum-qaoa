@@ -185,5 +185,5 @@ class TestMaxcutIntegration:
         measurements = backend.run_circuit_and_measure(circuit)
         # Then
         counter = Counter(measurements.bitstrings)
-        self.assertGreater(counter[(1, 0, 0, 0)], counter[((0, 0, 0, 1))])
-        self.assertGreater(counter[(0, 1, 1, 1)], counter[((0, 1, 0, 1))])
+        counter[(1, 0, 0, 0)] > counter[((0, 0, 0, 1))]
+        counter[(0, 1, 1, 1)] > counter[((0, 1, 0, 1))]
