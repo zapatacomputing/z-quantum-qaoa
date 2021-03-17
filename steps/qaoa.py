@@ -6,7 +6,9 @@ from zquantum.qaoa.problems.maxcut import (
 from zquantum.qaoa.ansatzes.farhi_ansatz import (
     create_farhi_qaoa_circuits as _create_farhi_qaoa_circuits,
 )
-from zquantum.qaoa.ansatzes.warm_start_ansatz import convert_relaxed_solution_to_angles
+from zquantum.qaoa.ansatzes.warm_start_ansatz import (
+    convert_relaxed_solution_to_angles as _convert_relaxed_solution_to_angles,
+)
 from zquantum.core.circuit import save_circuit, save_circuit_set
 from zquantum.core.graph import load_graph
 from zquantum.core.utils import load_list, save_list
@@ -59,6 +61,6 @@ def get_maxcut_hamiltonian(graph, scaling=1.0, shifted=False):
 
 
 def convert_relaxed_solution_to_angles(solution, epsilon=0.5):
-    # solution = load_list(solution)
-    thetas = convert_relaxed_solution_to_angles(solution, epsilon)
+    solution = load_list(solution)
+    thetas = _convert_relaxed_solution_to_angles(solution, epsilon)
     save_list(thetas, "thetas")
