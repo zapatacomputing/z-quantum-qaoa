@@ -9,19 +9,14 @@ from .maxcut import (
     get_random_maxcut_hamiltonians,
 )
 
-from zquantum.qaoa.ansatzes.farhi_ansatz import QAOAFarhiAnsatz
-from zquantum.qaoa.problems.maxcut import get_maxcut_hamiltonian
-from zquantum.optimizers.grid_search import GridSearchOptimizer
+from zquantum.qaoa.farhi_ansatz import QAOAFarhiAnsatz
 from zquantum.optimizers.scipy_optimizer import ScipyOptimizer
-from zquantum.core.circuit import ParameterGrid
-from zquantum.core.estimator import BasicEstimator, ExactEstimator
+from zquantum.core.estimator import BasicEstimator
 from zquantum.core.cost_function import AnsatzBasedCostFunction
 from qequlacs.simulator import QulacsSimulator
 from qeqiskit.simulator import QiskitSimulator
-from zquantum.core.circuit import build_ansatz_circuit
 from collections import Counter
 import numpy as np
-import networkx as nx
 
 
 class TestMaxcut:
@@ -173,19 +168,11 @@ class TestMaxcutIntegration:
         G.add_edge(1, 2, weight=1)
         G.add_edge(2, 3, weight=1)
         H = get_maxcut_hamiltonian(G)
-        params = np.array([0.5, 2])
         ansatz = QAOAFarhiAnsatz(1, cost_hamiltonian=H)
         backend = QulacsSimulator()
         backend = QiskitSimulator("qasm_simulator")
         # backend = ForestSimulator("4q-qvm", n_samples=10000)
-        param_step = np.pi / 5
-        param_ranges = [
-            [0, 2 * np.pi, param_step],
-            [0, np.pi, param_step],
-            [0, 2 * np.pi, param_step],
-            [0, np.pi, param_step],
-        ]
-        grid = ParameterGrid(param_ranges)
+
         # optimizer = GridSearchOptimizer(grid)
         estimator = BasicEstimator()
         optimizer = ScipyOptimizer(method="L-BFGS-B")
