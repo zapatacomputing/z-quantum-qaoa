@@ -65,4 +65,4 @@ def convert_relaxed_solution_to_angles(solution, epsilon=0.5, decimals=8):
     solution = np.around(load_list(solution), decimals=decimals)
 
     thetas = _convert_relaxed_solution_to_angles(solution, epsilon)
-    save_list(thetas, "thetas")
+    save_list(thetas.tolist(), "thetas")
