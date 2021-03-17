@@ -59,6 +59,7 @@ def get_maxcut_hamiltonian(graph, scaling=1.0, shifted=False):
 
 
 def convert_relaxed_solution_to_angles(solution, epsilon=0.5):
-    solution = load_list(solution)
+    if isinstance(solution, str):
+        solution = load_list(solution)
     thetas = convert_relaxed_solution_to_angles(solution, epsilon)
     save_list(thetas, "thetas")
