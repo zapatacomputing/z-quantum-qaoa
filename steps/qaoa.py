@@ -62,6 +62,6 @@ def get_maxcut_hamiltonian(graph, scaling=1.0, shifted=False):
 
 
 def convert_relaxed_solution_to_angles(solution, epsilon=0.5):
-    solution = load_list(solution)
+    solution = np.array(load_list(solution))
     thetas = _convert_relaxed_solution_to_angles(solution, epsilon)
     save_list(thetas.tolist(), "thetas.json")
