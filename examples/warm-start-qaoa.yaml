@@ -1,0 +1,212 @@
+# Workflow API version
+apiVersion: io.orquestra.workflow/1.0.0
+
+# Prefix for workflow ID
+name: warm-start-qaoa-example
+
+imports:
+- name: z-quantum-core
+  type: git
+  parameters:
+    repository: "git@github.com:zapatacomputing/z-quantum-core.git"
+    branch: "master"
+- name: z-quantum-qaoa
+  type: git
+  parameters:
+    repository: "git@github.com:zapatacomputing/z-quantum-qaoa.git"
+    branch: "master"
+- name: z-quantum-qubo
+  type: git
+  parameters:
+    repository: "git@github.com:zapatacomputing/z-quantum-qubo.git"
+    branch: "dev"
+- name: z-quantum-optimizers
+  type: git
+  parameters:
+    repository: "git@github.com:zapatacomputing/z-quantum-optimizers.git"
+    branch: "master"
+- name: qe-qulacs
+  type: git
+  parameters:
+    repository: "git@github.com:zapatacomputing/qe-qulacs.git"
+    branch: "master"
+
+steps:
+- name: generate-graph
+  config:
+    runtime:
+      customImage: "zapatacomputing/z-quantum-default:0.0.7"
+      language: python3
+      imports: [z-quantum-core]
+      parameters:
+        file: z-quantum-core/steps/graph.py
+        function: generate_random_graph_erdos_renyi
+  inputs:
+  - number_of_nodes: 5
+    type: int
+  - edge_probability: 0.8
+    type: float
+  - random_weights: False
+    type: bool
+  outputs:
+  - name: graph
+    type: graph
+
+- name: get-maxcut-hamiltonian
+  passed: [generate-graph]
+  config:
+    runtime:
+      customImage: "zapatacomputing/z-quantum-default:0.0.7"
+      language: python3
+      imports: [z-quantum-core, z-quantum-qaoa]
+      parameters:
+        file: z-quantum-qaoa/steps/qaoa.py
+        function: get_maxcut_hamiltonian
+  inputs:
+  - graph: ((generate-graph.graph))
+    type: graph
+  outputs:
+  - name: hamiltonian
+    type: qubit-operator
+
+- name: ising-hamiltonian-to-qubo
+  passed: [get-maxcut-hamiltonian]
+  config:
+    runtime:
+      customImage: "zapatacomputing/z-quantum-default:0.0.7"
+      language: python3
+      imports: [z-quantum-core, z-quantum-qubo]
+      parameters:
+        file: z-quantum-qubo/steps/qubo.py
+        function: ising_hamiltonian_to_qubo
+  inputs:
+  - hamiltonian: ((get-maxcut-hamiltonian.hamiltonian))
+    type: qubit-operator
+  outputs:
+  - name: qubo
+    type: qubo
+
+- name: get-solution-of-qp-relaxation-of-qubo
+  passed: [ising-hamiltonian-to-qubo]
+  config:
+    runtime:
+      customImage: "zapatacomputing/z-quantum-default:0.0.7"
+      language: python3
+      imports: [z-quantum-core, z-quantum-qubo, z-quantum-optimizers]
+      parameters:
+        file: z-quantum-qubo/steps/relaxed_qubo.py
+        function: solve_relaxed_qubo
+  inputs:
+  - qubo: ((ising-hamiltonian-to-qubo.qubo))
+    type: qubo
+  - epsilon: 0.5
+    type: float
+  - optimizer_specs:
+      module_name: zquantum.optimizers.scipy_optimizer
+      function_name: ScipyOptimizer
+      method: COBYLA
+    type: specs
+  - number_of_trials: 10
+    type: int
+  outputs:
+  - name: solution
+    type: list
+  - name: energy
+    type: float
+
+- name: convert-relaxed-solution-to-angles
+  passed: [get-solution-of-qp-relaxation-of-qubo]
+  config:
+    runtime:
+      customImage: "zapatacomputing/z-quantum-default:0.0.7"
+      language: python3
+      imports: [z-quantum-core, z-quantum-qaoa]
+      parameters:
+        file: z-quantum-qaoa/steps/qaoa.py
+        function: convert_relaxed_solution_to_angles
+  inputs:
+  - solution: ((get-solution-of-qp-relaxation-of-qubo.solution))
+    type: list
+  - epsilon: 0.1
+    type: float
+  outputs:
+  - name: thetas
+    type: list
+
+- name: generate-random-initial-ansatz-params
+  config:
+    runtime:
+      language: python3
+      imports: [z-quantum-core]
+      parameters:
+        file: z-quantum-core/steps/circuit.py
+        function: generate_random_ansatz_params
+  inputs:
+  - number_of_parameters: 2
+    type: int
+  - min_value: 0
+    type: int
+  - max_value: 3.14159265359
+    type: float
+  outputs:
+  - name: params
+    type: parameters
+
+- name: optimize-variational-circuit
+  passed: [get-maxcut-hamiltonian, generate-random-initial-ansatz-params, convert-relaxed-solution-to-angles]
+  config:
+    runtime:
+      language: python3
+      imports: [z-quantum-core, z-quantum-optimizers, qe-qulacs, z-quantum-qaoa]
+      parameters:
+        file: z-quantum-optimizers/steps/optimizers.py
+        function: optimize_variational_circuit
+    resources:
+      cpu: "1000m"
+      memory: "1Gi"
+      disk: "10Gi"
+  inputs:
+  - ansatz_specs:
+      module_name: zquantum.qaoa.ansatzes.warm_start_ansatz
+      function_name: WarmStartQAOAAnsatz
+      number_of_layers: 1
+    type: specs
+  - backend_specs:
+      module_name: qequlacs.simulator
+      function_name: QulacsSimulator
+    type: specs
+  - optimizer_specs:
+      module_name: zquantum.optimizers.scipy_optimizer
+      function_name: ScipyOptimizer
+      method: L-BFGS-B
+    type: specs
+  - cost_function_specs:
+      module_name: zquantum.core.cost_function
+      function_name: AnsatzBasedCostFunction
+      estimator-specs:
+        module_name: zquantum.core.estimator
+        function_name: ExactEstimator
+    type: specs
+  - qubit_operator: ((get-maxcut-hamiltonian.hamiltonian))
+    type: qubit-operator
+  - initial_parameters: ((generate-random-initial-ansatz-params.params))
+    type: parameters
+  - thetas: ((convert-relaxed-solution-to-angles.thetas))
+    type: list
+
+  outputs:
+  - name: optimization-results
+    type: optimization-results
+  - name: optimized-parameters
+    type: parameters
+
+types:
+- qubit-operator
+- grid
+- graph
+- parameters
+- relaxed_solution
+- list
+- qubo
+- optimization-results
+- specs
