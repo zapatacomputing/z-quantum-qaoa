@@ -2,7 +2,7 @@
 apiVersion: io.orquestra.workflow/1.0.0
 
 # Prefix for workflow ID
-name: maxcut-qaoa
+name: warm-start-qaoa-example
 
 imports:
 - name: z-quantum-core
@@ -15,6 +15,11 @@ imports:
   parameters:
     repository: "git@github.com:zapatacomputing/z-quantum-qaoa.git"
     branch: "master"
+- name: z-quantum-qubo
+  type: git
+  parameters:
+    repository: "git@github.com:zapatacomputing/z-quantum-qubo.git"
+    branch: "dev"
 - name: z-quantum-optimizers
   type: git
   parameters:
@@ -30,15 +35,12 @@ steps:
 - name: generate-graph
   config:
     runtime:
+      customImage: "zapatacomputing/z-quantum-default:0.0.7"
       language: python3
       imports: [z-quantum-core]
       parameters:
         file: z-quantum-core/steps/graph.py
         function: generate_random_graph_erdos_renyi
-    resources:
-      cpu: "1000m"
-      memory: "1Gi"
-      disk: "10Gi"
   inputs:
   - number_of_nodes: 5
     type: int
@@ -54,15 +56,12 @@ steps:
   passed: [generate-graph]
   config:
     runtime:
+      customImage: "zapatacomputing/z-quantum-default:0.0.7"
       language: python3
       imports: [z-quantum-core, z-quantum-qaoa]
       parameters:
         file: z-quantum-qaoa/steps/qaoa.py
         function: get_maxcut_hamiltonian
-    resources:
-      cpu: "1000m"
-      memory: "1Gi"
-      disk: "10Gi"
   inputs:
   - graph: ((generate-graph.graph))
     type: graph
@@ -70,32 +69,69 @@ steps:
   - name: hamiltonian
     type: qubit-operator
 
-- name: get-grid
+- name: ising-hamiltonian-to-qubo
+  passed: [get-maxcut-hamiltonian]
   config:
     runtime:
+      customImage: "zapatacomputing/z-quantum-default:0.0.7"
       language: python3
-      imports: [z-quantum-core]
+      imports: [z-quantum-core, z-quantum-qubo]
       parameters:
-        file: z-quantum-core/steps/circuit.py
-        function: build_uniform_param_grid
-    resources:
-      cpu: "1000m"
-      memory: "1Gi"
-      disk: "10Gi"
+        file: z-quantum-qubo/steps/qubo.py
+        function: ising_hamiltonian_to_qubo
   inputs:
-  - number_of_params_per_layer: 2
-    type: int
-  - number_of_layers: 1
-    type: int
-  - min_value: 0
-    type: int
-  - max_value: 3.14159265359
+  - hamiltonian: ((get-maxcut-hamiltonian.hamiltonian))
+    type: qubit-operator
+  outputs:
+  - name: qubo
+    type: qubo
+
+- name: get-solution-of-qp-relaxation-of-qubo
+  passed: [ising-hamiltonian-to-qubo]
+  config:
+    runtime:
+      customImage: "zapatacomputing/z-quantum-default:0.0.7"
+      language: python3
+      imports: [z-quantum-core, z-quantum-qubo, z-quantum-optimizers]
+      parameters:
+        file: z-quantum-qubo/steps/relaxed_qubo.py
+        function: solve_relaxed_qubo
+  inputs:
+  - qubo: ((ising-hamiltonian-to-qubo.qubo))
+    type: qubo
+  - epsilon: 0.5
     type: float
-  - step: 0.314159265359
+  - optimizer_specs:
+      module_name: zquantum.optimizers.scipy_optimizer
+      function_name: ScipyOptimizer
+      method: COBYLA
+    type: specs
+  - number_of_trials: 10
+    type: int
+  outputs:
+  - name: solution
+    type: list
+  - name: energy
+    type: float
+
+- name: convert-relaxed-solution-to-angles
+  passed: [get-solution-of-qp-relaxation-of-qubo]
+  config:
+    runtime:
+      customImage: "zapatacomputing/z-quantum-default:0.0.7"
+      language: python3
+      imports: [z-quantum-core, z-quantum-qaoa]
+      parameters:
+        file: z-quantum-qaoa/steps/qaoa.py
+        function: convert_relaxed_solution_to_angles
+  inputs:
+  - solution: ((get-solution-of-qp-relaxation-of-qubo.solution))
+    type: list
+  - epsilon: 0.1
     type: float
   outputs:
-  - name: parameter-grid
-    type: grid
+  - name: thetas
+    type: list
 
 - name: generate-random-initial-ansatz-params
   config:
@@ -105,10 +141,6 @@ steps:
       parameters:
         file: z-quantum-core/steps/circuit.py
         function: generate_random_ansatz_params
-    resources:
-      cpu: "1000m"
-      memory: "1Gi"
-      disk: "10Gi"
   inputs:
   - number_of_parameters: 2
     type: int
@@ -120,31 +152,8 @@ steps:
   - name: params
     type: parameters
 
-- name: generate-fixed-ansatz-params
-  config:
-    runtime:
-      language: python3
-      imports: [z-quantum-core]
-      parameters:
-        file: z-quantum-core/steps/circuit.py
-        function: generate_random_ansatz_params
-    resources:
-      cpu: "1000m"
-      memory: "1Gi"
-      disk: "10Gi"
-  inputs:
-  - number_of_parameters: 0
-    type: int
-  - min_value: -0.01
-    type: float
-  - max_value: 0.01
-    type: float
-  outputs:
-  - name: params
-    type: parameters
-
 - name: optimize-variational-circuit
-  passed: [get-maxcut-hamiltonian, get-grid, generate-random-initial-ansatz-params, generate-fixed-ansatz-params]
+  passed: [get-maxcut-hamiltonian, generate-random-initial-ansatz-params, convert-relaxed-solution-to-angles]
   config:
     runtime:
       language: python3
@@ -158,8 +167,8 @@ steps:
       disk: "10Gi"
   inputs:
   - ansatz_specs:
-      module_name: zquantum.qaoa.ansatzes.farhi_ansatz
-      function_name: QAOAFarhiAnsatz
+      module_name: zquantum.qaoa.ansatzes.warm_start_ansatz
+      function_name: WarmStartQAOAAnsatz
       number_of_layers: 1
     type: specs
   - backend_specs:
@@ -167,9 +176,9 @@ steps:
       function_name: QulacsSimulator
     type: specs
   - optimizer_specs:
-      module_name: zquantum.optimizers.grid_search
-      function_name: GridSearchOptimizer
-      options: {"keep_value_history": true}
+      module_name: zquantum.optimizers.scipy_optimizer
+      function_name: ScipyOptimizer
+      method: L-BFGS-B
     type: specs
   - cost_function_specs:
       module_name: zquantum.core.cost_function
@@ -182,10 +191,9 @@ steps:
     type: qubit-operator
   - initial_parameters: ((generate-random-initial-ansatz-params.params))
     type: parameters
-  - fixed_parameters: ((generate-fixed-ansatz-params.params))
-    type: parameters
-  - parameter_grid: ((get-grid.parameter-grid))
-    type: grid
+  - thetas: ((convert-relaxed-solution-to-angles.thetas))
+    type: list
+
   outputs:
   - name: optimization-results
     type: optimization-results
@@ -197,5 +205,8 @@ types:
 - grid
 - graph
 - parameters
+- relaxed_solution
+- list
+- qubo
 - optimization-results
 - specs

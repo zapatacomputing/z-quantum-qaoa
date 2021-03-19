@@ -3,12 +3,15 @@ from zquantum.qaoa.problems.maxcut import (
     get_maxcut_hamiltonian as _get_maxcut_hamiltonian,
     solve_maxcut_by_exhaustive_search as _solve_maxcut_by_exhaustive_search,
 )
-from zquantum.qaoa.farhi_ansatz import (
+from zquantum.qaoa.ansatzes.farhi_ansatz import (
     create_farhi_qaoa_circuits as _create_farhi_qaoa_circuits,
+)
+from zquantum.qaoa.ansatzes.warm_start_ansatz import (
+    convert_relaxed_solution_to_angles as _convert_relaxed_solution_to_angles,
 )
 from zquantum.core.circuit import save_circuit, save_circuit_set
 from zquantum.core.graph import load_graph
-from zquantum.core.utils import load_list
+from zquantum.core.utils import load_list, save_list
 from zquantum.core.openfermion import (
     save_qubit_operator_set,
     load_qubit_operator,
@@ -17,6 +20,7 @@ from zquantum.core.openfermion import (
 )
 import json
 from typing import List, Union
+import numpy as np
 
 
 def get_random_maxcut_hamiltonians(
@@ -55,3 +59,9 @@ def get_maxcut_hamiltonian(graph, scaling=1.0, shifted=False):
         graph_object, scaling=scaling, shifted=shifted
     )
     save_qubit_operator(hamiltonian, "hamiltonian.json")
+
+
+def convert_relaxed_solution_to_angles(solution, epsilon=0.5):
+    solution = np.array(load_list(solution))
+    thetas = _convert_relaxed_solution_to_angles(solution, epsilon)
+    save_list(thetas.tolist(), "thetas.json")
