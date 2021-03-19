@@ -10,11 +10,11 @@ import sympy
 
 
 def create_betas(number_of_layers):
-    return list(sympy.symbols(f"beta_:{number_of_layers}"))
+    return sympy.symbols(f"beta_:{number_of_layers}")
 
 
 def create_gammas(number_of_layers):
-    return list(sympy.symbols(f"gamma_:{number_of_layers}"))
+    return sympy.symbols(f"gamma_:{number_of_layers}")
 
 
 def create_symbols_map(number_of_layers):

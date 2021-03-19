@@ -24,7 +24,7 @@ class WarmStartQAOAAnsatz(Ansatz):
         thetas: np.ndarray,
     ):
         """
-        This is implementationg of the warm-start QAOA Ansatz from https://arxiv.org/abs/2009.10095v3 .
+        This is implementation of the warm-start QAOA Ansatz from https://arxiv.org/abs/2009.10095v3 .
         It has slightly modified mixer Hamiltonian and initial state, which are based on the relaxed
         (i.e. allowing for continuous values) solution of the problem defined by Ising Hamiltonian.
 
