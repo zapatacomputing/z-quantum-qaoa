@@ -11,6 +11,8 @@ def _adjacency_matrix(graph: nx.Graph) -> np.ndarray:
 
 def get_graph_partition_hamiltonian(graph: nx.Graph) -> openfermion.QubitOperator:
     weight_matrix = _adjacency_matrix(graph)
-    # TODO: add offset to QiskitOperator
     qiskit_operator, offset = graph_partition.get_operator(weight_matrix)
-    return qiskitpauli_to_qubitop(qiskit_operator) + offset
+    openfermion_operator = qiskitpauli_to_qubitop(qiskit_operator)
+    # openfermion's QubitOperator doesn't store the offset, we also don't have any
+    # other convenient place to keep track of it, so we're adding it as a free term.
+    return openfermion_operator + offset
