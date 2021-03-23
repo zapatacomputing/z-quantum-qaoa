@@ -22,7 +22,4 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ),
     install_requires=["z-quantum-core"],
-    extras_require={
-        "dev": ["z-quantum-optimizers", "qe-qulacs", "qe-qiskit"],
-    },
 )
