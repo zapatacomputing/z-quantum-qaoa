@@ -3,6 +3,7 @@ from zquantum.qaoa.problems.maxcut import (
     get_maxcut_hamiltonian as _get_maxcut_hamiltonian,
     solve_maxcut_by_exhaustive_search as _solve_maxcut_by_exhaustive_search,
 )
+from zquantum.qaoa.problems import partition
 from zquantum.qaoa.farhi_ansatz import (
     create_farhi_qaoa_circuits as _create_farhi_qaoa_circuits,
 )
@@ -54,4 +55,10 @@ def get_maxcut_hamiltonian(graph, scaling=1.0, shifted=False):
     hamiltonian = _get_maxcut_hamiltonian(
         graph_object, scaling=scaling, shifted=shifted
     )
+    save_qubit_operator(hamiltonian, "hamiltonian.json")
+
+
+def get_graph_partition_hamiltonian(graph):
+    graph_object = load_graph(graph)
+    hamiltonian = partition.get_graph_partition_hamiltonian(graph_object)
     save_qubit_operator(hamiltonian, "hamiltonian.json")
