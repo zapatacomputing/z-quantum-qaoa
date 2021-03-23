@@ -9,15 +9,6 @@ from .maxcut import (
     get_random_maxcut_hamiltonians,
 )
 
-from zquantum.qaoa.farhi_ansatz import QAOAFarhiAnsatz
-from zquantum.optimizers.scipy_optimizer import ScipyOptimizer
-from zquantum.core.estimator import BasicEstimator
-from zquantum.core.cost_function import AnsatzBasedCostFunction
-from qequlacs.simulator import QulacsSimulator
-from qeqiskit.simulator import QiskitSimulator
-from collections import Counter
-import numpy as np
-
 
 class TestMaxcut:
     def test_get_maxcut_hamiltonian(self):
@@ -156,34 +147,3 @@ class TestMaxcut:
             # Then
             for hamiltonian in hamiltonians:
                 assert count_qubits(hamiltonian) in possible_number_of_qubits
-
-
-class TestMaxcutIntegration:
-    def test_solve_maxcut_qaoa(self):
-        # Given
-        G = nx.Graph()
-        G.add_nodes_from([0, 1, 2, 3])
-        G.add_edge(0, 1, weight=10)
-        G.add_edge(0, 3, weight=10)
-        G.add_edge(1, 2, weight=1)
-        G.add_edge(2, 3, weight=1)
-        H = get_maxcut_hamiltonian(G)
-        ansatz = QAOAFarhiAnsatz(1, cost_hamiltonian=H)
-        backend = QulacsSimulator()
-        backend = QiskitSimulator("qasm_simulator")
-        # backend = ForestSimulator("4q-qvm", n_samples=10000)
-
-        # optimizer = GridSearchOptimizer(grid)
-        estimator = BasicEstimator()
-        optimizer = ScipyOptimizer(method="L-BFGS-B")
-        cost_function = AnsatzBasedCostFunction(H, ansatz, backend, estimator)
-        initial_params = np.array([0, 0])
-        # When
-        opt_results = optimizer.minimize(cost_function, initial_params)
-        circuit = ansatz.get_executable_circuit(opt_results.opt_params)
-        backend.n_samples = 10000
-        measurements = backend.run_circuit_and_measure(circuit)
-        # Then
-        counter = Counter(measurements.bitstrings)
-        counter[(1, 0, 0, 0)] > counter[((0, 0, 0, 1))]
-        counter[(0, 1, 1, 1)] > counter[((0, 1, 0, 1))]
