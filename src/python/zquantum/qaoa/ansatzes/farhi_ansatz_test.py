@@ -2,7 +2,11 @@ from zquantum.core.interfaces.ansatz_test import AnsatzTests
 from zquantum.core.circuit import Circuit, Gate, Qubit
 from zquantum.core.utils import compare_unitary
 from zquantum.core.openfermion import change_operator_type
-from .farhi_ansatz import QAOAFarhiAnsatz, create_farhi_qaoa_circuits
+from .farhi_ansatz import (
+    QAOAFarhiAnsatz,
+    create_farhi_qaoa_circuits,
+    create_all_x_mixer_hamiltonian,
+)
 from openfermion import QubitOperator, IsingOperator
 import pytest
 import numpy as np
@@ -192,3 +196,20 @@ def test_create_farhi_qaoa_circuits_fails_when_length_of_inputs_is_not_equal():
     # When
     with pytest.raises(AssertionError):
         create_farhi_qaoa_circuits(hamiltonians, number_of_layers)
+
+
+def test_create_all_x_mixer_hamiltonian():
+    # Given
+    number_of_qubits = 4
+    target_operator = (
+        QubitOperator("X0")
+        + QubitOperator("X1")
+        + QubitOperator("X2")
+        + QubitOperator("X3")
+    )
+
+    # When
+    operator = create_all_x_mixer_hamiltonian(number_of_qubits)
+
+    # Then
+    assert operator == target_operator
