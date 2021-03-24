@@ -1,11 +1,10 @@
-import networkx as nx
+from typing import Dict, List
+
 import numpy as np
-from itertools import combinations
-from random import uniform
+import networkx as nx
 from openfermion import QubitOperator
 from zquantum.core.utils import dec2bin
 from zquantum.core.graph import generate_graph_node_dict, generate_graph_from_specs
-from typing import Dict, List, Union
 
 
 def get_random_maxcut_hamiltonians(
@@ -28,7 +27,7 @@ def get_random_maxcut_hamiltonians(
     Returns:
         List of zquantum.core.qubitoperator.QubitOperator object describing the
         Hamiltonians
-        H = \sum_{<i,j>} w_{i,j} * scaling * (Z_i Z_j - shifted * I).
+        H = \\sum_{<i,j>} w_{i,j} * scaling * (Z_i Z_j - shifted * I).
 
     """
     hamiltonians = []
@@ -42,22 +41,26 @@ def get_random_maxcut_hamiltonians(
     return hamiltonians
 
 
-def get_maxcut_hamiltonian(graph, scaling=1.0, shifted=False, l1_normalized=False):
+def get_maxcut_hamiltonian(
+    graph: nx.Graph,
+    scaling: float = 1.0,
+    shifted: bool = False,
+    l1_normalized: bool = False,
+) -> QubitOperator:
     """Converts a MAXCUT instance, as described by a weighted graph, to an Ising
     Hamiltonian. It allows for different convention in the choice of the
     Hamiltonian.
 
     Args:
-        graph (networkx.Graph): undirected weighted graph describing the MAXCUT
+        graph: undirected weighted graph describing the MAXCUT
         instance.
-        scaling (float): scaling of the terms of the Hamiltonian
-        shifted (bool): if True include a shift. Default: False
-        l1_normalized (bool): normalize the operator using the l1_norm = \sum |w|
+        scaling: scaling of the terms of the Hamiltonian
+        shifted: if True include a shift. Default: False
+        l1_normalized: normalize the operator using the l1_norm = \\sum |w|
 
     Returns:
-        zquantum.core.qubitoperator.QubitOperator object describing the
-        Hamiltonian
-        H = \sum_{<i,j>} w_{i,j} * scaling * (Z_i Z_j - shifted * I)
+        operator describing the Hamiltonian
+        H = \\sum_{<i,j>} w_{i,j} * scaling * (Z_i Z_j - shifted * I)
         or H_norm = H / l1_norm if l1_normalized is True.
 
     """

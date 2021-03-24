@@ -8,7 +8,6 @@ from .maxcut import (
     solve_maxcut_by_exhaustive_search,
     get_random_maxcut_hamiltonians,
 )
-from zquantum.core.circuit import Circuit
 
 
 class TestMaxcut:

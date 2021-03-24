@@ -1,14 +1,5 @@
-from zquantum.qaoa.problems.maxcut import (
-    get_random_maxcut_hamiltonians as _get_random_maxcut_hamiltonians,
-    get_maxcut_hamiltonian as _get_maxcut_hamiltonian,
-    solve_maxcut_by_exhaustive_search as _solve_maxcut_by_exhaustive_search,
-)
-from zquantum.qaoa.ansatzes.farhi_ansatz import (
-    create_farhi_qaoa_circuits as _create_farhi_qaoa_circuits,
-)
-from zquantum.qaoa.ansatzes.warm_start_ansatz import (
-    convert_relaxed_solution_to_angles as _convert_relaxed_solution_to_angles,
-)
+from zquantum.qaoa.problems import maxcut, partition
+from zquantum.qaoa.ansatzes import farhi_ansatz, warm_start_ansatz
 from zquantum.core.circuit import save_circuit, save_circuit_set
 from zquantum.core.graph import load_graph
 from zquantum.core.utils import load_list, save_list
@@ -27,7 +18,7 @@ def get_random_maxcut_hamiltonians(
     graph_specs, number_of_instances, number_of_qubits, shifted=False, scaling=1.0
 ):
     graph_specs_dict = json.loads(graph_specs)
-    hamiltonians = _get_random_maxcut_hamiltonians(
+    hamiltonians = maxcut.get_random_maxcut_hamiltonians(
         graph_specs_dict,
         number_of_instances,
         number_of_qubits,
@@ -39,7 +30,7 @@ def get_random_maxcut_hamiltonians(
 
 def create_farhi_qaoa_circuit(number_of_layers, hamiltonian):
     hamiltonian_object = load_qubit_operator(hamiltonian)
-    circuit = _create_farhi_qaoa_circuits([hamiltonian_object], number_of_layers)[0]
+    circuit = farhi_ansatz.create_farhi_qaoa_circuits([hamiltonian_object], number_of_layers)[0]
     save_circuit(circuit, "circuit.json")
 
 
@@ -49,19 +40,25 @@ def create_farhi_qaoa_circuits(
     if isinstance(number_of_layers, str):
         number_of_layers = load_list(number_of_layers)
     hamiltonians_objects = load_qubit_operator_set(hamiltonians)
-    circuits = _create_farhi_qaoa_circuits(hamiltonians_objects, number_of_layers)
+    circuits = farhi_ansatz.create_farhi_qaoa_circuits(hamiltonians_objects, number_of_layers)
     save_circuit_set(circuits, "circuits.json")
 
 
 def get_maxcut_hamiltonian(graph, scaling=1.0, shifted=False):
     graph_object = load_graph(graph)
-    hamiltonian = _get_maxcut_hamiltonian(
+    hamiltonian = maxcut.get_maxcut_hamiltonian(
         graph_object, scaling=scaling, shifted=shifted
     )
     save_qubit_operator(hamiltonian, "hamiltonian.json")
 
 
+def get_graph_partition_hamiltonian(graph):
+    graph_object = load_graph(graph)
+    hamiltonian = partition.get_graph_partition_hamiltonian(graph_object)
+    save_qubit_operator(hamiltonian, "hamiltonian.json")
+
+    
 def convert_relaxed_solution_to_angles(solution, epsilon=0.5):
     solution = np.array(load_list(solution))
-    thetas = _convert_relaxed_solution_to_angles(solution, epsilon)
+    thetas = warm_start_ansatz.convert_relaxed_solution_to_angles(solution, epsilon)
     save_list(thetas.tolist(), "thetas.json")
