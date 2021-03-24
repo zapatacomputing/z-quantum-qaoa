@@ -1,7 +1,5 @@
-from zquantum.qaoa.problems import maxcut
-from zquantum.qaoa.problems import partition
-from zquantum.qaoa import farhi_ansatz
-from zquantum.qaoa.ansatzes import warm_start_ansatz
+from zquantum.qaoa.problems import maxcut, partition
+from zquantum.qaoa.ansatzes import farhi_ansatz, warm_start_ansatz
 from zquantum.core.circuit import save_circuit, save_circuit_set
 from zquantum.core.graph import load_graph
 from zquantum.core.utils import load_list, save_list
