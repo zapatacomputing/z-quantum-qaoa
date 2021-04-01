@@ -23,13 +23,14 @@ def build_qaoa_ansatz_circuit(
         ansatz_specs = json.loads(ansatz_specs)
 
     cost_hamiltonian = load_qubit_operator(cost_hamiltonian)
+    ansatz_specs["cost_hamiltonian"] = cost_hamiltonian
     if mixer_hamiltonian:
         mixer_hamiltonian = load_qubit_operator(mixer_hamiltonian)
+        ansatz_specs["mixer_hamiltonian"] = mixer_hamiltonian
     if thetas:
         thetas = load_list(thetas)
-    ansatz_specs["cost_hamiltonian"] = cost_hamiltonian
-    ansatz_specs["mixer_hamiltonian"] = mixer_hamiltonian
-    ansatz_specs["thetas"] = thetas
+        ansatz_specs["thetas"] = thetas
+
     ansatz = load_from_specs(ansatz_specs)
     if params is not None:
         if isinstance(params, str):
