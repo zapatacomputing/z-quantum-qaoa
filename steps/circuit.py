@@ -1,7 +1,7 @@
 import numpy as np
 from zquantum.core.circuit import save_circuit, Circuit, load_circuit_template_params
 from zquantum.core.openfermion import load_qubit_operator
-from zquantum.core.utils import create_object, load_from_specs
+from zquantum.core.utils import create_object, load_from_specs, load_list
 from typing import Union, List, Optional, Dict
 import json
 
@@ -13,6 +13,7 @@ def build_qaoa_ansatz_circuit(
     cost_hamiltonian: Union[str, List],
     mixer_hamiltonian: Union[str, List] = None,
     params: Optional[Union[str, List]] = None,
+    thetas: Optional[Union[str, List]] = None,
 ):
 
     if isinstance(ansatz_specs, str):
@@ -24,8 +25,11 @@ def build_qaoa_ansatz_circuit(
     cost_hamiltonian = load_qubit_operator(cost_hamiltonian)
     if mixer_hamiltonian:
         mixer_hamiltonian = load_qubit_operator(mixer_hamiltonian)
+    if thetas:
+        thetas = load_list(thetas)
     ansatz_specs["cost_hamiltonian"] = cost_hamiltonian
     ansatz_specs["mixer_hamiltonian"] = mixer_hamiltonian
+    ansatz_specs["thetas"] = thetas
     ansatz = load_from_specs(ansatz_specs)
     if params is not None:
         if isinstance(params, str):
