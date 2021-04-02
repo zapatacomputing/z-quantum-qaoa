@@ -30,7 +30,9 @@ def get_random_maxcut_hamiltonians(
 
 def create_farhi_qaoa_circuit(number_of_layers, hamiltonian):
     hamiltonian_object = load_qubit_operator(hamiltonian)
-    circuit = farhi_ansatz.create_farhi_qaoa_circuits([hamiltonian_object], number_of_layers)[0]
+    circuit = farhi_ansatz.create_farhi_qaoa_circuits(
+        [hamiltonian_object], number_of_layers
+    )[0]
     save_circuit(circuit, "circuit.json")
 
 
@@ -40,7 +42,9 @@ def create_farhi_qaoa_circuits(
     if isinstance(number_of_layers, str):
         number_of_layers = load_list(number_of_layers)
     hamiltonians_objects = load_qubit_operator_set(hamiltonians)
-    circuits = farhi_ansatz.create_farhi_qaoa_circuits(hamiltonians_objects, number_of_layers)
+    circuits = farhi_ansatz.create_farhi_qaoa_circuits(
+        hamiltonians_objects, number_of_layers
+    )
     save_circuit_set(circuits, "circuits.json")
 
 
@@ -57,8 +61,17 @@ def get_graph_partition_hamiltonian(graph):
     hamiltonian = partition.get_graph_partition_hamiltonian(graph_object)
     save_qubit_operator(hamiltonian, "hamiltonian.json")
 
-    
+
 def convert_relaxed_solution_to_angles(solution, epsilon=0.5):
     solution = np.array(load_list(solution))
     thetas = warm_start_ansatz.convert_relaxed_solution_to_angles(solution, epsilon)
     save_list(thetas.tolist(), "thetas.json")
+
+
+def get_problem_hamiltonian_from_graph(graph, problem_type):
+    if problem_type == "partition":
+        get_graph_partition_hamiltonian(graph)
+    elif problem_type == "maxcut":
+        get_maxcut_hamiltonian(graph)
+    else:
+        raise ValueError(f"Invalid problem type: {problem_type}.")
