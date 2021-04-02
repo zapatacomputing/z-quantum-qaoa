@@ -1,4 +1,5 @@
 
+from copy import copy, deepcopy
 from zquantum.core.interfaces.ansatz_test import AnsatzTests
 from zquantum.core.circuit import Circuit, Gate, Qubit
 from zquantum.core.utils import compare_unitary
@@ -76,68 +77,76 @@ def _validate_get_executable_circuit_does_not_contain_symbols(ansatz):
     #     return len(gate.symbolic_params) == 0
     return all(len(gate.symbolic_params) == 0 for gate in circuit.gates)
 
-# ----------- start
 
-class TestFahriInherited:
-    @pytest.fixture
-    def ansatz(self):
-        """Plugs-in into AnsatzTests test cases."""
-        return _make_ansatz()
+ALL_CONTRACTS = [
+    _validate_setting_number_of_layers,
+    _validate_number_of_qubits_greater_than_0,
+]
 
-    def test_set_number_of_layers(self, ansatz):
-        assert _validate_setting_number_of_layers(ansatz)
 
-        # # Given
-        # new_number_of_layers = 100
-        # # When
-        # ansatz.number_of_layers = new_number_of_layers
-        # # Then
-        # assert ansatz.number_of_layers == new_number_of_layers
+# ^^^^ - z-quantum-core
+# below - z-quantum-qaoa
 
-    def test_set_number_of_layers_invalidates_parametrized_circuit(self, ansatz):
-        assert _validate_set_number_of_layers_invalidates_parametrized_circuit(ansatz)
-        # # Given
-        # new_number_of_layers = 100
-        # if ansatz.supports_parametrized_circuits:
-        #     initial_circuit = ansatz.parametrized_circuit
 
-        #     # When
-        #     ansatz.number_of_layers = new_number_of_layers
+@pytest.mark.parametrize('contract', ALL_CONTRACTS)
+def test_ansatz_contract(self, contract):
+    ansatz = _make_ansatz()
+    assert contract(ansatz)
 
-        #     # Then
-        #     assert ansatz._parametrized_circuit is None
+#     def test_set_number_of_layers(self, ansatz):
+#         assert _validate_setting_number_of_layers(ansatz)
 
-    # TODO: check with QCBM?
-    def test_number_of_params_greater_than_0(self, ansatz):
-        assert _validate_number_of_params_greater_than_0(ansatz)
-        # if ansatz.number_of_layers != 0:
-        #     assert ansatz.number_of_params >= 0
+#         # # Given
+#         # new_number_of_layers = 100
+#         # # When
+#         # ansatz.number_of_layers = new_number_of_layers
+#         # # Then
+#         # assert ansatz.number_of_layers == new_number_of_layers
 
-    def test_number_of_qubits_greater_than_0(self, ansatz):
-        assert _validate_number_of_qubits_greater_than_0(ansatz)
+#     def test_set_number_of_layers_invalidates_parametrized_circuit(self, ansatz):
+#         assert _validate_set_number_of_layers_invalidates_parametrized_circuit(ansatz)
+#         # # Given
+#         # new_number_of_layers = 100
+#         # if ansatz.supports_parametrized_circuits:
+#         #     initial_circuit = ansatz.parametrized_circuit
 
-    def test_get_executable_circuit_is_not_empty(self, ansatz):
-        assert _validate_get_executable_circuit_is_not_empty(ansatz)
-        # # Given
-        # params = np.random.random([ansatz.number_of_params])
+#         #     # When
+#         #     ansatz.number_of_layers = new_number_of_layers
 
-        # # When
-        # circuit = ansatz.get_executable_circuit(params)
+#         #     # Then
+#         #     assert ansatz._parametrized_circuit is None
 
-        # # Then
-        # assert len(circuit.gates) > 0
+#     # TODO: check with QCBM?
+#     def test_number_of_params_greater_than_0(self, ansatz):
+#         assert _validate_number_of_params_greater_than_0(ansatz)
+#         # if ansatz.number_of_layers != 0:
+#         #     assert ansatz.number_of_params >= 0
 
-    def test_get_executable_circuit_does_not_contain_symbols(self, ansatz):
-        assert _validate_get_executable_circuit_does_not_contain_symbols(ansatz)
-        # # Given
-        # params = np.random.random([ansatz.number_of_params])
+#     def test_number_of_qubits_greater_than_0(self, ansatz):
+#         assert _validate_number_of_qubits_greater_than_0(ansatz)
 
-        # # When
-        # circuit = ansatz.get_executable_circuit(params=params)
+#     def test_get_executable_circuit_is_not_empty(self, ansatz):
+#         assert _validate_get_executable_circuit_is_not_empty(ansatz)
+#         # # Given
+#         # params = np.random.random([ansatz.number_of_params])
 
-        # # Then
-        # for gate in circuit.gates:
-        #     assert len(gate.symbolic_params) == 0
+#         # # When
+#         # circuit = ansatz.get_executable_circuit(params)
+
+#         # # Then
+#         # assert len(circuit.gates) > 0
+
+#     def test_get_executable_circuit_does_not_contain_symbols(self, ansatz):
+#         assert _validate_get_executable_circuit_does_not_contain_symbols(ansatz)
+#         # # Given
+#         # params = np.random.random([ansatz.number_of_params])
+
+#         # # When
+#         # circuit = ansatz.get_executable_circuit(params=params)
+
+#         # # Then
+#         # for gate in circuit.gates:
+#         #     assert len(gate.symbolic_params) == 0
 
 
 class TestFahriStandalone:
