@@ -66,3 +66,12 @@ def convert_relaxed_solution_to_angles(solution, epsilon=0.5):
     solution = np.array(load_list(solution))
     thetas = warm_start_ansatz.convert_relaxed_solution_to_angles(solution, epsilon)
     save_list(thetas.tolist(), "thetas.json")
+
+
+def get_problem_hamiltonian_from_graph(graph, problem_type):
+    if problem_type == "partition":
+        get_graph_partition_hamiltonian(graph)
+    elif problem_type == "maxcut":
+        get_maxcut_hamiltonian(graph)
+    else:
+        raise ValueError(f"Invalid problem type: {problem_type}.")
