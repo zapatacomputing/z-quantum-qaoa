@@ -9,7 +9,6 @@ from zquantum.core.interfaces.mock_objects import (
     MockQuantumBackend,
     MockQuantumSimulator,
 )
-from zquantum.core.estimator_test import TestBasicEstimator
 from zquantum.core.circuit import Circuit
 from zquantum.core.measurement import Measurements, ExpectationValues
 from .estimators import CvarEstimator
