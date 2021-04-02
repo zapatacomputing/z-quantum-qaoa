@@ -15,14 +15,8 @@ import numpy as np
 import sympy
 
 
-def _make_ansatz():
-    cost_hamiltonian = QubitOperator((0, "Z")) + QubitOperator((1, "Z"))
-    mixer_hamiltonian = QubitOperator((0, "X")) + QubitOperator((1, "X"))
-    return QAOAFarhiAnsatz(
-        number_of_layers=1,
-        cost_hamiltonian=cost_hamiltonian,
-        mixer_hamiltonian=mixer_hamiltonian,
-    )
+# --------- contracts ---------
+# Imagine this section is defined in z-quantum-core
 
 
 def _validate_setting_number_of_layers(ansatz):
@@ -45,15 +39,15 @@ def _validate_set_number_of_layers_invalidates_parametrized_circuit(ansatz):
         return True
 
 
-# ----------- start
-
 def _validate_number_of_params_greater_than_0(ansatz):
     if ansatz.number_of_layers != 0:
         return ansatz.number_of_params >= 0
     return True
 
+
 def _validate_number_of_qubits_greater_than_0(ansatz):
     return ansatz.number_of_qubits > 0
+
 
 def _validate_get_executable_circuit_is_not_empty(ansatz):
     # Given
@@ -73,83 +67,39 @@ def _validate_get_executable_circuit_does_not_contain_symbols(ansatz):
     circuit = ansatz.get_executable_circuit(params=params)
 
     # Then
-    # for gate in circuit.gates:
-    #     return len(gate.symbolic_params) == 0
     return all(len(gate.symbolic_params) == 0 for gate in circuit.gates)
 
 
-ALL_CONTRACTS = [
+ANSATZ_CONTRACTS = [
     _validate_setting_number_of_layers,
+    _validate_set_number_of_layers_invalidates_parametrized_circuit,
+    _validate_number_of_params_greater_than_0,
     _validate_number_of_qubits_greater_than_0,
+    _validate_get_executable_circuit_is_not_empty,
+    _validate_get_executable_circuit_does_not_contain_symbols,
 ]
 
 
-# ^^^^ - z-quantum-core
-# below - z-quantum-qaoa
+# --------- /contracts ---------
 
 
-@pytest.mark.parametrize('contract', ALL_CONTRACTS)
-def test_ansatz_contract(self, contract):
+def _make_ansatz():
+    cost_hamiltonian = QubitOperator((0, "Z")) + QubitOperator((1, "Z"))
+    mixer_hamiltonian = QubitOperator((0, "X")) + QubitOperator((1, "X"))
+    return QAOAFarhiAnsatz(
+        number_of_layers=1,
+        cost_hamiltonian=cost_hamiltonian,
+        mixer_hamiltonian=mixer_hamiltonian,
+    )
+
+
+@pytest.mark.parametrize('contract', ANSATZ_CONTRACTS)
+def test_ansatz_contract(contract):
     ansatz = _make_ansatz()
     assert contract(ansatz)
 
-#     def test_set_number_of_layers(self, ansatz):
-#         assert _validate_setting_number_of_layers(ansatz)
 
-#         # # Given
-#         # new_number_of_layers = 100
-#         # # When
-#         # ansatz.number_of_layers = new_number_of_layers
-#         # # Then
-#         # assert ansatz.number_of_layers == new_number_of_layers
-
-#     def test_set_number_of_layers_invalidates_parametrized_circuit(self, ansatz):
-#         assert _validate_set_number_of_layers_invalidates_parametrized_circuit(ansatz)
-#         # # Given
-#         # new_number_of_layers = 100
-#         # if ansatz.supports_parametrized_circuits:
-#         #     initial_circuit = ansatz.parametrized_circuit
-
-#         #     # When
-#         #     ansatz.number_of_layers = new_number_of_layers
-
-#         #     # Then
-#         #     assert ansatz._parametrized_circuit is None
-
-#     # TODO: check with QCBM?
-#     def test_number_of_params_greater_than_0(self, ansatz):
-#         assert _validate_number_of_params_greater_than_0(ansatz)
-#         # if ansatz.number_of_layers != 0:
-#         #     assert ansatz.number_of_params >= 0
-
-#     def test_number_of_qubits_greater_than_0(self, ansatz):
-#         assert _validate_number_of_qubits_greater_than_0(ansatz)
-
-#     def test_get_executable_circuit_is_not_empty(self, ansatz):
-#         assert _validate_get_executable_circuit_is_not_empty(ansatz)
-#         # # Given
-#         # params = np.random.random([ansatz.number_of_params])
-
-#         # # When
-#         # circuit = ansatz.get_executable_circuit(params)
-
-#         # # Then
-#         # assert len(circuit.gates) > 0
-
-#     def test_get_executable_circuit_does_not_contain_symbols(self, ansatz):
-#         assert _validate_get_executable_circuit_does_not_contain_symbols(ansatz)
-#         # # Given
-#         # params = np.random.random([ansatz.number_of_params])
-
-#         # # When
-#         # circuit = ansatz.get_executable_circuit(params=params)
-
-#         # # Then
-#         # for gate in circuit.gates:
-#         #     assert len(gate.symbolic_params) == 0
-
-
-class TestFahriStandalone:
+class TestFahriAnsatz:
     @pytest.fixture
     def ansatz(self):
         return _make_ansatz()
