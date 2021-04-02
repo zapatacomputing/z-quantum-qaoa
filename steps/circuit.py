@@ -28,7 +28,7 @@ def build_qaoa_ansatz_circuit(
         mixer_hamiltonian = load_qubit_operator(mixer_hamiltonian)
         ansatz_specs["mixer_hamiltonian"] = mixer_hamiltonian
     if thetas:
-        thetas = load_list(thetas)
+        thetas = np.array(load_list(thetas))
         ansatz_specs["thetas"] = thetas
 
     ansatz = load_from_specs(ansatz_specs)
