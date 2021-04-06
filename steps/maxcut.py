@@ -1,5 +1,12 @@
 from zquantum.core.graph import generate_graph_from_specs
-from zquantum.qaoa.maxcut import get_maxcut_hamiltonian, solve_maxcut_by_exhaustive_search
+from zquantum.qaoa.problems.maxcut import (
+    get_maxcut_hamiltonian,
+    solve_maxcut_by_exhaustive_search,
+)
+from zquantum.qaoa.problems.partition import get_graph_partition_hamiltonian
+from zquantum.qaoa.problems.stable_set import get_stable_set_hamiltonian
+from zquantum.qaoa.problems.vertex_cover import get_vertex_cover_hamiltonian
+
 from zquantum.core.circuit import (
     load_circuit_template_params,
     save_circuit_template_params,
@@ -23,10 +30,34 @@ import os
 import json
 import copy
 
-def create_and_run_qaoa_for_maxcut(graph_specs, 
-    ansatz_specs, 
-    backend_specs, 
-    optimizer_specs, 
+
+"""
+The code below comes from Dariusz Lasecki's project:
+https://github.com/dlasecki/QaoaParamsPredictor/blob/97a8c2839abed19ea05c91caa8d584ec33fcb10f/predictor/experiments/quadratic_solver.py#L6
+"""
+from qiskit.aqua.algorithms import NumPyMinimumEigensolver
+from qiskit.optimization import QuadraticProgram
+from qiskit.optimization.algorithms import MinimumEigenOptimizer
+
+
+def get_exact_classical_binary_solution(qubit_operator, offset):
+    qp = QuadraticProgram()
+    qp.from_ising(qubit_operator, offset)
+    exact = MinimumEigenOptimizer(NumPyMinimumEigensolver())
+    result = exact.solve(qp)
+    return result.x
+
+
+"""
+End of the code authored by Dariusz
+"""
+
+
+def create_and_run_qaoa_for_maxcut(
+    graph_specs,
+    ansatz_specs,
+    backend_specs,
+    optimizer_specs,
     cost_function_specs,
     problem_type,
     min_layer,
@@ -34,8 +65,9 @@ def create_and_run_qaoa_for_maxcut(graph_specs,
     params_min_values,
     params_max_values,
     number_of_repeats,
-    number_of_graphs):
-    
+    number_of_graphs,
+):
+
     graph_output = {}
     final_results = {}
     final_parameters = {}
@@ -45,16 +77,29 @@ def create_and_run_qaoa_for_maxcut(graph_specs,
         print("Graph", graph_id)
         graph = generate_graph_from_specs(graph_specs)
         if problem_type == "maxcut":
-            qubit_operator = get_maxcut_hamiltonian(
-                graph, scaling=1.0, shifted=False
-            )
+            qubit_operator = get_maxcut_hamiltonian(graph, scaling=1.0, shifted=False)
             optimal_value, optimal_solution = solve_maxcut_by_exhaustive_search(graph)
+        elif problem_type == "partition":
+            qubit_operator = get_graph_partition_hamiltonian(graph)
+            optimal_value, optimal_solution = get_exact_classical_binary_solution(
+                qubit_operator, 0
+            )
+        elif problem_type == "stable_set":
+            qubit_operator = get_stable_set_hamiltonian(graph)
+            optimal_value, optimal_solution = get_exact_classical_binary_solution(
+                qubit_operator, 0
+            )
+        elif problem_type == "vertex_cover":
+            qubit_operator = get_vertex_cover_hamiltonian(graph)
+            optimal_value, optimal_solution = get_exact_classical_binary_solution(
+                qubit_operator, 0
+            )
         else:
             raise ValueError("Unknown problem type")
         graph_output[graph_id] = {}
-        graph_output[graph_id]['graph'] = nx.readwrite.json_graph.node_link_data(graph)
-        graph_output[graph_id]['optimal_value'] = optimal_value
-        graph_output[graph_id]['optimal_solution'] = optimal_solution
+        graph_output[graph_id]["graph"] = nx.readwrite.json_graph.node_link_data(graph)
+        graph_output[graph_id]["optimal_value"] = optimal_value
+        graph_output[graph_id]["optimal_solution"] = optimal_solution
 
         for i in range(number_of_repeats):
             print("Repeat", i)
@@ -69,9 +114,16 @@ def create_and_run_qaoa_for_maxcut(graph_specs,
                 params_min_values,
                 params_max_values,
             )
-            os.rename("optimization-results.json", f"optimization-results-{graph_id}-{i}.json")
-            os.rename("optimized-parameters.json", f"optimized-parameters-{graph_id}-{i}.json")
-            os.rename("bitstring-distribution.json", f"bitstring-distribution-{graph_id}-{i}.json")
+            os.rename(
+                "optimization-results.json", f"optimization-results-{graph_id}-{i}.json"
+            )
+            os.rename(
+                "optimized-parameters.json", f"optimized-parameters-{graph_id}-{i}.json"
+            )
+            os.rename(
+                "bitstring-distribution.json",
+                f"bitstring-distribution-{graph_id}-{i}.json",
+            )
 
     for graph_id in range(number_of_graphs):
         opt_results_list = {}
@@ -87,7 +139,6 @@ def create_and_run_qaoa_for_maxcut(graph_specs,
         final_results[graph_id] = opt_results_list
         final_parameters[graph_id] = opt_parameters_list
         final_bitstrings[graph_id] = bitstrings_list
-        
 
     with open("graph-list.json", "w") as outfile:
         json.dump(graph_output, outfile)
@@ -97,7 +148,6 @@ def create_and_run_qaoa_for_maxcut(graph_specs,
         json.dump(final_parameters, outfile)
     with open("bitstring-distributions-aggregated.json", "w") as outfile:
         json.dump(final_bitstrings, outfile)
-
 
 
 def optimize_variational_circuit_with_layerwise_optimizer(
@@ -161,7 +211,9 @@ def optimize_variational_circuit_with_layerwise_optimizer(
         params_max_values=params_max_values,
     )
     circuit = ansatz.get_executable_circuit(opt_results.opt_params)
-    distribution = backend.run_circuit_and_measure(circuit, n_samples=10000).get_distribution()
+    distribution = backend.run_circuit_and_measure(
+        circuit, n_samples=10000
+    ).get_distribution()
 
     save_optimization_results(opt_results, "optimization-results.json")
     save_circuit_template_params(opt_results.opt_params, "optimized-parameters.json")
