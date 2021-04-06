@@ -88,7 +88,7 @@ def create_and_run_qaoa_for_graph_problem(
         if problem_type == "maxcut":
             qubit_operator = get_maxcut_hamiltonian(graph, scaling=1.0, shifted=False)
             optimal_value, optimal_solution = solve_maxcut_by_exhaustive_search(graph)
-        elif problem_type == "partition":
+        elif problem_type == "graphpartition":
             qubit_operator = get_graph_partition_hamiltonian(graph)
             optimal_value, optimal_solution = get_exact_classical_binary_solution(
                 graph, problem_type
