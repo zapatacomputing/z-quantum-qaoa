@@ -1,5 +1,4 @@
 from zquantum.core.graph import generate_graph_from_specs
-<<<<<<< HEAD
 from zquantum.qaoa.problems.maxcut import (
     get_maxcut_hamiltonian,
     solve_maxcut_by_exhaustive_search,
@@ -8,9 +7,6 @@ from zquantum.qaoa.problems.partition import get_graph_partition_hamiltonian
 from zquantum.qaoa.problems.stable_set import get_stable_set_hamiltonian
 from zquantum.qaoa.problems.vertex_cover import get_vertex_cover_hamiltonian
 
-=======
-from zquantum.qaoa.maxcut import get_maxcut_hamiltonian, solve_maxcut_by_exhaustive_search
->>>>>>> 8f2bf461e8fd82c4952b3670d05bce50f9935336
 from zquantum.core.circuit import (
     load_circuit_template_params,
     save_circuit_template_params,
@@ -69,8 +65,9 @@ def create_and_run_qaoa_for_maxcut(
     params_min_values,
     params_max_values,
     number_of_repeats,
-    number_of_graphs):
-    
+    number_of_graphs,
+):
+
     graph_output = {}
     final_results = {}
     final_parameters = {}
