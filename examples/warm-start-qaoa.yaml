@@ -35,7 +35,6 @@ steps:
 - name: generate-graph
   config:
     runtime:
-      customImage: "zapatacomputing/z-quantum-default:0.0.7"
       language: python3
       imports: [z-quantum-core]
       parameters:
@@ -56,7 +55,6 @@ steps:
   passed: [generate-graph]
   config:
     runtime:
-      customImage: "zapatacomputing/z-quantum-default:0.0.7"
       language: python3
       imports: [z-quantum-core, z-quantum-qaoa]
       parameters:
@@ -73,7 +71,6 @@ steps:
   passed: [get-maxcut-hamiltonian]
   config:
     runtime:
-      customImage: "zapatacomputing/z-quantum-default:0.0.7"
       language: python3
       imports: [z-quantum-core, z-quantum-qubo]
       parameters:
@@ -90,7 +87,6 @@ steps:
   passed: [ising-hamiltonian-to-qubo]
   config:
     runtime:
-      customImage: "zapatacomputing/z-quantum-default:0.0.7"
       language: python3
       imports: [z-quantum-core, z-quantum-qubo, z-quantum-optimizers]
       parameters:
@@ -118,7 +114,6 @@ steps:
   passed: [get-solution-of-qp-relaxation-of-qubo]
   config:
     runtime:
-      customImage: "zapatacomputing/z-quantum-default:0.0.7"
       language: python3
       imports: [z-quantum-core, z-quantum-qaoa]
       parameters:
