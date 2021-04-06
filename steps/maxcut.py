@@ -14,7 +14,7 @@ from zquantum.core.circuit import (
     load_circuit_connectivity,
 )
 from zquantum.core.bitstring_distribution import save_bitstring_distribution
-from zquantum.core.openfermion import load_qubit_operator
+from zquantum.core.openfermion import load_qubit_operator, qubitop_to_qiskitpauli
 from zquantum.core.utils import create_object, load_noise_model
 from zquantum.core.serialization import (
     save_optimization_results,
@@ -42,7 +42,7 @@ from qiskit.optimization.algorithms import MinimumEigenOptimizer
 
 def get_exact_classical_binary_solution(qubit_operator, offset):
     qp = QuadraticProgram()
-    qp.from_ising(qubit_operator, offset)
+    qp.from_ising(qubitop_to_qiskitpauli(qubit_operator), offset)
     exact = MinimumEigenOptimizer(NumPyMinimumEigensolver())
     result = exact.solve(qp)
     return result.x
@@ -53,7 +53,7 @@ End of the code authored by Dariusz
 """
 
 
-def create_and_run_qaoa_for_maxcut(
+def create_and_run_qaoa_for_graph_problem(
     graph_specs,
     ansatz_specs,
     backend_specs,
