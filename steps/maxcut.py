@@ -84,12 +84,12 @@ def create_and_run_qaoa_for_maxcut(
             optimal_value, optimal_solution = get_exact_classical_binary_solution(
                 qubit_operator, 0
             )
-        elif problem_type == "stable_set":
+        elif problem_type == "stableset":
             qubit_operator = get_stable_set_hamiltonian(graph)
             optimal_value, optimal_solution = get_exact_classical_binary_solution(
                 qubit_operator, 0
             )
-        elif problem_type == "vertex_cover":
+        elif problem_type == "vertexcover":
             qubit_operator = get_vertex_cover_hamiltonian(graph)
             optimal_value, optimal_solution = get_exact_classical_binary_solution(
                 qubit_operator, 0
