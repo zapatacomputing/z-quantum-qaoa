@@ -54,7 +54,7 @@ def get_exact_classical_binary_solution(graph, problem_type):
     qp.from_ising(qiskit_operator, offset)
     exact = MinimumEigenOptimizer(NumPyMinimumEigensolver())
     result = exact.solve(qp)
-    return result.x
+    return result.fval, list(result.x)
 
 
 """
@@ -91,17 +91,17 @@ def create_and_run_qaoa_for_graph_problem(
         elif problem_type == "partition":
             qubit_operator = get_graph_partition_hamiltonian(graph)
             optimal_value, optimal_solution = get_exact_classical_binary_solution(
-                qubit_operator, 0
+                graph, problem_type
             )
         elif problem_type == "stableset":
             qubit_operator = get_stable_set_hamiltonian(graph)
             optimal_value, optimal_solution = get_exact_classical_binary_solution(
-                qubit_operator, 0
+                graph, problem_type
             )
         elif problem_type == "vertexcover":
             qubit_operator = get_vertex_cover_hamiltonian(graph)
             optimal_value, optimal_solution = get_exact_classical_binary_solution(
-                qubit_operator, 0
+                graph, problem_type
             )
         else:
             raise ValueError("Unknown problem type")
