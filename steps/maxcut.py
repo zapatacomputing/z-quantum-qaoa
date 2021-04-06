@@ -8,14 +8,10 @@ from zquantum.qaoa.problems.stable_set import get_stable_set_hamiltonian
 from zquantum.qaoa.problems.vertex_cover import get_vertex_cover_hamiltonian
 
 from zquantum.core.circuit import (
-    load_circuit_template_params,
     save_circuit_template_params,
-    load_parameter_grid,
-    load_circuit_connectivity,
 )
 from zquantum.core.bitstring_distribution import save_bitstring_distribution
-from zquantum.core.openfermion import load_qubit_operator, qubitop_to_qiskitpauli
-from zquantum.core.utils import create_object, load_noise_model
+from zquantum.core.utils import create_object
 from zquantum.core.serialization import (
     save_optimization_results,
     load_optimization_results,
@@ -29,6 +25,11 @@ import numpy as np
 import os
 import json
 import copy
+from qiskit.optimization.applications.ising import (
+    graph_partition,
+    stable_set,
+    vertex_cover,
+)
 
 
 """
@@ -40,9 +41,17 @@ from qiskit.optimization import QuadraticProgram
 from qiskit.optimization.algorithms import MinimumEigenOptimizer
 
 
-def get_exact_classical_binary_solution(qubit_operator, offset):
+def get_exact_classical_binary_solution(graph, problem_type):
+    weight_matrix = nx.to_numpy_array(graph)
+    if problem_type == "graphpartition":
+        qiskit_operator, offset = graph_partition.get_operator(np.flip(weight_matrix))
+    elif problem_type == "stableset":
+        qiskit_operator, offset = stable_set.get_operator(np.flip(weight_matrix))
+    elif problem_type == "vertexcover":
+        qiskit_operator, offset = vertex_cover.get_operator(np.flip(weight_matrix))
+
     qp = QuadraticProgram()
-    qp.from_ising(qubitop_to_qiskitpauli(qubit_operator), offset)
+    qp.from_ising(qiskit_operator, offset)
     exact = MinimumEigenOptimizer(NumPyMinimumEigensolver())
     result = exact.solve(qp)
     return result.x
