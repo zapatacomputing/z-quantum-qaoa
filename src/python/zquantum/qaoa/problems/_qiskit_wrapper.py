@@ -9,9 +9,9 @@ def _adjacency_matrix(graph: nx.Graph) -> np.ndarray:
     return nx.to_numpy_array(graph)
 
 
-def _change_matrix_to_qiskit_convention(weights_matrix: np.ndarray):
+def _change_matrix_to_qiskit_convention(weight_matrix: np.ndarray):
     """Terms returned by Qiskit have flipped ordering compared to what we'd expect."""
-    return np.flip(weights_matrix)
+    return np.flip(weight_matrix)
 
 
 def _identity_operator(coefficient: complex):
