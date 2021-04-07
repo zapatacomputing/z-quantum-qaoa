@@ -1,3 +1,4 @@
+from typing import Callable
 import openfermion
 import networkx as nx
 import numpy as np
@@ -28,8 +29,8 @@ def _identity_operator(coefficient: complex):
     return openfermion.QubitOperator((), coefficient)
 
 
-def _get_hamiltonian_for_problem(
-    problem_type: str, graph: nx.Graph
+def get_hamiltonian_for_problem(
+    graph: nx.Graph, qiskit_operator_getter: Callable
 ) -> openfermion.QubitOperator:
     """Construct a qubit operator with Hamiltonian for the graph partition problem.
 
@@ -45,22 +46,7 @@ def _get_hamiltonian_for_problem(
         weight_matrix
     )
 
-    if problem_type in ["graph_partition", "partition"]:
-        qiskit_operator, offset = graph_partition.get_operator(
-            weight_matrix_in_qiskit_convention
-        )
-    elif problem_type in ["max_cut", "maxcut"]:
-        qiskit_operator, offset = max_cut.get_operator(
-            weight_matrix_in_qiskit_convention
-        )
-    elif problem_type in ["exact_cover"]:
-        qiskit_operator, offset = exact_cover.get_operator(
-            weight_matrix_in_qiskit_convention
-        )
-    elif problem_type in ["stable_set"]:
-        qiskit_operator, offset = stable_set.get_operator(
-            weight_matrix_in_qiskit_convention
-        )
+    qiskit_operator, offset = qiskit_operator_getter(weight_matrix_in_qiskit_convention)
 
     openfermion_operator = qiskitpauli_to_qubitop(qiskit_operator)
     # openfermion's QubitOperator doesn't store the offset, we also don't have any

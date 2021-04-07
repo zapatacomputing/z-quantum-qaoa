@@ -2,8 +2,7 @@ import openfermion
 import networkx as nx
 import numpy as np
 from qiskit.optimization.applications.ising import graph_partition
-from zquantum.core.openfermion import qiskitpauli_to_qubitop
-from ._qiskit_problem_helpers import _get_hamiltonian_for_problem
+from ._qiskit_wrapper import get_hamiltonian_for_problem
 
 
 def get_graph_partition_hamiltonian(graph: nx.Graph) -> openfermion.QubitOperator:
@@ -16,4 +15,6 @@ def get_graph_partition_hamiltonian(graph: nx.Graph) -> openfermion.QubitOperato
     The operator's terms contain Pauli Z matrices applied to qubits. The qubit indices are
     based on graph node indices in the graph definition, not on the node names.
     """
-    return _get_hamiltonian_for_problem(graph=graph, problem_type="graph_partition")
+    return get_hamiltonian_for_problem(
+        graph=graph, qiskit_operator_getter=graph_partition.get_operator
+    )
