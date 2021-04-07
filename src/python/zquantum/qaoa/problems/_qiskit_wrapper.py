@@ -2,12 +2,6 @@ from typing import Callable
 import openfermion
 import networkx as nx
 import numpy as np
-from qiskit.optimization.applications.ising import (
-    graph_partition,
-    max_cut,
-    exact_cover,
-    stable_set,
-)
 from zquantum.core.openfermion import qiskitpauli_to_qubitop
 
 
