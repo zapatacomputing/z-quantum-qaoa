@@ -6,3 +6,4 @@ from .maxcut import (
 )
 
 from .partition import get_graph_partition_hamiltonian
+from .vertex_cover import get_vertex_cover_hamiltonian
