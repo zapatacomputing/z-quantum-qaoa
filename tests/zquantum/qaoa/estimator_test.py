@@ -11,7 +11,7 @@ from zquantum.core.interfaces.mock_objects import (
 )
 from zquantum.core.circuit import Circuit
 from zquantum.core.measurement import Measurements, ExpectationValues
-from .estimators import CvarEstimator
+from zquantum.qaoa.estimators import CvarEstimator
 
 
 class TestCvarEstimator(EstimatorTests):
