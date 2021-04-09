@@ -106,8 +106,6 @@ class TestGetStableSetHamiltonian:
     )
     def test_returns_expected_terms(self, graph, terms):
         qubit_operator = get_stable_set_hamiltonian(graph)
-        print("\nExpected Terms: ", terms)
-        print("Recieved Terms: ", qubit_operator.terms)
         assert qubit_operator.terms == terms
 
     @pytest.mark.parametrize("graph", GRAPH_EXAMPLES)
