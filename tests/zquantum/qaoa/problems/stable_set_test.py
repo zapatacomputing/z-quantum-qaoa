@@ -1,7 +1,7 @@
 import networkx as nx
 import pytest
 
-from .stable_set import get_stable_set_hamiltonian
+from zquantum.qaoa.problems.stable_set import get_stable_set_hamiltonian
 
 
 def _make_graph(node_ids, edges):
