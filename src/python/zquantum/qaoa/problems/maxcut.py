@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 import numpy as np
 import networkx as nx
@@ -17,8 +17,7 @@ def get_random_maxcut_hamiltonians(
     graph_specs: Dict,
     number_of_instances: int,
     possible_number_of_qubits: List[int],
-    **kwargs
-):
+) -> List[QubitOperator]:
     """Generates random maxcut hamiltonians based on the input graph description for a range
     of number of qubits and a set number of instances.
 
@@ -44,27 +43,19 @@ def get_random_maxcut_hamiltonians(
     )
 
 
-def get_maxcut_hamiltonian(
-    graph: nx.Graph,
-    scaling: float = 1.0,
-    shifted: bool = False,
-    l1_normalized: bool = False,
-) -> QubitOperator:
+def get_maxcut_hamiltonian(graph: nx.Graph) -> QubitOperator:
     """Converts a MAXCUT instance, as described by a weighted graph, to an Ising
     Hamiltonian. It allows for different convention in the choice of the
     Hamiltonian.
+    The returned Hamiltonian is consistent with the definitions from
+    "A Quantum Approximate Optimization Algorithm" by E. Farhi, eq. 12
+    (https://arxiv.org/pdf/1411.4028.pdf).
 
     Args:
-        graph: undirected weighted graph describing the MAXCUT
-        instance.
-        scaling: scaling of the terms of the Hamiltonian
-        shifted: if True include a shift. Default: False
-        l1_normalized: normalize the operator using the l1_norm = \\sum |w|
+        graph: undirected weighted graph that we needs to be solved
 
     Returns:
         operator describing the Hamiltonian
-        H = \\sum_{<i,j>} w_{i,j} * scaling * (Z_i Z_j - shifted * I)
-        or H_norm = H / l1_norm if l1_normalized is True.
 
     """
     return get_hamiltonian_for_problem(
@@ -72,7 +63,7 @@ def get_maxcut_hamiltonian(
     )
 
 
-def evaluate_maxcut_solution(solution, graph):
+def evaluate_maxcut_solution(solution: List[int], graph: nx.Graph) -> float:
     """Compute the Cut given a partition of the nodes.
 
     Args:
@@ -81,12 +72,14 @@ def evaluate_maxcut_solution(solution, graph):
             separate sets.
         graph: networkx.Graph
             Input graph object.
+    Returns:
+        float
     """
 
     return evaluate_solution(solution, graph, get_maxcut_hamiltonian)
 
 
-def solve_maxcut_by_exhaustive_search(graph):
+def solve_maxcut_by_exhaustive_search(graph: nx.Graph) -> Tuple[float, List[List[int]]]:
     """Brute-force solver for MAXCUT instances using exhaustive search.
     Args:
         graph (networkx.Graph): undirected weighted graph describing the MAXCUT

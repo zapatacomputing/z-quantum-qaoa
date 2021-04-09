@@ -11,16 +11,18 @@ def get_random_hamiltonians_for_problem(
     possible_number_of_qubits: List[int],
     hamiltonian_generator: Callable[[nx.Graph], QubitOperator],
 ) -> List[QubitOperator]:
-    """Generates random maxcut hamiltonians based on the input graph description for a range
+    """Generates Hamiltonians based on the input graph description for a range
     of number of qubits and a set number of instances.
 
     Args:
-        graph_specs (dict): Specifications of the graph to generate. It should contain at
+        graph_specs: Specifications of the graph to generate. It should contain at
             least an entry with key 'type_graph' (Note: 'num_nodes' key will be overwritten)
-        number_of_instances (int): The number of hamiltonians to generate
-        possible_number_of_qubits (List[int]): A list containing the number of
+        number_of_instances: The number of hamiltonians to generate
+        possible_number_of_qubits: A list containing the number of
             qubits in the hamiltonian. If it contains more than one value, then a
             random value from the list will be picked to generate each instance.
+        hamiltonian_generator: a function that will generate a Hamiltonian
+            for a given problem based on the input graph.
 
     Returns:
         List of zquantum.core.qubitoperator.QubitOperator object describing the
@@ -28,6 +30,8 @@ def get_random_hamiltonians_for_problem(
         H = \\sum_{<i,j>} w_{i,j} * scaling * (Z_i Z_j - shifted * I).
 
     """
+    if "type_graph" not in graph_specs.keys():
+        raise ValueError("graph_specs should contain type_graph field.")
     hamiltonians = []
     for _ in range(number_of_instances):
         graph_specs["num_nodes"] = np.random.choice(possible_number_of_qubits)
