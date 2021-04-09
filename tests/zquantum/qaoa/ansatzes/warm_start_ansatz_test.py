@@ -2,7 +2,7 @@ from zquantum.core.interfaces.ansatz_test import AnsatzTests
 from zquantum.core.circuit import Circuit, Gate, Qubit
 from zquantum.core.utils import compare_unitary
 from zquantum.core.openfermion import change_operator_type
-from .warm_start_ansatz import WarmStartQAOAAnsatz, convert_relaxed_solution_to_angles
+from zquantum.qaoa.ansatzes.warm_start_ansatz import WarmStartQAOAAnsatz, convert_relaxed_solution_to_angles
 from openfermion import QubitOperator, IsingOperator
 import pytest
 import numpy as np
