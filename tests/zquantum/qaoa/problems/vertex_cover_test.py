@@ -1,7 +1,7 @@
 import networkx as nx
 import pytest
 
-from .vertex_cover import get_vertex_cover_hamiltonian
+from zquantum.qaoa.problems.vertex_cover import get_vertex_cover_hamiltonian
 
 
 def _make_graph(node_ids, edges):
