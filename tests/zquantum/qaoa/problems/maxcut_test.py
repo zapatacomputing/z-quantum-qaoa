@@ -4,7 +4,7 @@ from openfermion import QubitOperator
 from openfermion.utils import count_qubits
 from zquantum.qaoa.problems.maxcut import (
     get_maxcut_hamiltonian,
-    get_solution_cut_size,
+    evaluate_maxcut_solution,
     solve_maxcut_by_exhaustive_search,
     get_random_maxcut_hamiltonians,
 )
@@ -91,10 +91,10 @@ class TestMaxcut:
         # Then
         assert maxcut == 5
         for solution in solution_set:
-            cut_size = get_solution_cut_size(solution, graph)
+            cut_size = evaluate_maxcut_solution(solution, graph)
             assert cut_size == 5
 
-    def test_get_solution_cut_size(self):
+    def test_evaluate_maxcut_solution(self):
         # Given
         solution_1 = [0, 0, 0, 0, 0]
         solution_2 = [0, 1, 1, 1, 1]
@@ -108,14 +108,16 @@ class TestMaxcut:
         graph.add_edge(4, 5, weight=1)
 
         # When
-        cut_size_1 = get_solution_cut_size(solution_1, graph)
-        cut_size_2 = get_solution_cut_size(solution_2, graph)
-        cut_size_3 = get_solution_cut_size(solution_3, graph)
+        cut_size_1 = evaluate_maxcut_solution(solution_1, graph)
+        cut_size_2 = evaluate_maxcut_solution(solution_2, graph)
+        cut_size_3 = evaluate_maxcut_solution(solution_3, graph)
+        import pdb
 
+        pdb.set_trace()
         # Then
         assert cut_size_1 == 0
-        assert cut_size_2 == 2
-        assert cut_size_3 == 3
+        assert cut_size_2 == -2
+        assert cut_size_3 == -3
 
     def test_get_random_maxcut_hamiltonians_num_instances(self):
         # Given

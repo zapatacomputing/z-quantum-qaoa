@@ -24,7 +24,7 @@ def _identity_operator(coefficient: complex):
 
 
 def get_hamiltonian_for_problem(
-    graph: nx.Graph, qiskit_operator_getter: Callable
+    graph: nx.Graph, qiskit_operator_getter: Callable[[TODO], TODO]
 ) -> openfermion.QubitOperator:
     """Construct a qubit operator with Hamiltonian for the graph partition problem.
 

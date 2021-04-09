@@ -1,7 +1,7 @@
 import networkx as nx
 import pytest
 
-from zquantum.qaoa.problems.partition import get_graph_partition_hamiltonian
+from zquantum.qaoa.problems.graph_partition import get_graph_partition_hamiltonian
 
 
 def _make_graph(node_ids, edges):
@@ -127,4 +127,3 @@ class TestGetHamiltonian:
                 qubit_operator.terms[((qubit_index1, "Z"), (qubit_index2, "Z"))]
                 == 1.5 + 0j
             )
-

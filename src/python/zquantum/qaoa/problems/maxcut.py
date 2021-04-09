@@ -4,7 +4,13 @@ import numpy as np
 import networkx as nx
 from openfermion import QubitOperator
 from zquantum.core.utils import dec2bin
-from zquantum.core.graph import generate_graph_node_dict, generate_graph_from_specs
+from ._problem_evaluation import (
+    solve_graph_problem_by_exhaustive_search,
+    evaluate_solution,
+)
+from qiskit.optimization.applications.ising import max_cut
+from ._qiskit_wrapper import get_hamiltonian_for_problem
+from ._generators import get_random_hamiltonians_for_problem
 
 
 def get_random_maxcut_hamiltonians(
@@ -30,15 +36,12 @@ def get_random_maxcut_hamiltonians(
         H = \\sum_{<i,j>} w_{i,j} * scaling * (Z_i Z_j - shifted * I).
 
     """
-    hamiltonians = []
-    for _ in range(number_of_instances):
-        graph_specs["num_nodes"] = np.random.choice(possible_number_of_qubits)
-        graph = generate_graph_from_specs(graph_specs)
-
-        hamiltonian = get_maxcut_hamiltonian(graph, **kwargs)
-        hamiltonians.append(hamiltonian)
-
-    return hamiltonians
+    return get_random_hamiltonians_for_problem(
+        graph_specs,
+        number_of_instances,
+        possible_number_of_qubits,
+        get_maxcut_hamiltonian,
+    )
 
 
 def get_maxcut_hamiltonian(
@@ -64,27 +67,12 @@ def get_maxcut_hamiltonian(
         or H_norm = H / l1_norm if l1_normalized is True.
 
     """
-
-    output = QubitOperator()
-
-    nodes_dict = generate_graph_node_dict(graph)
-
-    l1_norm = 0
-    for edge in graph.edges:
-        coeff = graph.edges[edge[0], edge[1]]["weight"] * scaling
-        l1_norm += np.abs(coeff)
-        node_index1 = nodes_dict[edge[0]]
-        node_index2 = nodes_dict[edge[1]]
-        ZZ_term_str = "Z" + str(node_index1) + " Z" + str(node_index2)
-        output += QubitOperator(ZZ_term_str, coeff)
-        if shifted:
-            output += QubitOperator("", -coeff)  # constant term, i.e I
-    if l1_normalized and (l1_norm > 0):
-        output /= l1_norm
-    return output
+    return get_hamiltonian_for_problem(
+        graph=graph, qiskit_operator_getter=max_cut.get_operator
+    )
 
 
-def get_solution_cut_size(solution, graph):
+def evaluate_maxcut_solution(solution, graph):
     """Compute the Cut given a partition of the nodes.
 
     Args:
@@ -95,21 +83,7 @@ def get_solution_cut_size(solution, graph):
             Input graph object.
     """
 
-    if len(solution) != len(graph.nodes):
-        raise Exception(
-            "trial solution size is {}, which does not match graph size which is {}".format(
-                len(solution), len(graph.nodes)
-            )
-        )
-
-    cut_size = 0
-    node_dict = generate_graph_node_dict(graph)
-    for edge in graph.edges:
-        node_index1 = node_dict[edge[0]]
-        node_index2 = node_dict[edge[1]]
-        if solution[node_index1] != solution[node_index2]:
-            cut_size += 1
-    return cut_size
+    return evaluate_solution(solution, graph, get_maxcut_hamiltonian)
 
 
 def solve_maxcut_by_exhaustive_search(graph):
@@ -123,25 +97,6 @@ def solve_maxcut_by_exhaustive_search(graph):
             of bit strings that correspond to the solution(s).
     """
 
-    solution_set = []
-    num_nodes = len(graph.nodes)
-
-    # find one MAXCUT solution
-    maxcut = -1
-    one_maxcut_solution = None
-    for i in range(0, 2 ** num_nodes):
-        trial_solution = dec2bin(i, num_nodes)
-        current_cut = get_solution_cut_size(trial_solution, graph)
-        if current_cut > maxcut:
-            one_maxcut_solution = trial_solution
-            maxcut = current_cut
-    solution_set.append(one_maxcut_solution)
-
-    # search again to pick up any degeneracies
-    for i in range(0, 2 ** num_nodes):
-        trial_solution = dec2bin(i, num_nodes)
-        current_cut = get_solution_cut_size(trial_solution, graph)
-        if current_cut == maxcut and trial_solution != one_maxcut_solution:
-            solution_set.append(trial_solution)
-
-    return maxcut, solution_set
+    return solve_graph_problem_by_exhaustive_search(
+        graph, cost_function=evaluate_maxcut_solution, find_maximum=True
+    )
