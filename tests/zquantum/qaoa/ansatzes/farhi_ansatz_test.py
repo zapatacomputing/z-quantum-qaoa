@@ -2,7 +2,7 @@ from zquantum.core.interfaces.ansatz_test import AnsatzTests
 from zquantum.core.circuit import Circuit, Gate, Qubit
 from zquantum.core.utils import compare_unitary
 from zquantum.core.openfermion import change_operator_type
-from .farhi_ansatz import (
+from zquantum.qaoa.ansatzes.farhi_ansatz import (
     QAOAFarhiAnsatz,
     create_farhi_qaoa_circuits,
     create_all_x_mixer_hamiltonian,

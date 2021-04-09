@@ -2,7 +2,7 @@ import networkx as nx
 
 from openfermion import QubitOperator
 from openfermion.utils import count_qubits
-from .maxcut import (
+from zquantum.qaoa.problems.maxcut import (
     get_maxcut_hamiltonian,
     get_solution_cut_size,
     solve_maxcut_by_exhaustive_search,
