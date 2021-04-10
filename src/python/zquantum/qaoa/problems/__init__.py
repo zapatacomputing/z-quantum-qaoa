@@ -7,7 +7,7 @@ from .maxcut import (
 
 from .graph_partition import (
     get_graph_partition_hamiltonian,
-    get_random_graph_partition_hamiltoniansm,
+    get_random_graph_partition_hamiltonian,
     evaluate_graph_partition_solution,
     solve_graph_partition_by_exhaustive_search,
 )
