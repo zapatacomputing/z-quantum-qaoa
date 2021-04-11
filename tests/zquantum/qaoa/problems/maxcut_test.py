@@ -15,14 +15,14 @@ class TestMaxcut:
         # Given
         graph = nx.Graph()
         graph.add_edge(1, 2, weight=0.4)
-        graph.add_edge(2, 3, weight=-0.1)
+        graph.add_edge(2, 3, weight=-0.2)
         graph.add_edge(1, 3, weight=0.2)
         target_hamiltonian = (
-            0.4 * QubitOperator("Z0 Z1")
+            0.2 * QubitOperator("Z0 Z1")
             - 0.1 * QubitOperator("Z1 Z2")
-            + 0.2 * QubitOperator("Z0 Z2")
+            + 0.1 * QubitOperator("Z0 Z2")
+            - 0.2 * QubitOperator("")
         )
-
         # When
         hamiltonian = get_maxcut_hamiltonian(graph)
 
@@ -33,46 +33,21 @@ class TestMaxcut:
         # Given
         graph = nx.Graph()
         graph.add_edge(1, 2, weight=0.4)
-        graph.add_edge(2, 3, weight=-0.1)
+        graph.add_edge(2, 3, weight=-0.2)
         graph.add_edge(1, 3, weight=0.2)
+        offset = 3.0
+        scale_factor = 0.5
         target_hamiltonian = (
-            0.4 / 2 * QubitOperator("Z0 Z1")
-            - 0.1 / 2 * QubitOperator("Z1 Z2")
-            + 0.2 / 2 * QubitOperator("Z0 Z2")
-            - (0.4 - 0.1 + 0.2) / 2 * QubitOperator("")
+            0.2 * scale_factor * QubitOperator("Z0 Z1")
+            - 0.1 * scale_factor * QubitOperator("Z1 Z2")
+            + 0.1 * scale_factor * QubitOperator("Z0 Z2")
+            + (-0.2 * scale_factor + offset) * QubitOperator("")
         )
 
         # When
-        hamiltonian = get_maxcut_hamiltonian(graph, scaling=0.5, shifted=True)
-
-        # Then
-        assert hamiltonian == target_hamiltonian
-
-    def test_get_maxcut_hamiltonian_l1normalized(self):
-        # Given
-        graph = nx.Graph()
-        graph.add_edge(1, 2, weight=0.4)
-        graph.add_edge(2, 3, weight=-0.1)
-        graph.add_edge(1, 3, weight=0.2)
-        target_hamiltonian = (
-            0.4 / 0.7 * QubitOperator("Z0 Z1")
-            - 0.1 / 0.7 * QubitOperator("Z1 Z2")
-            + 0.2 / 0.7 * QubitOperator("Z0 Z2")
+        hamiltonian = get_maxcut_hamiltonian(
+            graph, scale_factor=scale_factor, offset=offset
         )
-
-        # When
-        hamiltonian = get_maxcut_hamiltonian(graph, l1_normalized=True)
-
-        # Then
-        assert hamiltonian == target_hamiltonian
-
-    def test_no_edge_l1normalized(self):
-        # Given
-        graph = nx.Graph()
-        target_hamiltonian = QubitOperator()
-
-        # When
-        hamiltonian = get_maxcut_hamiltonian(graph, l1_normalized=True)
 
         # Then
         assert hamiltonian == target_hamiltonian
@@ -89,10 +64,10 @@ class TestMaxcut:
         # When
         maxcut, solution_set = solve_maxcut_by_exhaustive_search(graph)
         # Then
-        assert maxcut == 5
+        assert maxcut == -5
         for solution in solution_set:
             cut_size = evaluate_maxcut_solution(solution, graph)
-            assert cut_size == 5
+            assert cut_size == -5
 
     def test_evaluate_maxcut_solution(self):
         # Given
@@ -111,9 +86,7 @@ class TestMaxcut:
         cut_size_1 = evaluate_maxcut_solution(solution_1, graph)
         cut_size_2 = evaluate_maxcut_solution(solution_2, graph)
         cut_size_3 = evaluate_maxcut_solution(solution_3, graph)
-        import pdb
 
-        pdb.set_trace()
         # Then
         assert cut_size_1 == 0
         assert cut_size_2 == -2

@@ -43,7 +43,9 @@ def get_random_maxcut_hamiltonians(
     )
 
 
-def get_maxcut_hamiltonian(graph: nx.Graph) -> QubitOperator:
+def get_maxcut_hamiltonian(
+    graph: nx.Graph, scale_factor: int = 1.0, offset: int = 0.0
+) -> QubitOperator:
     """Converts a MAXCUT instance, as described by a weighted graph, to an Ising
     Hamiltonian. It allows for different convention in the choice of the
     Hamiltonian.
@@ -52,19 +54,26 @@ def get_maxcut_hamiltonian(graph: nx.Graph) -> QubitOperator:
     (https://arxiv.org/pdf/1411.4028.pdf).
 
     Args:
-        graph: undirected weighted graph that we needs to be solved
+        graph: undirected weighted graph defining the problem
+        scale_factor: constant by which all the coefficients in the Hamiltonian will be multiplied
+        offset: coefficient of the constant term added to the Hamiltonian to shift its energy levels
 
     Returns:
         operator describing the Hamiltonian
 
     """
-    return get_hamiltonian_for_problem(
+    hamiltonian = get_hamiltonian_for_problem(
         graph=graph, qiskit_operator_getter=max_cut.get_operator
     )
+    return hamiltonian * scale_factor + offset
 
 
 def evaluate_maxcut_solution(solution: List[int], graph: nx.Graph) -> float:
     """Compute the Cut given a partition of the nodes.
+    In the convention we assumed, values of the cuts are negative
+    to frame the problem as a minimization problem.
+    So for a linear graph 0--1--2 with weights all equal 1, and the solution [0,1,0],
+    the returned value will be equal to -2.
 
     Args:
         solution: list[0,1]
@@ -91,5 +100,5 @@ def solve_maxcut_by_exhaustive_search(graph: nx.Graph) -> Tuple[float, List[List
     """
 
     return solve_graph_problem_by_exhaustive_search(
-        graph, cost_function=evaluate_maxcut_solution, find_maximum=True
+        graph, cost_function=evaluate_maxcut_solution
     )

@@ -11,7 +11,9 @@ from ._problem_evaluation import (
 )
 
 
-def get_graph_partition_hamiltonian(graph: nx.Graph) -> QubitOperator:
+def get_graph_partition_hamiltonian(
+    graph: nx.Graph, scale_factor: int = 1.0, offset: int = 0.0
+) -> QubitOperator:
     """Construct a qubit operator with Hamiltonian for the graph partition problem.
 
     The returned Hamiltonian is consistent with the definitions from
@@ -20,10 +22,21 @@ def get_graph_partition_hamiltonian(graph: nx.Graph) -> QubitOperator:
 
     The operator's terms contain Pauli Z matrices applied to qubits. The qubit indices are
     based on graph node indices in the graph definition, not on the node names.
+
+    Args:
+        graph: undirected weighted graph defining the problem
+        scale_factor: constant by which all the coefficients in the Hamiltonian will be multiplied
+        offset: coefficient of the constant term added to the Hamiltonian to shift its energy levels
+
+    Returns:
+        operator describing the Hamiltonian
+
+
     """
-    return get_hamiltonian_for_problem(
+    hamiltonian = get_hamiltonian_for_problem(
         graph=graph, qiskit_operator_getter=graph_partition.get_operator
     )
+    return hamiltonian * scale_factor + offset
 
 
 def get_random_graph_partition_hamiltonians(
