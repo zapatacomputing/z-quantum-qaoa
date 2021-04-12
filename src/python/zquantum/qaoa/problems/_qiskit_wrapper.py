@@ -46,8 +46,10 @@ def get_hamiltonian_for_problem(
     )
 
     qiskit_operator, offset = qiskit_operator_getter(weight_matrix_in_qiskit_convention)
-
     openfermion_operator = qiskitpauli_to_qubitop(qiskit_operator)
+    # This removes all the coefficients close to 0, or its real or imag parts.
+    openfermion_operator.compress()
+
     # openfermion's QubitOperator doesn't store the offset, we also don't have any
     # other convenient place to keep track of it, so we're adding it as a free term.
     return openfermion_operator + _identity_operator(offset)

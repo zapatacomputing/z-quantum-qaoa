@@ -10,37 +10,6 @@ from ._problem_evaluation import (
 )
 from qiskit.optimization.applications.ising import max_cut
 from ._qiskit_wrapper import get_hamiltonian_for_problem
-from ._generators import get_random_hamiltonians_for_problem
-
-
-def get_random_maxcut_hamiltonians(
-    graph_specs: Dict,
-    number_of_instances: int,
-    possible_number_of_qubits: List[int],
-) -> List[QubitOperator]:
-    """Generates random maxcut hamiltonians based on the input graph description for a range
-    of number of qubits and a set number of instances.
-
-    Args:
-        graph_specs (dict): Specifications of the graph to generate. It should contain at
-            least an entry with key 'type_graph' (Note: 'num_nodes' key will be overwritten)
-        number_of_instances (int): The number of hamiltonians to generate
-        possible_number_of_qubits (List[int]): A list containing the number of
-            qubits in the hamiltonian. If it contains more than one value, then a
-            random value from the list will be picked to generate each instance.
-
-    Returns:
-        List of zquantum.core.qubitoperator.QubitOperator object describing the
-        Hamiltonians
-        H = \\sum_{<i,j>} w_{i,j} * scaling * (Z_i Z_j - shifted * I).
-
-    """
-    return get_random_hamiltonians_for_problem(
-        graph_specs,
-        number_of_instances,
-        possible_number_of_qubits,
-        get_maxcut_hamiltonian,
-    )
 
 
 def get_maxcut_hamiltonian(

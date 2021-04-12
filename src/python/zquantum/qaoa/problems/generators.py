@@ -10,6 +10,7 @@ def get_random_hamiltonians_for_problem(
     number_of_instances: int,
     possible_number_of_qubits: List[int],
     hamiltonian_generator: Callable[[nx.Graph], QubitOperator],
+    seed=None,
 ) -> List[QubitOperator]:
     """Generates Hamiltonians based on the input graph description for a range
     of number of qubits and a set number of instances.
@@ -23,6 +24,7 @@ def get_random_hamiltonians_for_problem(
             random value from the list will be picked to generate each instance.
         hamiltonian_generator: a function that will generate a Hamiltonian
             for a given problem based on the input graph.
+        seed: seed for random number generator
 
     Returns:
         List of zquantum.core.qubitoperator.QubitOperator object describing the
@@ -30,6 +32,8 @@ def get_random_hamiltonians_for_problem(
         H = \\sum_{<i,j>} w_{i,j} * scaling * (Z_i Z_j - shifted * I).
 
     """
+    if seed is not None:
+        np.random.seed(seed)
     if "type_graph" not in graph_specs.keys():
         raise ValueError("graph_specs should contain type_graph field.")
     hamiltonians = []
