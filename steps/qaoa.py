@@ -1,4 +1,8 @@
-from zquantum.qaoa.problems import maxcut, partition
+from zquantum.qaoa.problems import (
+    get_maxcut_hamiltonian,
+    get_graph_partition_hamiltonian,
+    get_random_hamiltonians_for_problem,
+)
 from zquantum.qaoa.ansatzes import farhi_ansatz, warm_start_ansatz
 from zquantum.core.circuit import save_circuit, save_circuit_set
 from zquantum.core.graph import load_graph
@@ -18,12 +22,8 @@ def get_random_maxcut_hamiltonians(
     graph_specs, number_of_instances, number_of_qubits, shifted=False, scaling=1.0
 ):
     graph_specs_dict = json.loads(graph_specs)
-    hamiltonians = maxcut.get_random_maxcut_hamiltonians(
-        graph_specs_dict,
-        number_of_instances,
-        number_of_qubits,
-        shifted=shifted,
-        scaling=scaling,
+    hamiltonians = get_random_hamiltonians_for_problem(
+        graph_specs_dict, number_of_instances, number_of_qubits, get_maxcut_hamiltonian
     )
     save_qubit_operator_set(hamiltonians, "hamiltonians.json")
 
@@ -48,17 +48,19 @@ def create_farhi_qaoa_circuits(
     save_circuit_set(circuits, "circuits.json")
 
 
-def get_maxcut_hamiltonian(graph, scaling=1.0, shifted=False):
+def get_maxcut_hamiltonian(graph, scale_factor=1.0, offset=0.0):
     graph_object = load_graph(graph)
-    hamiltonian = maxcut.get_maxcut_hamiltonian(
-        graph_object, scaling=scaling, shifted=shifted
+    hamiltonian = get_maxcut_hamiltonian(
+        graph_object, scale_factor=scale_factor, offset=offset
     )
     save_qubit_operator(hamiltonian, "hamiltonian.json")
 
 
-def get_graph_partition_hamiltonian(graph):
+def get_graph_partition_hamiltonian(graph, scale_factor=1.0, offset=0.0):
     graph_object = load_graph(graph)
-    hamiltonian = partition.get_graph_partition_hamiltonian(graph_object)
+    hamiltonian = get_graph_partition_hamiltonian(
+        graph_object, scale_factor=scale_factor, offset=offset
+    )
     save_qubit_operator(hamiltonian, "hamiltonian.json")
 
 

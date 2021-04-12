@@ -37,7 +37,7 @@ def get_maxcut_hamiltonian(
     return hamiltonian * scale_factor + offset
 
 
-def evaluate_maxcut_solution(solution: List[int], graph: nx.Graph) -> float:
+def evaluate_maxcut_solution(solution: Tuple[int], graph: nx.Graph) -> float:
     """Compute the Cut given a partition of the nodes.
     In the convention we assumed, values of the cuts are negative
     to frame the problem as a minimization problem.
@@ -46,7 +46,7 @@ def evaluate_maxcut_solution(solution: List[int], graph: nx.Graph) -> float:
 
     Args:
         solution: list[0,1]
-            A list of 0-1 values indicating the partition of the nodes of a graph into two
+            A tuple of 0-1 values indicating the partition of the nodes of a graph into two
             separate sets.
         graph: networkx.Graph
             Input graph object.
@@ -57,7 +57,9 @@ def evaluate_maxcut_solution(solution: List[int], graph: nx.Graph) -> float:
     return evaluate_solution(solution, graph, get_maxcut_hamiltonian)
 
 
-def solve_maxcut_by_exhaustive_search(graph: nx.Graph) -> Tuple[float, List[Tuple[int]]]:
+def solve_maxcut_by_exhaustive_search(
+    graph: nx.Graph,
+) -> Tuple[float, List[Tuple[int]]]:
     """Brute-force solver for MAXCUT instances using exhaustive search.
     Args:
         graph (networkx.Graph): undirected weighted graph describing the MAXCUT

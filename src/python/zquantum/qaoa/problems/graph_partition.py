@@ -38,7 +38,7 @@ def get_graph_partition_hamiltonian(
     return hamiltonian * scale_factor + offset
 
 
-def evaluate_graph_partition_solution(solution: List[int], graph: nx.Graph) -> float:
+def evaluate_graph_partition_solution(solution: Tuple[int], graph: nx.Graph) -> float:
     """Evaluates a solution to a graph partition problem.
 
     Args:
