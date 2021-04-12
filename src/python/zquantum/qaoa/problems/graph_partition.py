@@ -53,14 +53,14 @@ def evaluate_graph_partition_solution(solution: List[int], graph: nx.Graph) -> f
 
 def solve_graph_partition_by_exhaustive_search(
     graph: nx.Graph,
-) -> Tuple[float, List[List[int]]]:
+) -> Tuple[float, List[Tuple[int]]]:
     """Brute-force solver for Graph Partition problem instances using exhaustive search.
     Args:
         graph (networkx.Graph): undirected weighted graph describing the problem.
         instance.
 
     Returns:
-        tuple: tuple whose first elements is the value of solution, and second is a list of lists
+        tuple: tuple whose first elements is the value of solution, and second is a list of tuples
             of bit strings that correspond to the solution(s).
     """
 

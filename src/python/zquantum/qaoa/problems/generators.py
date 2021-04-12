@@ -27,7 +27,7 @@ def get_random_hamiltonians_for_problem(
         seed: seed for random number generator
 
     Returns:
-        List of zquantum.core.qubitoperator.QubitOperator object describing the
+        List of openfermion.QubitOperator object describing the
         Hamiltonians
         H = \\sum_{<i,j>} w_{i,j} * scaling * (Z_i Z_j - shifted * I).
 

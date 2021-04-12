@@ -57,14 +57,14 @@ def evaluate_maxcut_solution(solution: List[int], graph: nx.Graph) -> float:
     return evaluate_solution(solution, graph, get_maxcut_hamiltonian)
 
 
-def solve_maxcut_by_exhaustive_search(graph: nx.Graph) -> Tuple[float, List[List[int]]]:
+def solve_maxcut_by_exhaustive_search(graph: nx.Graph) -> Tuple[float, List[Tuple[int]]]:
     """Brute-force solver for MAXCUT instances using exhaustive search.
     Args:
         graph (networkx.Graph): undirected weighted graph describing the MAXCUT
         instance.
 
     Returns:
-        tuple: tuple whose first elements is the number of cuts, and second is a list
+        tuple: tuple whose first elements is the number of cuts, and second is a tuple
             of bit strings that correspond to the solution(s).
     """
 

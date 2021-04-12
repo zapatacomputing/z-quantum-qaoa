@@ -24,7 +24,7 @@ def solve_graph_problem_by_exhaustive_search(
 
     Returns:
         float: value of the best solution
-        List[List[int]]: list of solutions which correspond to the best value, each solution is a list of ints.
+        List[Tuple[int]]: list of solutions which correspond to the best value, each solution is a tuple of ints.
     """
     solutions_list = []
     num_nodes = len(graph.nodes)
