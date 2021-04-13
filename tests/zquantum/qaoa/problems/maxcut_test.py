@@ -12,7 +12,7 @@ import networkx as nx
 import pytest
 import copy
 
-from ._helpers import make_graph, graph_node_index
+from ._helpers import make_graph
 
 
 MONOTONIC_GRAPH_OPERATOR_TERM_PAIRS = [
@@ -131,7 +131,7 @@ GRAPH_BEST_SOLUTIONS_COST_LIST = [
 ]
 
 
-class TestGetGraphPartitionHamiltonian:
+class TestGetMaxcutHamiltonian:
     @pytest.mark.parametrize(
         "graph,terms",
         [
@@ -152,7 +152,7 @@ class TestGetGraphPartitionHamiltonian:
         assert qubit_operator.terms == terms
 
 
-class TestEvaluateGraphPartitionSolution:
+class TestEvaluateMaxcutSolution:
     @pytest.mark.parametrize("graph,solution,target_value", [*GRAPH_SOLUTION_COST_LIST])
     def test_evaluate_maxcut_solution(self, graph, solution, target_value):
         value = evaluate_maxcut_solution(solution, graph)
@@ -176,7 +176,7 @@ class TestEvaluateGraphPartitionSolution:
                 _ = evaluate_maxcut_solution(invalid_solution, graph)
 
 
-class TestSolveGraphPartitionByExhaustiveSearch:
+class TestSolveMaxcutByExhaustiveSearch:
     @pytest.mark.parametrize(
         "graph,target_solutions,target_value", [*GRAPH_BEST_SOLUTIONS_COST_LIST]
     )
