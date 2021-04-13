@@ -95,8 +95,6 @@ steps:
   inputs:
   - qubo: ((ising-hamiltonian-to-qubo.qubo))
     type: qubo
-  - epsilon: 0.5
-    type: float
   - optimizer_specs:
       module_name: zquantum.optimizers.scipy_optimizer
       function_name: ScipyOptimizer
