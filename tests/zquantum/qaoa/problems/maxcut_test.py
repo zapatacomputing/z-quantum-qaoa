@@ -1,149 +1,188 @@
 import networkx as nx
 
 from openfermion import QubitOperator
-from openfermion.utils import count_qubits
 from zquantum.qaoa.problems.maxcut import (
     get_maxcut_hamiltonian,
-    get_solution_cut_size,
+    evaluate_maxcut_solution,
     solve_maxcut_by_exhaustive_search,
-    get_random_maxcut_hamiltonians,
 )
 
 
-class TestMaxcut:
-    def test_get_maxcut_hamiltonian(self):
-        # Given
-        graph = nx.Graph()
-        graph.add_edge(1, 2, weight=0.4)
-        graph.add_edge(2, 3, weight=-0.1)
-        graph.add_edge(1, 3, weight=0.2)
-        target_hamiltonian = (
-            0.4 * QubitOperator("Z0 Z1")
-            - 0.1 * QubitOperator("Z1 Z2")
-            + 0.2 * QubitOperator("Z0 Z2")
-        )
+import networkx as nx
+import pytest
+import copy
 
-        # When
-        hamiltonian = get_maxcut_hamiltonian(graph)
+from ._helpers import make_graph, graph_node_index
 
-        # Then
-        assert hamiltonian == target_hamiltonian
 
-    def test_get_maxcut_hamiltonian_scaled_and_shifted(self):
-        # Given
-        graph = nx.Graph()
-        graph.add_edge(1, 2, weight=0.4)
-        graph.add_edge(2, 3, weight=-0.1)
-        graph.add_edge(1, 3, weight=0.2)
-        target_hamiltonian = (
-            0.4 / 2 * QubitOperator("Z0 Z1")
-            - 0.1 / 2 * QubitOperator("Z1 Z2")
-            + 0.2 / 2 * QubitOperator("Z0 Z2")
-            - (0.4 - 0.1 + 0.2) / 2 * QubitOperator("")
-        )
+MONOTONIC_GRAPH_OPERATOR_TERM_PAIRS = [
+    (
+        make_graph(node_ids=range(2), edges=[(0, 1)]),
+        {
+            (): -0.5,
+            ((0, "Z"), (1, "Z")): 0.5,
+        },
+    ),
+    (
+        make_graph(node_ids=range(3), edges=[(0, 1), (0, 2)]),
+        {
+            (): -1,
+            ((0, "Z"), (1, "Z")): 0.5,
+            ((0, "Z"), (2, "Z")): 0.5,
+        },
+    ),
+    (
+        make_graph(
+            node_ids=range(4), edges=[(0, 1, 1), (0, 2, 2), (0, 3, 3)], use_weights=True
+        ),
+        {
+            (): -3,
+            ((0, "Z"), (1, "Z")): 0.5,
+            ((0, "Z"), (2, "Z")): 1,
+            ((0, "Z"), (3, "Z")): 1.5,
+        },
+    ),
+    (
+        make_graph(node_ids=range(5), edges=[(0, 1), (1, 2), (3, 4)]),
+        {
+            (): -1.5,
+            ((0, "Z"), (1, "Z")): 0.5,
+            ((1, "Z"), (2, "Z")): 0.5,
+            ((3, "Z"), (4, "Z")): 0.5,
+        },
+    ),
+]
 
-        # When
-        hamiltonian = get_maxcut_hamiltonian(graph, scaling=0.5, shifted=True)
+GRAPH_OPERATOR_TERM_SCALING_OFFSET_LIST = [
+    (
+        make_graph(
+            node_ids=range(4),
+            edges=[(0, 1, 1), (0, 2, 2), (0, 3, 3)],
+            use_weights=True,
+        ),
+        {
+            (): 1,
+            ((0, "Z"), (1, "Z")): 1,
+            ((0, "Z"), (2, "Z")): 2,
+            ((0, "Z"), (3, "Z")): 3,
+        },
+        2.0,
+        7.0,
+    ),
+]
 
-        # Then
-        assert hamiltonian == target_hamiltonian
+NONMONOTONIC_GRAPH_OPERATOR_TERM_PAIRS = [
+    (
+        make_graph(node_ids=[4, 2], edges=[(2, 4)]),
+        {
+            (): -0.5,
+            ((0, "Z"), (1, "Z")): 0.5,
+        },
+    ),
+    (
+        make_graph(node_ids="CBA", edges=[("C", "B"), ("C", "A")]),
+        {
+            (): -1,
+            ((0, "Z"), (1, "Z")): 0.5,  # the C-B edge
+            ((0, "Z"), (2, "Z")): 0.5,  # the C-A edge
+        },
+    ),
+]
 
-    def test_get_maxcut_hamiltonian_l1normalized(self):
-        # Given
-        graph = nx.Graph()
-        graph.add_edge(1, 2, weight=0.4)
-        graph.add_edge(2, 3, weight=-0.1)
-        graph.add_edge(1, 3, weight=0.2)
-        target_hamiltonian = (
-            0.4 / 0.7 * QubitOperator("Z0 Z1")
-            - 0.1 / 0.7 * QubitOperator("Z1 Z2")
-            + 0.2 / 0.7 * QubitOperator("Z0 Z2")
-        )
+GRAPH_SOLUTION_COST_LIST = [
+    (make_graph(node_ids=range(2), edges=[(0, 1)]), [0, 0], 0),
+    (make_graph(node_ids=range(2), edges=[(0, 1)]), [0, 1], -1),
+    (
+        make_graph(
+            node_ids=range(4), edges=[(0, 1, 1), (0, 2, 2), (0, 3, 3)], use_weights=True
+        ),
+        [1, 0, 0, 0],
+        -6,
+    ),
+    (make_graph(node_ids=range(4), edges=[(0, 1), (0, 2), (0, 3)]), [0, 0, 1, 1], -2),
+    (make_graph(node_ids=range(4), edges=[(0, 1), (0, 2), (0, 3)]), [0, 1, 1, 1], -3),
+    (
+        make_graph(node_ids=range(5), edges=[(0, 1), (1, 2), (3, 4)]),
+        [1, 1, 1, 1, 1],
+        0,
+    ),
+]
 
-        # When
-        hamiltonian = get_maxcut_hamiltonian(graph, l1_normalized=True)
+GRAPH_BEST_SOLUTIONS_COST_LIST = [
+    (make_graph(node_ids=range(2), edges=[(0, 1)]), [(0, 1), (1, 0)], -1),
+    (
+        make_graph(node_ids=range(3), edges=[(0, 1), (0, 2)]),
+        [(0, 1, 1), (1, 0, 0)],
+        -2,
+    ),
+    (
+        make_graph(node_ids=range(4), edges=[(0, 1), (0, 2), (0, 3)]),
+        [
+            (0, 1, 1, 1),
+            (1, 0, 0, 0),
+        ],
+        -3,
+    ),
+    (
+        make_graph(node_ids=range(5), edges=[(0, 1), (1, 2), (3, 4)]),
+        [(0, 1, 0, 0, 1), (0, 1, 0, 1, 0), (1, 0, 1, 0, 1), (1, 0, 1, 1, 0)],
+        -3,
+    ),
+]
 
-        # Then
-        assert hamiltonian == target_hamiltonian
 
-    def test_no_edge_l1normalized(self):
-        # Given
-        graph = nx.Graph()
-        target_hamiltonian = QubitOperator()
+class TestGetGraphPartitionHamiltonian:
+    @pytest.mark.parametrize(
+        "graph,terms",
+        [
+            *MONOTONIC_GRAPH_OPERATOR_TERM_PAIRS,
+            *NONMONOTONIC_GRAPH_OPERATOR_TERM_PAIRS,
+        ],
+    )
+    def test_returns_expected_terms(self, graph, terms):
+        qubit_operator = get_maxcut_hamiltonian(graph)
+        assert qubit_operator.terms == terms
 
-        # When
-        hamiltonian = get_maxcut_hamiltonian(graph, l1_normalized=True)
+    @pytest.mark.parametrize(
+        "graph,terms,scale_factor,offset",
+        [*GRAPH_OPERATOR_TERM_SCALING_OFFSET_LIST],
+    )
+    def test_scaling_and_offset_works(self, graph, terms, scale_factor, offset):
+        qubit_operator = get_maxcut_hamiltonian(graph, scale_factor, offset)
+        assert qubit_operator.terms == terms
 
-        # Then
-        assert hamiltonian == target_hamiltonian
 
-    def test_maxcut_exhaustive_solution(self):
-        # Given
-        graph = nx.Graph()
-        graph.add_edge(1, 2, weight=1)
-        graph.add_edge(1, 3, weight=1)
-        graph.add_edge(2, 3, weight=1)
-        graph.add_edge(2, 4, weight=1)
-        graph.add_edge(3, 5, weight=1)
-        graph.add_edge(4, 5, weight=1)
-        # When
-        maxcut, solution_set = solve_maxcut_by_exhaustive_search(graph)
-        # Then
-        assert maxcut == 5
-        for solution in solution_set:
-            cut_size = get_solution_cut_size(solution, graph)
-            assert cut_size == 5
+class TestEvaluateGraphPartitionSolution:
+    @pytest.mark.parametrize("graph,solution,target_value", [*GRAPH_SOLUTION_COST_LIST])
+    def test_evaluate_maxcut_solution(self, graph, solution, target_value):
+        value = evaluate_maxcut_solution(solution, graph)
+        assert value == target_value
 
-    def test_get_solution_cut_size(self):
-        # Given
-        solution_1 = [0, 0, 0, 0, 0]
-        solution_2 = [0, 1, 1, 1, 1]
-        solution_3 = [0, 0, 1, 0, 1]
-        graph = nx.Graph()
-        graph.add_edge(1, 2, weight=1)
-        graph.add_edge(1, 3, weight=1)
-        graph.add_edge(2, 3, weight=1)
-        graph.add_edge(2, 4, weight=1)
-        graph.add_edge(3, 5, weight=1)
-        graph.add_edge(4, 5, weight=1)
+    @pytest.mark.parametrize("graph,solution,target_value", [*GRAPH_SOLUTION_COST_LIST])
+    def test_evaluate_maxcut_solution_with_invalid_input(
+        self, graph, solution, target_value
+    ):
+        too_long_solution = solution + [1]
+        too_short_solution = solution[:-1]
+        invalid_value_solution = copy.copy(solution)
+        invalid_value_solution[0] = -1
+        invalid_solutions = [
+            too_long_solution,
+            too_short_solution,
+            invalid_value_solution,
+        ]
+        for invalid_solution in invalid_solutions:
+            with pytest.raises(ValueError):
+                _ = evaluate_maxcut_solution(invalid_solution, graph)
 
-        # When
-        cut_size_1 = get_solution_cut_size(solution_1, graph)
-        cut_size_2 = get_solution_cut_size(solution_2, graph)
-        cut_size_3 = get_solution_cut_size(solution_3, graph)
 
-        # Then
-        assert cut_size_1 == 0
-        assert cut_size_2 == 2
-        assert cut_size_3 == 3
-
-    def test_get_random_maxcut_hamiltonians_num_instances(self):
-        # Given
-        graph_specs = {"type_graph": "complete"}
-        number_of_instances_list = [0, 1, 10]
-        number_of_qubits = 4
-
-        # When
-        for number_of_instances in number_of_instances_list:
-            hamiltonians = get_random_maxcut_hamiltonians(
-                graph_specs, number_of_instances, number_of_qubits
-            )
-
-            # Then
-            assert len(hamiltonians) == number_of_instances
-
-    def test_get_random_maxcut_hamiltonians_num_qubits_is_in_range(self):
-        # Given
-        graph_specs = {"type_graph": "complete"}
-        number_of_instances = 10
-        list_possible_number_of_qubits = [[2, 3, 4], [2, 8]]
-
-        # When
-        for possible_number_of_qubits in list_possible_number_of_qubits:
-            hamiltonians = get_random_maxcut_hamiltonians(
-                graph_specs, number_of_instances, possible_number_of_qubits
-            )
-
-            # Then
-            for hamiltonian in hamiltonians:
-                assert count_qubits(hamiltonian) in possible_number_of_qubits
+class TestSolveGraphPartitionByExhaustiveSearch:
+    @pytest.mark.parametrize(
+        "graph,target_solutions,target_value", [*GRAPH_BEST_SOLUTIONS_COST_LIST]
+    )
+    def test_solve_maxcut_by_exhaustive_search(
+        self, graph, target_solutions, target_value
+    ):
+        value, solutions = solve_maxcut_by_exhaustive_search(graph)
+        assert set(solutions) == set(target_solutions)
+        assert value == target_value

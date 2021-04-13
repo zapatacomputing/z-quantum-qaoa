@@ -1,147 +1,75 @@
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 import numpy as np
 import networkx as nx
 from openfermion import QubitOperator
 from zquantum.core.utils import dec2bin
-from zquantum.core.graph import generate_graph_node_dict, generate_graph_from_specs
-
-
-def get_random_maxcut_hamiltonians(
-    graph_specs: Dict,
-    number_of_instances: int,
-    possible_number_of_qubits: List[int],
-    **kwargs
-):
-    """Generates random maxcut hamiltonians based on the input graph description for a range
-    of number of qubits and a set number of instances.
-
-    Args:
-        graph_specs (dict): Specifications of the graph to generate. It should contain at
-            least an entry with key 'type_graph' (Note: 'num_nodes' key will be overwritten)
-        number_of_instances (int): The number of hamiltonians to generate
-        possible_number_of_qubits (List[int]): A list containing the number of
-            qubits in the hamiltonian. If it contains more than one value, then a
-            random value from the list will be picked to generate each instance.
-
-    Returns:
-        List of zquantum.core.qubitoperator.QubitOperator object describing the
-        Hamiltonians
-        H = \\sum_{<i,j>} w_{i,j} * scaling * (Z_i Z_j - shifted * I).
-
-    """
-    hamiltonians = []
-    for _ in range(number_of_instances):
-        graph_specs["num_nodes"] = np.random.choice(possible_number_of_qubits)
-        graph = generate_graph_from_specs(graph_specs)
-
-        hamiltonian = get_maxcut_hamiltonian(graph, **kwargs)
-        hamiltonians.append(hamiltonian)
-
-    return hamiltonians
+from ._problem_evaluation import (
+    solve_graph_problem_by_exhaustive_search,
+    evaluate_solution,
+)
+from qiskit.optimization.applications.ising import max_cut
+from ._qiskit_wrapper import get_hamiltonian_for_problem
 
 
 def get_maxcut_hamiltonian(
-    graph: nx.Graph,
-    scaling: float = 1.0,
-    shifted: bool = False,
-    l1_normalized: bool = False,
+    graph: nx.Graph, scale_factor: int = 1.0, offset: int = 0.0
 ) -> QubitOperator:
     """Converts a MAXCUT instance, as described by a weighted graph, to an Ising
     Hamiltonian. It allows for different convention in the choice of the
     Hamiltonian.
+    The returned Hamiltonian is consistent with the definitions from
+    "A Quantum Approximate Optimization Algorithm" by E. Farhi, eq. 12
+    (https://arxiv.org/pdf/1411.4028.pdf).
 
     Args:
-        graph: undirected weighted graph describing the MAXCUT
-        instance.
-        scaling: scaling of the terms of the Hamiltonian
-        shifted: if True include a shift. Default: False
-        l1_normalized: normalize the operator using the l1_norm = \\sum |w|
+        graph: undirected weighted graph defining the problem
+        scale_factor: constant by which all the coefficients in the Hamiltonian will be multiplied
+        offset: coefficient of the constant term added to the Hamiltonian to shift its energy levels
 
     Returns:
         operator describing the Hamiltonian
-        H = \\sum_{<i,j>} w_{i,j} * scaling * (Z_i Z_j - shifted * I)
-        or H_norm = H / l1_norm if l1_normalized is True.
 
     """
-
-    output = QubitOperator()
-
-    nodes_dict = generate_graph_node_dict(graph)
-
-    l1_norm = 0
-    for edge in graph.edges:
-        coeff = graph.edges[edge[0], edge[1]]["weight"] * scaling
-        l1_norm += np.abs(coeff)
-        node_index1 = nodes_dict[edge[0]]
-        node_index2 = nodes_dict[edge[1]]
-        ZZ_term_str = "Z" + str(node_index1) + " Z" + str(node_index2)
-        output += QubitOperator(ZZ_term_str, coeff)
-        if shifted:
-            output += QubitOperator("", -coeff)  # constant term, i.e I
-    if l1_normalized and (l1_norm > 0):
-        output /= l1_norm
-    return output
+    hamiltonian = get_hamiltonian_for_problem(
+        graph=graph, qiskit_operator_getter=max_cut.get_operator
+    )
+    return hamiltonian * scale_factor + offset
 
 
-def get_solution_cut_size(solution, graph):
+def evaluate_maxcut_solution(solution: Tuple[int], graph: nx.Graph) -> float:
     """Compute the Cut given a partition of the nodes.
+    In the convention we assumed, values of the cuts are negative
+    to frame the problem as a minimization problem.
+    So for a linear graph 0--1--2 with weights all equal 1, and the solution [0,1,0],
+    the returned value will be equal to -2.
 
     Args:
         solution: list[0,1]
-            A list of 0-1 values indicating the partition of the nodes of a graph into two
+            A tuple of 0-1 values indicating the partition of the nodes of a graph into two
             separate sets.
         graph: networkx.Graph
             Input graph object.
+    Returns:
+        float
     """
 
-    if len(solution) != len(graph.nodes):
-        raise Exception(
-            "trial solution size is {}, which does not match graph size which is {}".format(
-                len(solution), len(graph.nodes)
-            )
-        )
-
-    cut_size = 0
-    node_dict = generate_graph_node_dict(graph)
-    for edge in graph.edges:
-        node_index1 = node_dict[edge[0]]
-        node_index2 = node_dict[edge[1]]
-        if solution[node_index1] != solution[node_index2]:
-            cut_size += 1
-    return cut_size
+    return evaluate_solution(solution, graph, get_maxcut_hamiltonian)
 
 
-def solve_maxcut_by_exhaustive_search(graph):
+def solve_maxcut_by_exhaustive_search(
+    graph: nx.Graph,
+) -> Tuple[float, List[Tuple[int]]]:
     """Brute-force solver for MAXCUT instances using exhaustive search.
     Args:
         graph (networkx.Graph): undirected weighted graph describing the MAXCUT
         instance.
 
     Returns:
-        tuple: tuple whose first elements is the number of cuts, and second is a list
+        tuple: tuple whose first elements is the number of cuts, and second is a tuple
             of bit strings that correspond to the solution(s).
     """
 
-    solution_set = []
-    num_nodes = len(graph.nodes)
-
-    # find one MAXCUT solution
-    maxcut = -1
-    one_maxcut_solution = None
-    for i in range(0, 2 ** num_nodes):
-        trial_solution = dec2bin(i, num_nodes)
-        current_cut = get_solution_cut_size(trial_solution, graph)
-        if current_cut > maxcut:
-            one_maxcut_solution = trial_solution
-            maxcut = current_cut
-    solution_set.append(one_maxcut_solution)
-
-    # search again to pick up any degeneracies
-    for i in range(0, 2 ** num_nodes):
-        trial_solution = dec2bin(i, num_nodes)
-        current_cut = get_solution_cut_size(trial_solution, graph)
-        if current_cut == maxcut and trial_solution != one_maxcut_solution:
-            solution_set.append(trial_solution)
-
-    return maxcut, solution_set
+    return solve_graph_problem_by_exhaustive_search(
+        graph, cost_function=evaluate_maxcut_solution
+    )
