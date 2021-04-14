@@ -172,11 +172,10 @@ class TestGetStableSetHamiltonian:
         expected_constant_term = 0
 
         qubit_operator = get_stable_set_hamiltonian(graph)
-        for vertex_id1, vertex_id2 in graph.edges:
+        for _ in graph.edges:
             expected_constant_term += 1 / 2
 
-        for vertex in graph.nodes:
-            expected_constant_term -= len(graph.nodes) / 2
+        expected_constant_term -= len(graph.nodes) / 2
 
         assert qubit_operator.terms[()] == expected_constant_term
 
