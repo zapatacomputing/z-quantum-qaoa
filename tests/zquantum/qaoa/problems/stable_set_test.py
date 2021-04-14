@@ -89,44 +89,43 @@ GRAPH_EXAMPLES = [
     ),
 ]
 
-
 GRAPH_SOLUTION_COST_LIST = [
-    (make_graph(node_ids=range(2), edges=[(0, 1)]), [0, 0], 2),
-    (make_graph(node_ids=range(2), edges=[(0, 1)]), [0, 1], 1),
+    (make_graph(node_ids=range(2), edges=[(0, 1)]), [0, 0], 0),
+    (make_graph(node_ids=range(2), edges=[(0, 1)]), [0, 1], -1),
     (
         make_graph(
             node_ids=range(4), edges=[(0, 1, 1), (0, 2, 2), (0, 3, 3)], use_weights=True
         ),
         [1, 0, 0, 0],
-        3,
+        -1,
     ),
-    (make_graph(node_ids=range(4), edges=[(0, 1), (0, 2), (0, 3)]), [0, 0, 1, 1], 2),
-    (make_graph(node_ids=range(4), edges=[(0, 1), (0, 2), (0, 3)]), [0, 1, 1, 1], 1),
+    (make_graph(node_ids=range(4), edges=[(0, 1), (0, 2), (0, 3)]), [0, 0, 1, 1], -2),
+    (make_graph(node_ids=range(4), edges=[(0, 1), (0, 2), (0, 3)]), [0, 1, 1, 1], -3),
     (
         make_graph(node_ids=range(5), edges=[(0, 1), (1, 2), (3, 4)]),
         [1, 1, 1, 1, 1],
-        15,
+        1,
     ),
 ]
 
 GRAPH_BEST_SOLUTIONS_COST_LIST = [
-    (make_graph(node_ids=range(2), edges=[(0, 1)]), [(0, 1), (1, 0)], 1),
+    (make_graph(node_ids=range(2), edges=[(0, 1)]), [(0, 1), (1, 0)], -1),
     (
         make_graph(node_ids=range(3), edges=[(0, 1), (0, 2)]),
         [(0, 1, 1)],
-        1,
+        -2,
     ),
     (
         make_graph(node_ids=range(4), edges=[(0, 1), (0, 2), (0, 3)]),
         [
             (0, 1, 1, 1),
         ],
-        1,
+        -3,
     ),
     (
         make_graph(node_ids=range(5), edges=[(0, 1), (1, 2), (3, 4)]),
         [(1, 0, 1, 0, 1), (1, 0, 1, 1, 0)],
-        2,
+        -3,
     ),
 ]
 
