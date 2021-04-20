@@ -27,7 +27,7 @@ class CvarEstimator(EstimateExpectationValues):
 
     def __call__(
         self, backend: QuantumBackend, estimation_tasks: List[EstimationTask]
-    ) -> ExpectationValues:
+    ) -> List[ExpectationValues]:
         """Given a circuit, backend, and target operators, this method produces expectation values
         using CVaR algorithm.
         TODO
@@ -55,16 +55,16 @@ class CvarEstimator(EstimateExpectationValues):
             for circuit, n_shots in zip(circuits, shots_per_circuit)
         ]
 
-        return ExpectationValues(
-            np.array(
-                [
+        return [
+            ExpectationValues(
+                np.array(
                     _calculate_expectation_value_for_distribution(
                         distribution, operator, self.alpha
                     )
-                    for distribution, operator in zip(distributions_list, operators)
-                ]
+                )
             )
-        )
+            for distribution, operator in zip(distributions_list, operators)
+        ]
 
 
 def _calculate_expectation_value_for_distribution(distribution, operator, alpha):

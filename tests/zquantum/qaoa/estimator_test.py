@@ -1,14 +1,13 @@
 import pytest
 from pyquil import Program
 from pyquil.gates import X, H
-from openfermion import QubitOperator, qubit_operator_sparse, IsingOperator
+from openfermion import QubitOperator, IsingOperator
 
-from zquantum.core.interfaces.estimator_test import EstimatorTests
 from zquantum.core.interfaces.mock_objects import (
     MockQuantumBackend,
 )
 from zquantum.core.circuit import Circuit
-from zquantum.core.measurement import Measurements, ExpectationValues
+from zquantum.core.measurement import Measurements
 from zquantum.qaoa.estimators import CvarEstimator
 
 from zquantum.core.wip.estimators.estimation_interface import EstimationTask
@@ -41,14 +40,6 @@ class TestCvarEstimator:
 
         backend.run_circuit_and_measure = custom_run_circuit_and_measure
         return backend
-
-    def test_returns_expectation_values(self, estimator, backend, estimation_tasks):
-        value = estimator(
-            backend=backend,
-            estimation_tasks=estimation_tasks,
-        )
-        # Then
-        assert type(value) is ExpectationValues
 
     def test_raises_exception_if_operator_is_not_ising(
         self, estimator, backend, circuit
@@ -90,10 +81,11 @@ class TestCvarEstimator:
             target_value = (-1 * 0.5 + 1 * (estimator.alpha - 0.5)) / estimator.alpha
 
         # When
-        value = estimator(
+        expectation_values = estimator(
             backend=backend,
             estimation_tasks=estimation_tasks,
-        ).values
+        )
 
         # Then
-        assert value == pytest.approx(target_value)
+        assert len(expectation_values) == len(estimation_tasks)
+        assert expectation_values[0].values == pytest.approx(target_value)
