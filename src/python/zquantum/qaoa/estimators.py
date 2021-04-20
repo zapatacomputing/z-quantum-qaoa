@@ -1,15 +1,16 @@
 import numpy as np
 from openfermion import IsingOperator
-from typing import Optional
-from overrides import overrides
+from typing import List
 
-from zquantum.core.circuit import Circuit
-from zquantum.core.interfaces.backend import QuantumBackend, QuantumSimulator
+from zquantum.core.interfaces.backend import QuantumBackend
 from zquantum.core.measurement import ExpectationValues, Measurements
-from zquantum.core.interfaces.estimator import Estimator
+from zquantum.core.wip.estimators.estimation_interface import (
+    EstimateExpectationValues,
+    EstimationTask,
+)
 
 
-class CvarEstimator(Estimator):
+class CvarEstimator(EstimateExpectationValues):
     """An estimator for calculating expectation value using CVaR method.
     The main idea is that for diagonal operators the ground state of the Hamiltonian is a base state.
     In particular for the combinatorial optimization problems, we care only about getting a single bitstring representing the solution.
@@ -20,18 +21,16 @@ class CvarEstimator(Estimator):
     "Improving Variational Quantum Optimization using CVaR", P. Barkoutsos, G. Nannicini, A. Robert, I. Tavernelli, and S. Woerner
     """
 
-    @overrides
-    def get_estimated_expectation_values(
-        self,
-        backend: QuantumBackend,
-        circuit: Circuit,
-        target_operator: IsingOperator,
-        alpha: float,
-        n_samples: Optional[int] = None,
+    def __init__(self, alpha: float) -> None:
+        super().__init__()
+        self.alpha = alpha
+
+    def __call__(
+        self, backend: QuantumBackend, estimation_tasks: List[EstimationTask]
     ) -> ExpectationValues:
         """Given a circuit, backend, and target operators, this method produces expectation values
         using CVaR algorithm.
-
+        TODO
         Args:
             backend (QuantumBackend): the backend that will be used to run the circuit
             circuit (Circuit): the circuit that prepares the state.
@@ -45,35 +44,49 @@ class CvarEstimator(Estimator):
         Returns:
             ExpectationValues: expectation values for each term in the target operator.
         """
-        if alpha > 1 or alpha <= 0:
+        if self.alpha > 1 or self.alpha <= 0:
             raise ValueError("alpha needs to be a value between 0 and 1.")
 
-        if not isinstance(target_operator, IsingOperator):
-            raise TypeError("Operator should be of type IsingOperator.")
+        circuits, operators, shots_per_circuit = zip(
+            *[(e.circuit, e.operator, e.number_of_shots) for e in estimation_tasks]
+        )
+        distributions_list = [
+            backend.get_bitstring_distribution(circuit, n_samples=n_shots)
+            for circuit, n_shots in zip(circuits, shots_per_circuit)
+        ]
 
-        distribution = backend.get_bitstring_distribution(circuit, n_samples=n_samples)
-        expected_values_per_bitstring = {}
-
-        for bitstring in distribution.distribution_dict:
-            expected_value = Measurements(bitstring).get_expectation_values(
-                target_operator
+        return ExpectationValues(
+            np.array(
+                [
+                    _calculate_expectation_value_for_distribution(
+                        distribution, operator, self.alpha
+                    )
+                    for distribution, operator in zip(distributions_list, operators)
+                ]
             )
-            expected_values_per_bitstring[bitstring] = expected_value.values[0]
-
-        sorted_expected_values_per_bitstring_list = sorted(
-            expected_values_per_bitstring.items(), key=lambda item: item[1]
         )
 
-        cumulative_prob = 0.0
-        cumulative_value = 0.0
 
-        for bitstring, energy in sorted_expected_values_per_bitstring_list:
-            prob = distribution.distribution_dict[bitstring]
-            if cumulative_prob + prob < alpha:
-                cumulative_prob += prob
-                cumulative_value += prob * energy
-            else:
-                cumulative_value += (alpha - cumulative_prob) * energy
-                break
-        final_value = cumulative_value / alpha
-        return ExpectationValues(final_value)
+def _calculate_expectation_value_for_distribution(distribution, operator, alpha):
+    expected_values_per_bitstring = {}
+    for bitstring in distribution.distribution_dict:
+        expected_value = Measurements(bitstring).get_expectation_values(operator)
+        expected_values_per_bitstring[bitstring] = expected_value.values[0]
+
+    sorted_expected_values_per_bitstring_list = sorted(
+        expected_values_per_bitstring.items(), key=lambda item: item[1]
+    )
+
+    cumulative_prob = 0.0
+    cumulative_value = 0.0
+
+    for bitstring, energy in sorted_expected_values_per_bitstring_list:
+        prob = distribution.distribution_dict[bitstring]
+        if cumulative_prob + prob < alpha:
+            cumulative_prob += prob
+            cumulative_value += prob * energy
+        else:
+            cumulative_value += (alpha - cumulative_prob) * energy
+            break
+    final_value = cumulative_value / alpha
+    return final_value
