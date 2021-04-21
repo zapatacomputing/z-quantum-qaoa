@@ -4,6 +4,7 @@ from typing import List
 
 from zquantum.core.interfaces.backend import QuantumBackend
 from zquantum.core.measurement import ExpectationValues, Measurements
+from zquantum.core.bitstring_distribution import BitstringDistribution
 from zquantum.core.wip.estimators.estimation_interface import (
     EstimateExpectationValues,
     EstimationTask,
@@ -67,7 +68,9 @@ class CvarEstimator(EstimateExpectationValues):
         ]
 
 
-def _calculate_expectation_value_for_distribution(distribution, operator, alpha):
+def _calculate_expectation_value_for_distribution(
+    distribution: BitstringDistribution, operator: IsingOperator, alpha: float
+):
     expected_values_per_bitstring = {}
     for bitstring in distribution.distribution_dict:
         expected_value = Measurements(bitstring).get_expectation_values(operator)
