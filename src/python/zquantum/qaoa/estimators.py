@@ -62,7 +62,7 @@ class CvarEstimator(EstimateExpectationValues):
 
 def _calculate_expectation_value_for_distribution(
     distribution: BitstringDistribution, operator: IsingOperator, alpha: float
-):
+) -> float:
     # Calculates expectation value per bitstring
     expectation_values_per_bitstring = {}
     for bitstring in distribution.distribution_dict:
