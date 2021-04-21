@@ -74,7 +74,7 @@ def _calculate_expectation_value_for_distribution(
     expected_values_per_bitstring = {}
     for bitstring in distribution.distribution_dict:
         expected_value = Measurements(bitstring).get_expectation_values(operator)
-        expected_values_per_bitstring[bitstring] = expected_value.values[0]
+        expected_values_per_bitstring[bitstring] = np.sum(expected_value.values)
 
     sorted_expected_values_per_bitstring_list = sorted(
         expected_values_per_bitstring.items(), key=lambda item: item[1]
