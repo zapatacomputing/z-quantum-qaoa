@@ -8,7 +8,7 @@ from zquantum.core.interfaces.mock_objects import (
 )
 from zquantum.core.circuit import Circuit
 from zquantum.core.measurement import Measurements
-from zquantum.qaoa.estimators import CvarEstimator
+from zquantum.qaoa.wip.estimators import CvarEstimator
 
 from zquantum.core.wip.estimators.estimation_interface import EstimationTask
 
