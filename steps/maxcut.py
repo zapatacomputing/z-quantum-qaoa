@@ -30,7 +30,8 @@ from qiskit.optimization.applications.ising import (
     stable_set,
     vertex_cover,
 )
-
+import psutil
+import gc
 
 """
 The code below comes from Dariusz Lasecki's project:
@@ -133,6 +134,8 @@ def create_and_run_qaoa_for_graph_problem(
                 "bitstring-distribution.json",
                 f"bitstring-distribution-{graph_id}-{i}.json",
             )
+        print(str(psutil.virtual_memory()))
+        gc.collect()
 
     for graph_id in range(number_of_graphs):
         opt_results_list = {}
