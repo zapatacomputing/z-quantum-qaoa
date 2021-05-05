@@ -24,12 +24,12 @@ imports:
   type: git
   parameters:
     repository: "git@github.com:zapatacomputing/z-quantum-optimizers.git"
-    branch: "master"
+    branch: "177703113-switch-to-wip-estimators"
 - name: qe-qulacs
   type: git
   parameters:
     repository: "git@github.com:zapatacomputing/qe-qulacs.git"
-    branch: "master"
+    branch: "dev"
 
 steps:
 - name: generate-graph
@@ -176,9 +176,18 @@ steps:
   - cost_function_specs:
       module_name: zquantum.core.cost_function
       function_name: AnsatzBasedCostFunction
-      estimator-specs:
-        module_name: zquantum.core.estimator
-        function_name: ExactEstimator
+      estimation_method_specs:
+        module_name: zquantum.core.estimation
+        function_name: calculate_exact_expectation_values
+      estimation_preprocessors_specs:
+      - grouping: # This string is just for syntax and informative purposes
+        module_name: zquantum.core.estimation 
+        function_name: group_greedily_with_context_selection
+      - shot_allocation: # This string is just for syntax and informative purposes
+        module_name: zquantum.core.estimation 
+        function_name: allocate_shots_uniformly
+        number_of_shots: 10000
+
     type: specs
   - qubit_operator: ((get-maxcut-hamiltonian.hamiltonian))
     type: qubit-operator

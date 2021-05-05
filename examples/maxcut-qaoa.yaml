@@ -174,9 +174,9 @@ steps:
   - cost_function_specs:
       module_name: zquantum.core.cost_function
       function_name: AnsatzBasedCostFunction
-      estimator-specs:
-        module_name: zquantum.core.estimator
-        function_name: ExactEstimator
+      estimation_method_specs:
+        module_name: zquantum.core.estimation
+        function_name: calculate_exact_expectation_values
     type: specs
   - qubit_operator: ((get-maxcut-hamiltonian.hamiltonian))
     type: qubit-operator
