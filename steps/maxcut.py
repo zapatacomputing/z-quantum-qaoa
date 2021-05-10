@@ -113,17 +113,25 @@ def create_and_run_qaoa_for_graph_problem(
 
         for i in range(number_of_repeats):
             print("Repeat", i)
+            ansatz_specs_copy = copy.deepcopy(ansatz_specs)
+            backend_specs_copy = copy.deepcopy(backend_specs)
+            optimizer_specs_copy = copy.deepcopy(optimizer_specs)
+            cost_function_specs = copy.deepcopy(cost_function_specs)
             optimize_variational_circuit_with_layerwise_optimizer(
-                copy.deepcopy(ansatz_specs),
-                copy.deepcopy(backend_specs),
-                copy.deepcopy(optimizer_specs),
-                copy.deepcopy(cost_function_specs),
+                ansatz_specs_copy,
+                backend_specs_copy,
+                optimizer_specs_copy,
+                cost_function_specs,
                 qubit_operator,
                 min_layer,
                 max_layer,
                 params_min_values,
                 params_max_values,
             )
+            del ansatz_specs_copy
+            del backend_specs_copy
+            del optimizer_specs_copy
+            del cost_function_specs
             os.rename(
                 "optimization-results.json", f"optimization-results-{graph_id}-{i}.json"
             )
@@ -230,3 +238,11 @@ def optimize_variational_circuit_with_layerwise_optimizer(
     save_optimization_results(opt_results, "optimization-results.json")
     save_circuit_template_params(opt_results.opt_params, "optimized-parameters.json")
     save_bitstring_distribution(distribution, "bitstring-distribution.json")
+
+    del cost_function_specs_dict
+    del distribution
+    del opt_results
+    del lbl_optimizer
+    del cost_function
+    del ansatz
+    del backend
