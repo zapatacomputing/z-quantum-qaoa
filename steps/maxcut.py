@@ -116,12 +116,12 @@ def create_and_run_qaoa_for_graph_problem(
             ansatz_specs_copy = copy.deepcopy(ansatz_specs)
             backend_specs_copy = copy.deepcopy(backend_specs)
             optimizer_specs_copy = copy.deepcopy(optimizer_specs)
-            cost_function_specs = copy.deepcopy(cost_function_specs)
+            cost_function_specs_copy = copy.deepcopy(cost_function_specs)
             optimize_variational_circuit_with_layerwise_optimizer(
                 ansatz_specs_copy,
                 backend_specs_copy,
                 optimizer_specs_copy,
-                cost_function_specs,
+                cost_function_specs_copy,
                 qubit_operator,
                 min_layer,
                 max_layer,
@@ -131,7 +131,7 @@ def create_and_run_qaoa_for_graph_problem(
             del ansatz_specs_copy
             del backend_specs_copy
             del optimizer_specs_copy
-            del cost_function_specs
+            del cost_function_specs_copy
             os.rename(
                 "optimization-results.json", f"optimization-results-{graph_id}-{i}.json"
             )
