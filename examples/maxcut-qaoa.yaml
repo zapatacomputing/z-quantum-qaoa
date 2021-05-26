@@ -74,9 +74,9 @@ steps:
   config:
     runtime:
       language: python3
-      imports: [z-quantum-core]
+      imports: [z-quantum-core, z-quantum-optimizers]
       parameters:
-        file: z-quantum-core/steps/circuit.py
+        file: z-quantum-optimizers/steps/grid.py
         function: build_uniform_param_grid
     resources:
       cpu: "1000m"
