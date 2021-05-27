@@ -4,7 +4,7 @@ from zquantum.qaoa.problems import (
     get_random_hamiltonians_for_problem,
 )
 from zquantum.qaoa.ansatzes import farhi_ansatz, warm_start_ansatz
-from zquantum.core.circuit import save_circuit, save_circuit_set
+from zquantum.core.wip.circuits import save_circuit, save_circuitset
 from zquantum.core.graph import load_graph
 from zquantum.core.utils import load_list, save_list
 from zquantum.core.openfermion import (
@@ -43,7 +43,7 @@ def create_farhi_qaoa_circuits(
     circuits = farhi_ansatz.create_farhi_qaoa_circuits(
         hamiltonians_objects, number_of_layers
     )
-    save_circuit_set(circuits, "circuits.json")
+    save_circuitset(circuits, "circuits.json")
 
 
 def get_maxcut_hamiltonian(graph, scale_factor=1.0, offset=0.0):

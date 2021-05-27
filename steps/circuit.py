@@ -1,5 +1,6 @@
 import numpy as np
-from zquantum.core.circuit import save_circuit, Circuit, load_circuit_template_params
+from zquantum.core.wip.circuits import save_circuit
+from zquantum.core.serialization import load_array
 from zquantum.core.openfermion import load_qubit_operator
 from zquantum.core.utils import create_object, load_from_specs
 from typing import Union, List, Optional, Dict
@@ -29,7 +30,7 @@ def build_qaoa_ansatz_circuit(
     ansatz = load_from_specs(ansatz_specs)
     if params is not None:
         if isinstance(params, str):
-            params = load_circuit_template_params(params)
+            params = load_array(params)
         else:
             params = np.array(params)
         circuit = ansatz.get_executable_circuit(params)
