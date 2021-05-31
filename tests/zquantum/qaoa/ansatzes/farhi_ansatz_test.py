@@ -1,5 +1,5 @@
 from zquantum.core.interfaces.ansatz_test import AnsatzTests
-from zquantum.core.circuit import Circuit, Gate, Qubit
+from zquantum.core.circuits import Circuit, H, RX, RZ
 from zquantum.core.utils import compare_unitary
 from zquantum.core.openfermion import change_operator_type
 from zquantum.qaoa.ansatzes.farhi_ansatz import (
@@ -34,21 +34,18 @@ class TestQAOAFarhiAnsatz(AnsatzTests):
 
     @pytest.fixture
     def symbols_map(self, beta, gamma):
-        beta_value = 0.5
-        gamma_value = 0.7
-        return [(beta, beta_value), (gamma, gamma_value)]
+        return {beta: 0.5, gamma: 0.7}
 
     @pytest.fixture
     def target_unitary(self, beta, gamma, symbols_map):
         target_circuit = Circuit()
-        target_circuit.gates = []
-        target_circuit.gates.append(Gate("H", [Qubit(0)]))
-        target_circuit.gates.append(Gate("H", [Qubit(1)]))
-        target_circuit.gates.append(Gate("Rz", [Qubit(0)], [2.0 * gamma]))
-        target_circuit.gates.append(Gate("Rz", [Qubit(1)], [2.0 * gamma]))
-        target_circuit.gates.append(Gate("Rx", [Qubit(0)], [2.0 * beta]))
-        target_circuit.gates.append(Gate("Rx", [Qubit(1)], [2.0 * beta]))
-        return target_circuit.evaluate(symbols_map).to_unitary()
+        target_circuit += H(0)
+        target_circuit += H(1)
+        target_circuit += RZ(2 * gamma)(0)
+        target_circuit += RZ(2 * gamma)(1)
+        target_circuit += RX(2 * beta)(0)
+        target_circuit += RX(2 * beta)(1)
+        return target_circuit.bind(symbols_map).to_unitary()
 
     def test_set_cost_hamiltonian(self, ansatz):
         # Given
@@ -119,7 +116,7 @@ class TestQAOAFarhiAnsatz(AnsatzTests):
 
     def test_get_parametrizable_circuit(self, ansatz, beta, gamma):
         # Then
-        assert ansatz.parametrized_circuit.symbolic_params == [
+        assert ansatz.parametrized_circuit.free_symbols == [
             gamma,
             beta,
         ]
@@ -127,7 +124,7 @@ class TestQAOAFarhiAnsatz(AnsatzTests):
     def test_generate_circuit(self, ansatz, symbols_map, target_unitary):
         # When
         parametrized_circuit = ansatz._generate_circuit()
-        evaluated_circuit = parametrized_circuit.evaluate(symbols_map)
+        evaluated_circuit = parametrized_circuit.bind(symbols_map)
         final_unitary = evaluated_circuit.to_unitary()
 
         # Then
@@ -142,7 +139,7 @@ class TestQAOAFarhiAnsatz(AnsatzTests):
         )
 
         parametrized_circuit = ansatz._generate_circuit()
-        evaluated_circuit = parametrized_circuit.evaluate(symbols_map)
+        evaluated_circuit = parametrized_circuit.bind(symbols_map)
         final_unitary = evaluated_circuit.to_unitary()
 
         # Then

@@ -196,7 +196,6 @@ steps:
 
 types:
 - qubit-operator
-- grid
 - graph
 - parameters
 - relaxed_solution

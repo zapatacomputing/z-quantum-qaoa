@@ -1,8 +1,11 @@
 from zquantum.core.interfaces.ansatz_test import AnsatzTests
-from zquantum.core.circuit import Circuit, Gate, Qubit
+from zquantum.core.circuits import Circuit, RY, RZ
 from zquantum.core.utils import compare_unitary
 from zquantum.core.openfermion import change_operator_type
-from zquantum.qaoa.ansatzes.warm_start_ansatz import WarmStartQAOAAnsatz, convert_relaxed_solution_to_angles
+from zquantum.qaoa.ansatzes.warm_start_ansatz import (
+    WarmStartQAOAAnsatz,
+    convert_relaxed_solution_to_angles,
+)
 from openfermion import QubitOperator, IsingOperator
 import pytest
 import numpy as np
@@ -31,25 +34,24 @@ def create_symbols_map(number_of_layers):
 
 def create_target_unitary(thetas, number_of_layers):
     target_circuit = Circuit()
-    target_circuit.gates = []
-    target_circuit.gates.append(Gate("Ry", [Qubit(0)], [thetas[0]]))
-    target_circuit.gates.append(Gate("Ry", [Qubit(1)], [thetas[1]]))
+    target_circuit += RY(thetas[0])(0)
+    target_circuit += RY(thetas[1])(1)
     betas = create_betas(number_of_layers)
     gammas = create_gammas(number_of_layers)
     symbols_map = create_symbols_map(number_of_layers)
     for layer_id in range(number_of_layers):
         beta = betas[layer_id]
         gamma = gammas[layer_id]
-        target_circuit.gates.append(Gate("Rz", [Qubit(0)], [2.0 * gamma]))
-        target_circuit.gates.append(Gate("Rz", [Qubit(1)], [2.0 * gamma]))
-        target_circuit.gates.append(Gate("Ry", [Qubit(0)], [-thetas[0]]))
-        target_circuit.gates.append(Gate("Ry", [Qubit(1)], [-thetas[1]]))
-        target_circuit.gates.append(Gate("Rz", [Qubit(0)], [-2.0 * beta]))
-        target_circuit.gates.append(Gate("Rz", [Qubit(1)], [-2.0 * beta]))
-        target_circuit.gates.append(Gate("Ry", [Qubit(0)], [thetas[0]]))
-        target_circuit.gates.append(Gate("Ry", [Qubit(1)], [thetas[1]]))
+        target_circuit += RZ(2.0 * gamma)(0)
+        target_circuit += RZ(2.0 * gamma)(1)
+        target_circuit += RY(-thetas[0])(0)
+        target_circuit += RY(-thetas[1])(1)
+        target_circuit += RZ(-2.0 * beta)(0)
+        target_circuit += RZ(-2.0 * beta)(1)
+        target_circuit += RY(thetas[0])(0)
+        target_circuit += RY(thetas[1])(1)
 
-    return target_circuit.evaluate(symbols_map).to_unitary()
+    return target_circuit.bind(symbols_map).to_unitary()
 
 
 class TestWarmStartQAOAAnsatz(AnsatzTests):
@@ -146,13 +148,13 @@ class TestWarmStartQAOAAnsatz(AnsatzTests):
             target_params.append(gammas[i])
             target_params.append(betas[i])
 
-        assert ansatz.parametrized_circuit.symbolic_params == target_params
+        assert ansatz.parametrized_circuit.free_symbols == target_params
 
     def test_generate_circuit(self, ansatz, number_of_layers, thetas):
         # When
         symbols_map = create_symbols_map(number_of_layers)
         parametrized_circuit = ansatz._generate_circuit()
-        evaluated_circuit = parametrized_circuit.evaluate(symbols_map)
+        evaluated_circuit = parametrized_circuit.bind(symbols_map)
         final_unitary = evaluated_circuit.to_unitary()
         target_unitary = create_target_unitary(thetas, number_of_layers)
         # Then
@@ -169,7 +171,7 @@ class TestWarmStartQAOAAnsatz(AnsatzTests):
         parametrized_circuit = ansatz._generate_circuit()
         symbols_map = create_symbols_map(number_of_layers)
         target_unitary = create_target_unitary(thetas, number_of_layers)
-        evaluated_circuit = parametrized_circuit.evaluate(symbols_map)
+        evaluated_circuit = parametrized_circuit.bind(symbols_map)
         final_unitary = evaluated_circuit.to_unitary()
 
         # Then

@@ -1,5 +1,6 @@
 from zquantum.core.interfaces.ansatz import Ansatz, ansatz_property
-from zquantum.core.circuit import Circuit, Qubit, create_layer_of_gates
+
+from zquantum.core.circuits import Circuit, create_layer_of_gates, H
 from zquantum.core.evolution import time_evolution
 from zquantum.core.openfermion import qubitop_to_pyquilpauli, change_operator_type
 
@@ -63,11 +64,9 @@ class QAOAFarhiAnsatz(Ansatz):
                 "This method retuns a parametrizable circuit, params will be ignored."
             )
         circuit = Circuit()
-        qubits = [Qubit(qubit_index) for qubit_index in range(self.number_of_qubits)]
-        circuit.qubits = qubits
 
         # Prepare initial state
-        circuit += create_layer_of_gates(self.number_of_qubits, "H")
+        circuit += create_layer_of_gates(self.number_of_qubits, H)
 
         # Add time evolution layers
         pyquil_cost_hamiltonian = qubitop_to_pyquilpauli(
