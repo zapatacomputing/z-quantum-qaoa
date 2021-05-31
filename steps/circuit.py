@@ -1,5 +1,5 @@
 import numpy as np
-from zquantum.core.wip.circuits import save_circuit
+from zquantum.core.circuits import save_circuit
 from zquantum.core.serialization import load_array
 from zquantum.core.openfermion import load_qubit_operator
 from zquantum.core.utils import create_object, load_from_specs

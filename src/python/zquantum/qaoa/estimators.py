@@ -51,9 +51,11 @@ class CvarEstimator(EstimateExpectationValues):
         return [
             ExpectationValues(
                 np.array(
-                    _calculate_expectation_value_for_distribution(
-                        distribution, operator, self.alpha
-                    )
+                    [
+                        _calculate_expectation_value_for_distribution(
+                            distribution, operator, self.alpha
+                        )
+                    ]
                 )
             )
             for distribution, operator in zip(distributions_list, operators)
@@ -66,7 +68,9 @@ def _calculate_expectation_value_for_distribution(
     # Calculates expectation value per bitstring
     expectation_values_per_bitstring = {}
     for bitstring in distribution.distribution_dict:
-        expected_value = Measurements(bitstring).get_expectation_values(operator)
+        expected_value = Measurements([bitstring]).get_expectation_values(
+            operator, use_bessel_correction=False
+        )
         expectation_values_per_bitstring[bitstring] = np.sum(expected_value.values)
 
     # Sorts expectation values by values.

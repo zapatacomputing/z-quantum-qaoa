@@ -1,5 +1,5 @@
 from zquantum.core.interfaces.ansatz_test import AnsatzTests
-from zquantum.core.wip.circuits import Circuit, H, RX, RY, RZ
+from zquantum.core.circuits import Circuit, RY, RZ
 from zquantum.core.utils import compare_unitary
 from zquantum.core.openfermion import change_operator_type
 from zquantum.qaoa.ansatzes.warm_start_ansatz import (

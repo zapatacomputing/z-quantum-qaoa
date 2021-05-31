@@ -1,12 +1,10 @@
 import pytest
-from pyquil import Program
-from pyquil.gates import X, H
 from openfermion import QubitOperator, IsingOperator
 
 from zquantum.core.interfaces.mock_objects import (
     MockQuantumBackend,
 )
-from zquantum.core.circuit import Circuit
+from zquantum.core.circuits import Circuit, X, H
 from zquantum.core.measurement import Measurements
 from zquantum.qaoa.estimators import CvarEstimator
 
@@ -20,7 +18,7 @@ class TestCvarEstimator:
 
     @pytest.fixture()
     def circuit(self):
-        return Circuit(Program(X(0)))
+        return Circuit([X(0)])
 
     @pytest.fixture()
     def operator(self):
@@ -74,7 +72,7 @@ class TestCvarEstimator:
 
     def test_cvar_estimator_returns_correct_values(self, estimator, backend, operator):
         # Given
-        estimation_tasks = [EstimationTask(operator, Circuit(Program(H(0))), 10)]
+        estimation_tasks = [EstimationTask(operator, Circuit([H(0)]), 10)]
         if estimator.alpha <= 0.5:
             target_value = -1
         else:

@@ -4,7 +4,7 @@ from zquantum.qaoa.problems import (
     get_random_hamiltonians_for_problem,
 )
 from zquantum.qaoa.ansatzes import farhi_ansatz, warm_start_ansatz
-from zquantum.core.wip.circuits import save_circuit, save_circuitset
+from zquantum.core.circuits import save_circuit, save_circuitset
 from zquantum.core.graph import load_graph
 from zquantum.core.utils import load_list, save_list
 from zquantum.core.openfermion import (
