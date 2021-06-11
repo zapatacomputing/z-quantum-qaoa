@@ -44,6 +44,12 @@ steps:
         type: int
       - edge_probability: 0.8
         type: float
+      - sampler_specs:
+          module_name: zquantum.core.graph
+          function_name: uniform_sampler
+          min_value: 2
+          max_value: 10
+        type: specs
     outputs:
       - name: graph
         type: graph
