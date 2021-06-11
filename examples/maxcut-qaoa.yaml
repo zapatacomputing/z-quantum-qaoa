@@ -9,22 +9,22 @@ imports:
     type: git
     parameters:
       repository: "git@github.com:zapatacomputing/z-quantum-core.git"
-      branch: "dev"
+      branch: "master"
   - name: z-quantum-qaoa
     type: git
     parameters:
       repository: "git@github.com:zapatacomputing/z-quantum-qaoa.git"
-      branch: "dev"
+      branch: "master"
   - name: z-quantum-optimizers
     type: git
     parameters:
       repository: "git@github.com:zapatacomputing/z-quantum-optimizers.git"
-      branch: "176825410-discrete-parameter-values-search"
+      branch: "master"
   - name: qe-qulacs
     type: git
     parameters:
       repository: "git@github.com:zapatacomputing/qe-qulacs.git"
-      branch: "dev"
+      branch: "master"
 
 steps:
   - name: generate-graph
