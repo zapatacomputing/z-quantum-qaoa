@@ -167,8 +167,9 @@ steps:
   - optimizer_specs:
       module_name: zquantum.optimizers.grid_search
       function_name: GridSearchOptimizer
-      options: {"keep_value_history": true}
     type: specs
+  - keep_history: True
+    type: bool
   - cost_function_specs:
       module_name: zquantum.core.cost_function
       function_name: AnsatzBasedCostFunction
