@@ -5,197 +5,204 @@ apiVersion: io.orquestra.workflow/1.0.0
 name: maxcut-qaoa
 
 imports:
-- name: z-quantum-core
-  type: git
-  parameters:
-    repository: "git@github.com:zapatacomputing/z-quantum-core.git"
-    branch: "master"
-- name: z-quantum-qaoa
-  type: git
-  parameters:
-    repository: "git@github.com:zapatacomputing/z-quantum-qaoa.git"
-    branch: "master"
-- name: z-quantum-optimizers
-  type: git
-  parameters:
-    repository: "git@github.com:zapatacomputing/z-quantum-optimizers.git"
-    branch: "master"
-- name: qe-qulacs
-  type: git
-  parameters:
-    repository: "git@github.com:zapatacomputing/qe-qulacs.git"
-    branch: "master"
+  - name: z-quantum-core
+    type: git
+    parameters:
+      repository: "git@github.com:zapatacomputing/z-quantum-core.git"
+      branch: "master"
+  - name: z-quantum-qaoa
+    type: git
+    parameters:
+      repository: "git@github.com:zapatacomputing/z-quantum-qaoa.git"
+      branch: "master"
+  - name: z-quantum-optimizers
+    type: git
+    parameters:
+      repository: "git@github.com:zapatacomputing/z-quantum-optimizers.git"
+      branch: "master"
+  - name: qe-qulacs
+    type: git
+    parameters:
+      repository: "git@github.com:zapatacomputing/qe-qulacs.git"
+      branch: "master"
 
 steps:
-- name: generate-graph
-  config:
-    runtime:
-      language: python3
-      imports: [z-quantum-core]
-      parameters:
-        file: z-quantum-core/steps/graph.py
-        function: generate_random_graph_erdos_renyi
-    resources:
-      cpu: "1000m"
-      memory: "1Gi"
-      disk: "10Gi"
-  inputs:
-  - number_of_nodes: 5
-    type: int
-  - edge_probability: 0.8
-    type: float
-  - random_weights: False
-    type: bool
-  outputs:
-  - name: graph
-    type: graph
+  - name: generate-graph
+    config:
+      runtime:
+        language: python3
+        imports: [z-quantum-core]
+        parameters:
+          file: z-quantum-core/steps/graph.py
+          function: generate_random_graph_erdos_renyi
+      resources:
+        cpu: "1000m"
+        memory: "1Gi"
+        disk: "10Gi"
+    inputs:
+      - number_of_nodes: 5
+        type: int
+      - edge_probability: 0.8
+        type: float
+      - sampler_specs:
+          module_name: zquantum.core.graph
+          function_name: uniform_sampler
+          min_value: 2
+          max_value: 10
+        type: specs
+    outputs:
+      - name: graph
+        type: graph
 
-- name: get-maxcut-hamiltonian
-  passed: [generate-graph]
-  config:
-    runtime:
-      language: python3
-      imports: [z-quantum-core, z-quantum-qaoa]
-      parameters:
-        file: z-quantum-qaoa/steps/qaoa.py
-        function: get_maxcut_hamiltonian
-    resources:
-      cpu: "1000m"
-      memory: "1Gi"
-      disk: "10Gi"
-  inputs:
-  - graph: ((generate-graph.graph))
-    type: graph
-  outputs:
-  - name: hamiltonian
-    type: qubit-operator
+  - name: get-maxcut-hamiltonian
+    passed: [generate-graph]
+    config:
+      runtime:
+        language: python3
+        imports: [z-quantum-core, z-quantum-qaoa]
+        parameters:
+          file: z-quantum-qaoa/steps/qaoa.py
+          function: get_maxcut_hamiltonian
+      resources:
+        cpu: "1000m"
+        memory: "1Gi"
+        disk: "10Gi"
+    inputs:
+      - graph: ((generate-graph.graph))
+        type: graph
+    outputs:
+      - name: hamiltonian
+        type: qubit-operator
 
-- name: get-grid
-  config:
-    runtime:
-      language: python3
-      imports: [z-quantum-core, z-quantum-optimizers]
-      parameters:
-        file: z-quantum-optimizers/steps/grid.py
-        function: build_uniform_param_grid
-    resources:
-      cpu: "1000m"
-      memory: "1Gi"
-      disk: "10Gi"
-  inputs:
-  - number_of_params_per_layer: 2
-    type: int
-  - number_of_layers: 1
-    type: int
-  - min_value: 0
-    type: int
-  - max_value: 3.14159265359
-    type: float
-  - step: 0.314159265359
-    type: float
-  outputs:
-  - name: parameter-grid
-    type: grid
+  - name: get-grid
+    config:
+      runtime:
+        language: python3
+        imports: [z-quantum-core, z-quantum-optimizers]
+        parameters:
+          file: z-quantum-optimizers/steps/grid.py
+          function: build_uniform_param_grid
+      resources:
+        cpu: "1000m"
+        memory: "1Gi"
+        disk: "10Gi"
+    inputs:
+      - number_of_params_per_layer: 2
+        type: int
+      - number_of_layers: 1
+        type: int
+      - min_value: 0
+        type: int
+      - max_value: 3.14159265359
+        type: float
+      - step: 0.314159265359
+        type: float
+    outputs:
+      - name: parameter-grid
+        type: grid
 
-- name: generate-random-initial-ansatz-params
-  config:
-    runtime:
-      language: python3
-      imports: [z-quantum-core]
-      parameters:
-        file: z-quantum-core/steps/circuit.py
-        function: generate_random_ansatz_params
-    resources:
-      cpu: "1000m"
-      memory: "1Gi"
-      disk: "10Gi"
-  inputs:
-  - number_of_parameters: 2
-    type: int
-  - min_value: 0
-    type: int
-  - max_value: 3.14159265359
-    type: float
-  outputs:
-  - name: params
-    type: parameters
+  - name: get-points-list
+    passed: [get-grid]
+    config:
+      runtime:
+        language: python3
+        imports: [z-quantum-core, z-quantum-optimizers]
+        parameters:
+          file: z-quantum-optimizers/steps/grid.py
+          function: get_parameter_values_list_from_grid
+      resources:
+        cpu: "1000m"
+        memory: "1Gi"
+        disk: "10Gi"
+    inputs:
+      - grid: ((get-grid.parameter-grid))
+        type: grid
+    outputs:
+      - name: parameter-values-list
+        type: parameter-values-list
 
-- name: generate-fixed-ansatz-params
-  config:
-    runtime:
-      language: python3
-      imports: [z-quantum-core]
-      parameters:
-        file: z-quantum-core/steps/circuit.py
-        function: generate_random_ansatz_params
-    resources:
-      cpu: "1000m"
-      memory: "1Gi"
-      disk: "10Gi"
-  inputs:
-  - number_of_parameters: 0
-    type: int
-  - min_value: -0.01
-    type: float
-  - max_value: 0.01
-    type: float
-  outputs:
-  - name: params
-    type: parameters
+  - name: generate-random-initial-ansatz-params
+    config:
+      runtime:
+        language: python3
+        imports: [z-quantum-core]
+        parameters:
+          file: z-quantum-core/steps/circuit.py
+          function: generate_random_ansatz_params
+      resources:
+        cpu: "1000m"
+        memory: "1Gi"
+        disk: "10Gi"
+    inputs:
+      - number_of_parameters: 2
+        type: int
+      - min_value: 0
+        type: int
+      - max_value: 3.14159265359
+        type: float
+    outputs:
+      - name: params
+        type: parameters
 
-- name: optimize-variational-circuit
-  passed: [get-maxcut-hamiltonian, get-grid, generate-random-initial-ansatz-params, generate-fixed-ansatz-params]
-  config:
-    runtime:
-      language: python3
-      imports: [z-quantum-core, z-quantum-optimizers, qe-qulacs, z-quantum-qaoa]
-      parameters:
-        file: z-quantum-optimizers/steps/optimizers.py
-        function: optimize_variational_circuit
-    resources:
-      cpu: "1000m"
-      memory: "1Gi"
-      disk: "10Gi"
-  inputs:
-  - ansatz_specs:
-      module_name: zquantum.qaoa.ansatzes.farhi_ansatz
-      function_name: QAOAFarhiAnsatz
-      number_of_layers: 1
-    type: specs
-  - backend_specs:
-      module_name: qequlacs.simulator
-      function_name: QulacsSimulator
-    type: specs
-  - optimizer_specs:
-      module_name: zquantum.optimizers.grid_search
-      function_name: GridSearchOptimizer
-      options: {"keep_value_history": true}
-    type: specs
-  - cost_function_specs:
-      module_name: zquantum.core.cost_function
-      function_name: AnsatzBasedCostFunction
-      estimation_method_specs:
-        module_name: zquantum.core.estimation
-        function_name: calculate_exact_expectation_values
-    type: specs
-  - qubit_operator: ((get-maxcut-hamiltonian.hamiltonian))
-    type: qubit-operator
-  - initial_parameters: ((generate-random-initial-ansatz-params.params))
-    type: parameters
-  - fixed_parameters: ((generate-fixed-ansatz-params.params))
-    type: parameters
-  - parameter_grid: ((get-grid.parameter-grid))
-    type: grid
-  outputs:
-  - name: optimization-results
-    type: optimization-results
-  - name: optimized-parameters
-    type: parameters
+  - name: optimize-variational-circuit
+    passed:
+      [
+        get-maxcut-hamiltonian,
+        get-points-list,
+        generate-random-initial-ansatz-params,
+      ]
+    config:
+      runtime:
+        language: python3
+        imports:
+          [z-quantum-core, z-quantum-optimizers, qe-qulacs, z-quantum-qaoa]
+        parameters:
+          file: z-quantum-optimizers/steps/optimizers.py
+          function: optimize_variational_circuit
+      resources:
+        cpu: "1000m"
+        memory: "1Gi"
+        disk: "10Gi"
+    inputs:
+      - ansatz_specs:
+          module_name: zquantum.qaoa.ansatzes.farhi_ansatz
+          function_name: QAOAFarhiAnsatz
+          number_of_layers: 1
+        type: specs
+      - backend_specs:
+          module_name: qequlacs.simulator
+          function_name: QulacsSimulator
+        type: specs
+      - optimizer_specs:
+          module_name: zquantum.optimizers
+          function_name: SearchPointsOptimizer
+        type: specs
+      - keep_history: True
+        type: bool
+      - cost_function_specs:
+          module_name: zquantum.core.cost_function
+          function_name: AnsatzBasedCostFunction
+          estimation_method_specs:
+            module_name: zquantum.core.estimation
+            function_name: calculate_exact_expectation_values
+        type: specs
+      - qubit_operator: ((get-maxcut-hamiltonian.hamiltonian))
+        type: qubit-operator
+      - initial_parameters: ((generate-random-initial-ansatz-params.params))
+        type: parameters
+      - parameter_values_list: ((get-points-list.parameter-values-list))
+        type: parameter-values-list
+    outputs:
+      - name: optimization-results
+        type: optimization-results
+      - name: optimized-parameters
+        type: parameters
 
 types:
-- qubit-operator
-- grid
-- graph
-- parameters
-- optimization-results
-- specs
+  - qubit-operator
+  - grid
+  - graph
+  - parameters
+  - optimization-results
+  - specs
+  - parameter-values-list
