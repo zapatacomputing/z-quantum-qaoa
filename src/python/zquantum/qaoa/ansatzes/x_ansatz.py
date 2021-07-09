@@ -61,21 +61,42 @@ class QAOAXAnsatz(Ansatz):
 
         # Add time evolution layers
         # Maybe I should make H a list of hamiltonians
-        from math import comb
+        
 
         H = []
         S = []
         A = []
-        k = 1
         X = np.array([[0, 1], [1, 0]])
         for j in range(self.number_of_params):
+            for i in range(j):
+                if sigma(1, j, ncr(self.number_of_qubits, i)) > j:
+                    k = i
             if k == 1:
                 S[j] = j
                 # for i in range(self.number_of_qubits)
                 H[j] = np.kron(X, np.eye(2), np.eye(2))
             if k == 2:
-                print(comb(self.number_of_qubits, k))
+                print(ncr(self.number_of_qubits, k))
 
             circuit += time_evolution(H[j], sympy.Symbol(f"theta_{j}"))
 
         return circuit
+
+def sigma(first, last, const):
+    sum = 0
+    for i in range(first, last + 1):
+        sum += const * i
+    return sum
+
+# first : is the first value of (n) (the index of summation)
+# last : is the last value of (n)
+# const : is the number that you want to sum its multiplication each (n) times with (n)
+
+import operator as op
+from functools import reduce
+
+def ncr(n, r):
+    r = min(r, n-r)
+    numer = reduce(op.mul, range(n, n-r, -1), 1)
+    denom = reduce(op.mul, range(1, r+1), 1)
+    return numer // denom  # or / in Python 2
