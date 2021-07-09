@@ -66,14 +66,11 @@ class WarmStartQAOAAnsatz(Ansatz):
         # Prepare initial state
         circuit += create_layer_of_gates(self.number_of_qubits, RY, self._thetas)
 
-        pyquil_cost_hamiltonian = qubitop_to_pyquilpauli(
-            change_operator_type(self._cost_hamiltonian, QubitOperator)
-        )
-
         # Add time evolution layers
         for i in range(self.number_of_layers):
             circuit += time_evolution(
-                pyquil_cost_hamiltonian, sympy.Symbol(f"gamma_{i}")
+                change_operator_type(self._cost_hamiltonian, QubitOperator),
+                sympy.Symbol(f"gamma_{i}"),
             )
             circuit += create_layer_of_gates(self.number_of_qubits, RY, -self._thetas)
             circuit += create_layer_of_gates(
