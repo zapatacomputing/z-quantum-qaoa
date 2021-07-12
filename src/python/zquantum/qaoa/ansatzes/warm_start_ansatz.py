@@ -1,7 +1,7 @@
 from zquantum.core.interfaces.ansatz import Ansatz, ansatz_property
 from zquantum.core.circuits import Circuit, create_layer_of_gates, RY, RZ
 from zquantum.core.evolution import time_evolution
-from zquantum.core.openfermion import qubitop_to_pyquilpauli, change_operator_type
+from zquantum.core.openfermion import change_operator_type
 
 from openfermion import QubitOperator, IsingOperator
 from openfermion.utils import count_qubits
