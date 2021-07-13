@@ -12,16 +12,14 @@ import sympy
 from overrides import overrides
 from itertools import combinations
 
-from zquantum.qaoa.ansatzes.x_ansatz import (
-    ncr,
-    cost_of_cut,
-    get_edges_from_cost_hamiltonian,
-)
+from zquantum.qaoa.ansatzes.x_ansatz import ncr
+
 
 class QAOAXZAnsatz(Ansatz):
 
     supports_parametrized_circuits = True
     cost_hamiltonian = ansatz_property("cost_hamiltonian")
+    type = ansatz_property("type")
 
     def __init__(
         self,
@@ -29,12 +27,12 @@ class QAOAXZAnsatz(Ansatz):
         cost_hamiltonian: Union[QubitOperator, IsingOperator],
         type: int,
     ):
-        """This is implementation of the XZ Ansatzes from https://arxiv.org/abs/2105.01114 4.2
+        """This is implementation of the XZ Ansatzes from https://arxiv.org/abs/2105.01114 section 4.2
 
         Args:
             number_of_layers: k-body depth (the maximum number of qubits entangled at one time) as described in https://arxiv.org/abs/2105.01114.  Cannot be greater than the number of qubits.
             cost_hamiltonian: Hamiltonian representing the cost function
-            type: either 1 or 2, from the two types of XZ ansatzes from https://arxiv.org/abs/2105.01114
+            type: either 0 or 1, from the two types of XZ ansatzes from https://arxiv.org/abs/2105.01114
 
         Attributes:
             number_of_qubits: number of qubits required for the ansatz circuit.
@@ -62,7 +60,7 @@ class QAOAXZAnsatz(Ansatz):
             sum += ncr(self.number_of_qubits, i)
         return sum * 2
 
-    @overrides 
+    @overrides
     def _generate_circuit(self, params: Optional[np.ndarray] = None) -> Circuit:
         """Returns a parametrizable circuit represention of the ansatz.
         Args:
@@ -76,29 +74,23 @@ class QAOAXZAnsatz(Ansatz):
 
         # Add time evolution layers
         j = 0
-        edges = get_edges_from_cost_hamiltonian(self._cost_hamiltonian)
         for k in range(self.number_of_layers):
 
             A = combinations(range(0, self.number_of_qubits), k + 1)
 
             for S in list(A):
-                H_j = QubitOperator(" ".join([f"X{i}" for i in S])) * cost_of_cut(
-                    S, edges
-                ) / 2 
+                H_j = QubitOperator(" ".join([f"X{i}" for i in S]))
 
                 if self._type == 0:
-                    H_k = QubitOperator(" ".join([f"Z{i}" for i in S])) * cost_of_cut(
-                        S, edges
-                    ) / 2 
-                elif self._type == 1: 
+                    H_k = QubitOperator(" ".join([f"Z{i}" for i in S]))
+                elif self._type == 1:
                     H_k = QubitOperator()
                     for i in range(self.number_of_qubits):
-                        H_k += QubitOperator((i, "Z")) * cost_of_cut(S, edges) / 2 
+                        H_k += QubitOperator((i, "Z"))
 
-                if cost_of_cut(S, edges) != 0:
-                    circuit += time_evolution(H_j, sympy.Symbol(f"theta_{j}"))
-                    circuit += time_evolution(H_k, sympy.Symbol(f"theta_{j + 1}"))
-                    j += 2
+                circuit += time_evolution(H_j, sympy.Symbol(f"theta_{j}"))
+                circuit += time_evolution(H_k, sympy.Symbol(f"theta_{j + 1}"))
+                j += 2
 
         return circuit
 
@@ -106,7 +98,7 @@ class QAOAXZAnsatz(Ansatz):
 def create_xz_qaoa_circuits(
     hamiltonians: List[QubitOperator], number_of_layers: Union[int, List[int]]
 ):
-    """Creates parameterizable quantum circuits based on the farhi qaoa ansatz for each
+    """Creates parameterizable quantum circuits based on the XZ qaoa ansatz for each
     hamiltonian in the input list using the set number of layers.
     Args:
         hamiltonians (List[QubitOperator]): List of hamiltonians for constructing the

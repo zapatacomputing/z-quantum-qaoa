@@ -1,22 +1,16 @@
-from zquantum.core.interfaces.ansatz_test import AnsatzTests
-from zquantum.core.circuits import Circuit, H, RZ, CNOT
-from zquantum.core.utils import compare_unitary
-from zquantum.core.openfermion import change_operator_type
-from zquantum.qaoa.ansatzes.x_ansatz import (
-    QAOAXAnsatz,
-    create_x_qaoa_circuits,
-    cost_of_cut,
-    get_edges_from_cost_hamiltonian,
-)
-from openfermion import QubitOperator, IsingOperator
 import pytest
 import sympy
-from zquantum.qaoa.problems.maxcut import get_maxcut_hamiltonian
-import networkx as nx
+from openfermion import IsingOperator, QubitOperator
+from zquantum.core.circuits import CNOT, RZ, Circuit, H
+from zquantum.core.interfaces.ansatz_test import AnsatzTests
+from zquantum.core.openfermion import change_operator_type
+from zquantum.core.utils import compare_unitary
+from zquantum.qaoa.ansatzes.x_ansatz import QAOAXAnsatz, create_x_qaoa_circuits
 
 
 def create_thetas(number_of_params):
     return sympy.symbols(f"theta_:{number_of_params}")
+
 
 def create_symbols_map(number_of_params):
     symbols_map = {}
@@ -25,7 +19,8 @@ def create_symbols_map(number_of_params):
         symbols_map[thetas[i]] = 0.5
     return symbols_map
 
-def create_target_unitary(number_of_params, k_body_depth = 1):
+
+def create_target_unitary(number_of_params, k_body_depth=1):
     thetas = create_thetas(number_of_params)
     symbols_map = create_symbols_map(number_of_params)
 
@@ -34,7 +29,7 @@ def create_target_unitary(number_of_params, k_body_depth = 1):
     target_circuit += RZ(2 * thetas[0])(0)
     target_circuit += H(0)
     target_circuit += H(1)
-    target_circuit += RZ(4 * thetas[1])(1)
+    target_circuit += RZ(2 * thetas[1])(1)
     target_circuit += H(1)
     target_circuit += H(2)
     target_circuit += RZ(2 * thetas[2])(2)
@@ -52,7 +47,7 @@ def create_target_unitary(number_of_params, k_body_depth = 1):
         target_circuit += H(0)
         target_circuit += H(2)
         target_circuit += CNOT(0, 2)
-        target_circuit += RZ(4 * thetas[4])(2)
+        target_circuit += RZ(2 * thetas[4])(2)
         target_circuit += CNOT(0, 2)
         target_circuit += H(0)
         target_circuit += H(2)
@@ -108,7 +103,7 @@ class TestQAOAXAnsatz(AnsatzTests):
         ansatz.cost_hamiltonian = new_cost_hamiltonian
 
         # Then
-        assert ansatz.number_of_qubits == target_number_of_qubits    
+        assert ansatz.number_of_qubits == target_number_of_qubits
 
     def test_get_number_of_params(self, ansatz):
         # Given
@@ -147,38 +142,6 @@ class TestQAOAXAnsatz(AnsatzTests):
         # Then
         assert ansatz.number_of_params == target_number_of_params
 
-    def test_get_edges_from_cost_hamiltonian(self):
-        # When
-        cost_hamiltonian = QubitOperator(("Z0 Z1")) + QubitOperator(("Z1 Z2"))
-        expected_edges = [[0, 1, 2.0], [1, 2, 2.0]]
-        final_edges = get_edges_from_cost_hamiltonian(cost_hamiltonian)
-
-        # Then
-        assert expected_edges == final_edges
-
-    def test_get_edges_with_ising_hamiltonian(self):
-        # When
-        G = nx.Graph()
-        G.add_nodes_from([0, 1, 2])
-        G.add_edge(0, 1, weight=5)
-        G.add_edge(1, 2, weight=2)
-        cost_hamiltonian = get_maxcut_hamiltonian(G)
-        expected_edges = [[1, 2, 2.0], [0, 1, 5.0]]
-        final_edges = get_edges_from_cost_hamiltonian(cost_hamiltonian)
-
-        # Then
-        assert expected_edges == final_edges
-
-    def test_get_cost_of_cut(self):
-        # When
-        edges = [[0, 1, 2.0], [1, 2, 2.0]]
-        cut = (0,)
-        expected_cost = 2.0
-        final_cost = cost_of_cut(cut, edges)
-
-        # Then
-        assert expected_cost == final_cost        
-
     def test_generate_circuit(self, ansatz, number_of_params, target_unitary):
         # When
         symbols_map = create_symbols_map(number_of_params)
@@ -192,7 +155,7 @@ class TestQAOAXAnsatz(AnsatzTests):
     def test_generate_circuit_with_k_body_depth_greater_than_1(self, ansatz):
         # When
         symbols_map = create_symbols_map(number_of_params=6)
-        target_unitary = create_target_unitary(number_of_params=6, k_body_depth = 2)
+        target_unitary = create_target_unitary(number_of_params=6, k_body_depth=2)
         ansatz.number_of_layers = 2
         parametrized_circuit = ansatz._generate_circuit()
         evaluated_circuit = parametrized_circuit.bind(symbols_map)

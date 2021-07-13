@@ -47,13 +47,12 @@ class QAOAXAnsatz(Ansatz):
     @property
     def number_of_params(self) -> int:
         """Returns number of parameters in the ansatz."""
-        # return sigma(self.number_of_layers self.number_of_qubits choose k
         sum = 0
         for i in range(1, self.number_of_layers + 1):
             sum += ncr(self.number_of_qubits, i)
         return sum
 
-    @overrides  # bc this method is in super
+    @overrides
     def _generate_circuit(self, params: Optional[np.ndarray] = None) -> Circuit:
         """Returns a parametrizable circuit represention of the ansatz.
         Args:
@@ -67,15 +66,12 @@ class QAOAXAnsatz(Ansatz):
 
         # Add time evolution layers
         j = 0
-        edges = get_edges_from_cost_hamiltonian(self._cost_hamiltonian)
         for k in range(self.number_of_layers):
 
             A = combinations(range(0, self.number_of_qubits), k + 1)
 
             for S in list(A):
-                H_j = QubitOperator(" ".join([f"X{i}" for i in S])) * cost_of_cut(
-                    S, edges
-                ) / 2
+                H_j = QubitOperator(" ".join([f"X{i}" for i in S]))
 
                 circuit += time_evolution(H_j, sympy.Symbol(f"theta_{j}"))
                 j += 1
@@ -86,7 +82,7 @@ class QAOAXAnsatz(Ansatz):
 def create_x_qaoa_circuits(
     hamiltonians: List[QubitOperator], number_of_layers: Union[int, List[int]]
 ):
-    """Creates parameterizable quantum circuits based on the farhi qaoa ansatz for each
+    """Creates parameterizable quantum circuits based on the X qaoa ansatz for each
     hamiltonian in the input list using the set number of layers.
     Args:
         hamiltonians (List[QubitOperator]): List of hamiltonians for constructing the
@@ -119,33 +115,3 @@ def ncr(n, r):
     numer = reduce(op.mul, range(n, n - r, -1), 1)
     denom = reduce(op.mul, range(1, r + 1), 1)
     return numer // denom
-
-
-def cost_of_cut(cut: Tuple, edges: List):
-    # Edge is in the form of [node1, node2, weight]
-    total_cost = 0
-    for edge in edges:
-        if len(edge) == 3:
-            a = edge[0] in cut
-            b = edge[1] in cut
-            if a != b:
-                total_cost += edge[2]
-    return total_cost
-
-
-def get_edges_from_cost_hamiltonian(cost_hamiltonian: QubitOperator):
-    # Edge is in the form of [node1, node2, weight]
-    edges = []
-    for term in cost_hamiltonian.terms:
-        temp = []
-        for operator in term:
-            temp.append(operator[0])
-        if temp:
-            edges.append(temp)
-
-    a = 0
-    for value in cost_hamiltonian.terms.values():
-        if len(edges) > a:  # only works when constant term is last term.
-            edges[a].append(value * 2) # Multiply by 2 because when converting maxcut graph to hamiltonian the edges get divided by 2
-        a += 1
-    return edges

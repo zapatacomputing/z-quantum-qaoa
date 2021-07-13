@@ -1,11 +1,14 @@
-from zquantum.core.interfaces.ansatz_test import AnsatzTests
-from zquantum.core.circuits import Circuit, H, RZ, CNOT
-from zquantum.core.utils import compare_unitary
-from zquantum.core.openfermion import change_operator_type
-from zquantum.qaoa.ansatzes.xz_ansatz import QAOAXZAnsatz, create_xz_qaoa_circuits
-from openfermion import QubitOperator, IsingOperator
 import pytest
 import sympy
+from openfermion import IsingOperator, QubitOperator
+from zquantum.core.circuits import CNOT, RZ, Circuit, H
+from zquantum.core.interfaces.ansatz_test import AnsatzTests
+from zquantum.core.openfermion import change_operator_type
+from zquantum.core.utils import compare_unitary
+from zquantum.qaoa.ansatzes.xz_ansatz import (
+    QAOAXZAnsatz,
+    create_xz_qaoa_circuits,
+)
 
 
 def create_thetas(number_of_params):
@@ -44,9 +47,9 @@ def create_target_unitary(number_of_params, k_body_depth=1):
         target_circuit += H(1)
         target_circuit += H(0)
 
-        target_circuit += CNOT(2, 1)
+        target_circuit += CNOT(0, 1)
         target_circuit += RZ(2 * thetas[5])(1)
-        target_circuit += CNOT(2, 1)
+        target_circuit += CNOT(0, 1)
 
     return target_circuit.bind(symbols_map).to_unitary()
 
@@ -94,7 +97,7 @@ class TestQAOAXAnsatz(AnsatzTests):
         return QAOAXZAnsatz(
             number_of_layers=1,
             cost_hamiltonian=cost_hamiltonian,
-            type=1,
+            type=0,
         )
 
     def test_get_number_of_qubits(self, ansatz):
@@ -220,9 +223,6 @@ class TestQAOAXAnsatz(AnsatzTests):
         evaluated_circuit = parametrized_circuit.bind(symbols_map)
         final_unitary = evaluated_circuit.to_unitary()
 
-        import pdb
-
-        pdb.set_trace()
         # Then
         assert compare_unitary(final_unitary, target_unitary, tol=1e-10)
 
