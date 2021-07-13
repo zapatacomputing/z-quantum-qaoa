@@ -6,14 +6,19 @@ from zquantum.core.openfermion import change_operator_type
 
 from openfermion import QubitOperator, IsingOperator
 from openfermion.utils import count_qubits
-from typing import Tuple, Union, Optional, List
+from typing import Union, Optional, List
 import numpy as np
 import sympy
 from overrides import overrides
 from itertools import combinations
 
+from zquantum.qaoa.ansatzes.x_ansatz import (
+    ncr,
+    cost_of_cut,
+    get_edges_from_cost_hamiltonian,
+)
 
-class QAOAXAnsatz(Ansatz):
+class QAOAXZAnsatz(Ansatz):
 
     supports_parametrized_circuits = True
     cost_hamiltonian = ansatz_property("cost_hamiltonian")
@@ -22,12 +27,14 @@ class QAOAXAnsatz(Ansatz):
         self,
         number_of_layers: int,
         cost_hamiltonian: Union[QubitOperator, IsingOperator],
+        type: int,
     ):
-        """This is implementation of the X Ansatz from https://arxiv.org/abs/2105.01114
+        """This is implementation of the XZ Ansatzes from https://arxiv.org/abs/2105.01114 4.2
 
         Args:
-            number_of_layers: k-body depth (the maximum number of qubits entangled at one time) as described in https://arxiv.org/abs/2105.01114. Cannot be greater than the number of qubits.
+            number_of_layers: k-body depth (the maximum number of qubits entangled at one time) as described in https://arxiv.org/abs/2105.01114.  Cannot be greater than the number of qubits.
             cost_hamiltonian: Hamiltonian representing the cost function
+            type: either 1 or 2, from the two types of XZ ansatzes from https://arxiv.org/abs/2105.01114
 
         Attributes:
             number_of_qubits: number of qubits required for the ansatz circuit.
@@ -36,7 +43,9 @@ class QAOAXAnsatz(Ansatz):
 
         super().__init__(number_of_layers)
         self._cost_hamiltonian = cost_hamiltonian
+        self._type = type
 
+        assert type == 1 or type == 0
         assert number_of_layers <= self.number_of_qubits
 
     @property
@@ -51,9 +60,9 @@ class QAOAXAnsatz(Ansatz):
         sum = 0
         for i in range(1, self.number_of_layers + 1):
             sum += ncr(self.number_of_qubits, i)
-        return sum
+        return sum * 2
 
-    @overrides  # bc this method is in super
+    @overrides 
     def _generate_circuit(self, params: Optional[np.ndarray] = None) -> Circuit:
         """Returns a parametrizable circuit represention of the ansatz.
         Args:
@@ -75,15 +84,26 @@ class QAOAXAnsatz(Ansatz):
             for S in list(A):
                 H_j = QubitOperator(" ".join([f"X{i}" for i in S])) * cost_of_cut(
                     S, edges
-                ) / 2
+                ) / 2 
 
-                circuit += time_evolution(H_j, sympy.Symbol(f"theta_{j}"))
-                j += 1
+                if self._type == 0:
+                    H_k = QubitOperator(" ".join([f"Z{i}" for i in S])) * cost_of_cut(
+                        S, edges
+                    ) / 2 
+                elif self._type == 1: 
+                    H_k = QubitOperator()
+                    for i in range(self.number_of_qubits):
+                        H_k += QubitOperator((i, "Z")) * cost_of_cut(S, edges) / 2 
+
+                if cost_of_cut(S, edges) != 0:
+                    circuit += time_evolution(H_j, sympy.Symbol(f"theta_{j}"))
+                    circuit += time_evolution(H_k, sympy.Symbol(f"theta_{j + 1}"))
+                    j += 2
 
         return circuit
 
 
-def create_x_qaoa_circuits(
+def create_xz_qaoa_circuits(
     hamiltonians: List[QubitOperator], number_of_layers: Union[int, List[int]]
 ):
     """Creates parameterizable quantum circuits based on the farhi qaoa ansatz for each
@@ -105,47 +125,6 @@ def create_x_qaoa_circuits(
 
     circuitset = []
     for number_of_layers, hamiltonian in zip(number_of_layers_list, hamiltonians):
-        ansatz = QAOAXAnsatz(number_of_layers, hamiltonian)
+        ansatz = QAOAXZAnsatz(number_of_layers, hamiltonian, type=0)
         circuitset.append(ansatz.parametrized_circuit)
     return circuitset
-
-
-import operator as op
-from functools import reduce
-
-
-def ncr(n, r):
-    r = min(r, n - r)
-    numer = reduce(op.mul, range(n, n - r, -1), 1)
-    denom = reduce(op.mul, range(1, r + 1), 1)
-    return numer // denom
-
-
-def cost_of_cut(cut: Tuple, edges: List):
-    # Edge is in the form of [node1, node2, weight]
-    total_cost = 0
-    for edge in edges:
-        if len(edge) == 3:
-            a = edge[0] in cut
-            b = edge[1] in cut
-            if a != b:
-                total_cost += edge[2]
-    return total_cost
-
-
-def get_edges_from_cost_hamiltonian(cost_hamiltonian: QubitOperator):
-    # Edge is in the form of [node1, node2, weight]
-    edges = []
-    for term in cost_hamiltonian.terms:
-        temp = []
-        for operator in term:
-            temp.append(operator[0])
-        if temp:
-            edges.append(temp)
-
-    a = 0
-    for value in cost_hamiltonian.terms.values():
-        if len(edges) > a:  # only works when constant term is last term.
-            edges[a].append(value * 2) # Multiply by 2 because when converting maxcut graph to hamiltonian the edges get divided by 2
-        a += 1
-    return edges
