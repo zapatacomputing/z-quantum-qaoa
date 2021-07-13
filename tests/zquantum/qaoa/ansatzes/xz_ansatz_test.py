@@ -2,10 +2,7 @@ from zquantum.core.interfaces.ansatz_test import AnsatzTests
 from zquantum.core.circuits import Circuit, H, RZ, CNOT
 from zquantum.core.utils import compare_unitary
 from zquantum.core.openfermion import change_operator_type
-from zquantum.qaoa.ansatzes.xz_ansatz import (
-    QAOAXZAnsatz,
-    create_xz_qaoa_circuits
-)
+from zquantum.qaoa.ansatzes.xz_ansatz import QAOAXZAnsatz, create_xz_qaoa_circuits
 from openfermion import QubitOperator, IsingOperator
 import pytest
 import sympy
@@ -14,6 +11,7 @@ import sympy
 def create_thetas(number_of_params):
     return sympy.symbols(f"theta_:{number_of_params}")
 
+
 def create_symbols_map(number_of_params):
     symbols_map = {}
     thetas = create_thetas(number_of_params)
@@ -21,7 +19,8 @@ def create_symbols_map(number_of_params):
         symbols_map[thetas[i]] = 0.5
     return symbols_map
 
-def create_target_unitary(number_of_params, k_body_depth = 1):
+
+def create_target_unitary(number_of_params, k_body_depth=1):
     thetas = create_thetas(number_of_params)
     symbols_map = create_symbols_map(number_of_params)
 
@@ -40,18 +39,19 @@ def create_target_unitary(number_of_params, k_body_depth = 1):
         target_circuit += H(0)
         target_circuit += H(1)
         target_circuit += CNOT(0, 1)
-        target_circuit += RZ(0 * thetas[4])(1)
+        target_circuit += RZ(2 * thetas[4])(1)
         target_circuit += CNOT(0, 1)
         target_circuit += H(1)
         target_circuit += H(0)
 
-        target_circuit += CNOT(0, 1)
-        target_circuit += RZ(0 * thetas[5])(1)
-        target_circuit += CNOT(0, 1)
+        target_circuit += CNOT(2, 1)
+        target_circuit += RZ(2 * thetas[5])(1)
+        target_circuit += CNOT(2, 1)
 
     return target_circuit.bind(symbols_map).to_unitary()
 
-def create_target_unitary_type_2(number_of_params, k_body_depth = 1):
+
+def create_target_unitary_type_2(number_of_params, k_body_depth=1):
     thetas = create_thetas(number_of_params)
     symbols_map = create_symbols_map(number_of_params)
 
@@ -72,15 +72,16 @@ def create_target_unitary_type_2(number_of_params, k_body_depth = 1):
         target_circuit += H(0)
         target_circuit += H(1)
         target_circuit += CNOT(0, 1)
-        target_circuit += RZ(0 * thetas[4])(1)
+        target_circuit += RZ(2 * thetas[4])(1)
         target_circuit += CNOT(0, 1)
         target_circuit += H(1)
         target_circuit += H(0)
 
-        target_circuit += RZ(0 * thetas[5])(0)
-        target_circuit += RZ(0 * thetas[5])(1)
+        target_circuit += RZ(2 * thetas[5])(0)
+        target_circuit += RZ(2 * thetas[5])(1)
 
     return target_circuit.bind(symbols_map).to_unitary()
+
 
 class TestQAOAXAnsatz(AnsatzTests):
     @pytest.fixture()
@@ -119,7 +120,7 @@ class TestQAOAXAnsatz(AnsatzTests):
         ansatz.cost_hamiltonian = new_cost_hamiltonian
 
         # Then
-        assert ansatz.number_of_qubits == target_number_of_qubits    
+        assert ansatz.number_of_qubits == target_number_of_qubits
 
     def test_get_number_of_params(self, ansatz):
         # Given
@@ -207,17 +208,20 @@ class TestQAOAXAnsatz(AnsatzTests):
     def test_generate_circuit_type_2_with_k_body_depth_greater_than_1(self, ansatz):
         # Given
         symbols_map = create_symbols_map(number_of_params=6)
-        target_unitary = create_target_unitary_type_2(number_of_params=6, k_body_depth=2)
+        target_unitary = create_target_unitary_type_2(
+            number_of_params=6, k_body_depth=2
+        )
         ansatz.number_of_layers = 2
         ansatz.type = 1
         ansatz.cost_hamiltonian = QubitOperator(("Z0 Z1"))
-        
+
         # When
         parametrized_circuit = ansatz._generate_circuit()
         evaluated_circuit = parametrized_circuit.bind(symbols_map)
         final_unitary = evaluated_circuit.to_unitary()
 
         import pdb
+
         pdb.set_trace()
         # Then
         assert compare_unitary(final_unitary, target_unitary, tol=1e-10)
