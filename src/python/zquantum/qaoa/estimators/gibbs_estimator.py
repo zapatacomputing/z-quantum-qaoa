@@ -33,7 +33,7 @@ class GibbsEstimator(EstimateExpectationValues):
         Args:
             backend: the backend that will be used to run the circuits
             estimation_tasks: the estimation tasks defining the problem. Each task consist of target operator, circuit and number of shots.
-            alpha: defines to what degree will expectation values be exponentiated to. exp(-alpha * expectation_value)
+            alpha: defines to exponent coefficient, `exp(-alpha * expectation_value)`.
         """
         if self.alpha <= 0:
             raise ValueError("alpha needs to be a value greater than 0.")
