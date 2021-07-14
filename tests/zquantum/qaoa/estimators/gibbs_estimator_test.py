@@ -66,7 +66,7 @@ class TestGibbsEstimator:
         estimation_tasks = [EstimationTask(operator, Circuit([H(0)]), 10)]
 
         expval_0 = np.exp(1 * -estimator.alpha)  # Expectation value of bitstring 0
-        expval_1 = np.exp(-1 * -estimator.alpha)  # Expectation value of bitstring 0
+        expval_1 = np.exp(-1 * -estimator.alpha)  # Expectation value of bitstring 1
 
         # Target value is the -log of the mean of the expectation values of the 2 bitstrings
         target_value = -np.log((expval_1 + expval_0) / 2)
