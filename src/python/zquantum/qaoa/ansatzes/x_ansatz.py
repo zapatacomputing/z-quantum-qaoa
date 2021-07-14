@@ -9,9 +9,6 @@ import sympy
 from overrides import overrides
 from itertools import combinations
 
-import operator as op
-from functools import reduce
-
 
 class XAnsatz(Ansatz):
 
@@ -28,24 +25,12 @@ class XAnsatz(Ansatz):
         Args:
             number_of_layers: k-body depth (the maximum number of qubits entangled at one time) as described in the original paper. Cannot be greater than the number of qubits.
             number_of_qubits: number of qubits required for the ansatz circuit.
-
-        Attributes:
-            number_of_params: number of the parameters that need to be set for the ansatz circuit.
         """
 
         super().__init__(number_of_layers)
         self.number_of_qubits = number_of_qubits
 
         assert number_of_layers <= number_of_qubits
-
-    @property
-    def number_of_params(self) -> int:
-        """Returns number of parameters in the ansatz."""
-        # See section 4.1 of the original paper
-        sum = 0
-        for i in range(1, self.number_of_layers + 1):
-            sum += n_choose_r(self.number_of_qubits, i)
-        return sum
 
     @overrides
     def _generate_circuit(self, params: Optional[np.ndarray] = None) -> Circuit:
@@ -79,9 +64,6 @@ class XZAnsatz(Ansatz):
             number_of_layers: k-body depth (the maximum number of qubits entangled at one time) as described in https://arxiv.org/abs/2105.01114.  Cannot be greater than the number of qubits.
             number_of_qubits: number of qubits required for the ansatz circuit.
             use_k_body_z_operators: from the two types of XZ ansatzes in the original paper
-
-        Attributes:
-            number_of_params: number of the parameters that need to be set for the ansatz circuit.
         """
 
         super().__init__(number_of_layers)
@@ -89,14 +71,6 @@ class XZAnsatz(Ansatz):
         self._use_k_body_z_operators = use_k_body_z_operators
 
         assert number_of_layers <= number_of_qubits
-
-    @property
-    def number_of_params(self) -> int:
-        """Returns number of parameters in the ansatz."""
-        sum = 0
-        for i in range(1, self.number_of_layers + 1):
-            sum += n_choose_r(self.number_of_qubits, i)
-        return sum * 2
 
     @overrides
     def _generate_circuit(self, params: Optional[np.ndarray] = None) -> Circuit:
@@ -116,7 +90,7 @@ class XZAnsatz(Ansatz):
         return _create_circuit(self.number_of_layers, self.number_of_qubits, type)
 
 
-def _create_circuit(number_of_layers: int, number_of_qubits: int, type) -> Circuit:
+def _create_circuit(k_body_depth: int, number_of_qubits: int, type) -> Circuit:
     """Args:
     type: X, XZ1, or XZ2
     """
@@ -127,7 +101,7 @@ def _create_circuit(number_of_layers: int, number_of_qubits: int, type) -> Circu
     # S is a set of vertices that represents a cut of the graph while
     # A is the set of all possible cuts.
     # The maximum number of vertices in each set is the k-body depth.
-    for k in range(number_of_layers):
+    for k in range(k_body_depth):
         A = combinations(range(0, number_of_qubits), k + 1)
         for S in list(A):
             H_j = QubitOperator(" ".join([f"X{i}" for i in S]))
@@ -149,10 +123,3 @@ def _create_circuit(number_of_layers: int, number_of_qubits: int, type) -> Circu
                 j += 1
 
     return circuit
-
-
-def n_choose_r(n: int, r: int) -> int:
-    r = min(r, n - r)
-    numer = reduce(op.mul, range(n, n - r, -1), 1)
-    denom = reduce(op.mul, range(1, r + 1), 1)
-    return numer // denom
