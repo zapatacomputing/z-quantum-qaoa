@@ -11,8 +11,8 @@ from zquantum.core.interfaces.estimation import (
 )
 
 
-class GibbsEstimator(EstimateExpectationValues):
-    """An estimator for calculating expectation value using the Gibbs objective function method
+class GibbsObjectiveEstimator(EstimateExpectationValues):
+    """An estimator for calculating expectation value using the Gibbs objective function method.
     The main idea is that we exponentiate the negative expectation value of each sample, which amplifies bitstrings with
     low energies while reducing the role that high energy bitstrings play in determining the cost.
 
@@ -28,7 +28,7 @@ class GibbsEstimator(EstimateExpectationValues):
         self, backend: QuantumBackend, estimation_tasks: List[EstimationTask]
     ) -> List[ExpectationValues]:
         """Given a circuit, backend, and target operators, this method produces expectation values
-        using Gibbs method.
+        using Gibbs objective function.
 
         Args:
             backend: the backend that will be used to run the circuits

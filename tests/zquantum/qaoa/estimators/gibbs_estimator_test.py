@@ -5,8 +5,7 @@ from zquantum.core.interfaces.mock_objects import (
     MockQuantumBackend,
 )
 from zquantum.core.circuits import Circuit, X, H
-from zquantum.core.measurement import Measurements
-from zquantum.qaoa.estimators import GibbsEstimator
+from zquantum.qaoa.estimators import GibbsObjectiveEstimator
 
 from zquantum.core.interfaces.estimation import EstimationTask
 import numpy as np
@@ -15,7 +14,7 @@ import numpy as np
 class TestGibbsEstimator:
     @pytest.fixture(params=[1.0, 0.8, 0.5, 0.2])
     def estimator(self, request):
-        return GibbsEstimator(alpha=request.param)
+        return GibbsObjectiveEstimator(alpha=request.param)
 
     @pytest.fixture()
     def circuit(self):
@@ -30,15 +29,8 @@ class TestGibbsEstimator:
         return [EstimationTask(operator, circuit, 10)]
 
     @pytest.fixture()
-    def backend(self, request):
-        backend = MockQuantumBackend()
-
-        def custom_run_circuit_and_measure(circuit, n_samples):
-            bitstrings = [("0"), ("1")]
-            return Measurements(bitstrings)
-
-        backend.run_circuit_and_measure = custom_run_circuit_and_measure
-        return backend
+    def backend(self):
+        return MockQuantumBackend()
 
     def test_raises_exception_if_operator_is_not_ising(
         self, estimator, backend, circuit
@@ -51,10 +43,11 @@ class TestGibbsEstimator:
                 estimation_tasks=estimation_tasks,
             )
 
-    def test_gibbs_estimator_raises_exception_if_alpha_less_than_0(
-        self, estimator, backend, estimation_tasks
+    @pytest.mark.parametrize("alpha", [-1, 0])
+    def test_gibbs_estimator_raises_exception_if_alpha_less_than_or_equal_to_0(
+        self, estimator, backend, estimation_tasks, alpha
     ):
-        estimator.alpha = -1
+        estimator.alpha = alpha
         with pytest.raises(ValueError):
             estimator(
                 backend=backend,
