@@ -16,7 +16,7 @@ class GibbsObjectiveEstimator(EstimateExpectationValues):
     The main idea is that we exponentiate the negative expectation value of each sample, which amplifies bitstrings with
     low energies while reducing the role that high energy bitstrings play in determining the cost.
 
-    Reference: https://arxiv.org/abs/1909.07621
+    Reference: https://arxiv.org/abs/1909.07621 Section III
     "Quantum Optimization with a Novel Gibbs Objective Function and Ansatz Architecture Search", L. Li, M. Fan, M. Coram, P. Riley, and S. Leichenauer
     """
 
@@ -33,7 +33,7 @@ class GibbsObjectiveEstimator(EstimateExpectationValues):
         Args:
             backend: the backend that will be used to run the circuits
             estimation_tasks: the estimation tasks defining the problem. Each task consist of target operator, circuit and number of shots.
-            alpha: defines to exponent coefficient, `exp(-alpha * expectation_value)`.
+            alpha: defines to exponent coefficient, `exp(-alpha * expectation_value)`. See equation 2 in the original paper.
         """
         if self.alpha <= 0:
             raise ValueError("alpha needs to be a value greater than 0.")
@@ -77,7 +77,7 @@ def _calculate_expectation_value_for_distribution(
     for bitstring in expectation_values_per_bitstring:
         prob = distribution.distribution_dict[bitstring]
 
-        # for the i-th sampled bitstring, compute exp(-alpha E_i)
+        # For the i-th sampled bitstring, compute exp(-alpha E_i) See equation 2 in the original paper.
         expectation_value = np.exp(-alpha * expectation_values_per_bitstring[bitstring])
         cumulative_value += prob * expectation_value
 
