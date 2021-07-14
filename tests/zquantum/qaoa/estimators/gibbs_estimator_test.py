@@ -6,7 +6,7 @@ from zquantum.core.interfaces.mock_objects import (
 )
 from zquantum.core.circuits import Circuit, X, H
 from zquantum.core.measurement import Measurements
-from zquantum.qaoa.estimators.gibbs_estimator import GibbsEstimator
+from zquantum.qaoa.estimators import GibbsEstimator
 
 from zquantum.core.interfaces.estimation import EstimationTask
 import numpy as np
