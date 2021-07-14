@@ -111,23 +111,6 @@ class TestXAnsatz(AnsatzTests):
     def target_unitary(self, number_of_params):
         return create_X_target_unitary(number_of_params)
 
-    def test_get_number_of_params(self, ansatz):
-        # Given
-        target_number_of_params = 3
-
-        # Then
-        assert ansatz.number_of_params == target_number_of_params
-
-    def test_get_number_of_params_with_k_body_depth_greater_than_1(self, ansatz):
-        # Given
-        target_number_of_params = 6
-
-        # When
-        ansatz.number_of_layers = 2
-
-        # Then
-        assert ansatz.number_of_params == target_number_of_params
-
     def test_generate_circuit(self, ansatz, number_of_params, target_unitary):
         # When
         symbols_map = create_symbols_map(number_of_params)
@@ -162,23 +145,6 @@ class TestXZAnsatz(AnsatzTests):
             number_of_layers=1,
             number_of_qubits=2,
         )
-
-    def test_get_number_of_params(self, ansatz):
-        # Given
-        target_number_of_params = 4
-
-        # Then
-        assert ansatz.number_of_params == target_number_of_params
-
-    def test_get_number_of_params_with_k_body_depth_greater_than_1(self, ansatz):
-        # Given
-        target_number_of_params = 6
-
-        # When
-        ansatz.number_of_layers = 2
-
-        # Then
-        assert ansatz.number_of_params == target_number_of_params
 
     def test_generate_circuit(self, ansatz):
         # Given
