@@ -83,9 +83,6 @@ class TestCvarEstimator:
             backend=backend,
             estimation_tasks=estimation_tasks,
         )
-        import pdb
-
-        pdb.set_trace()
 
         # Then
         assert len(expectation_values) == len(estimation_tasks)
