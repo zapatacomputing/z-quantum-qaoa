@@ -3,7 +3,7 @@ import sympy
 from zquantum.core.circuits import CNOT, RZ, Circuit, H
 from zquantum.core.interfaces.ansatz_test import AnsatzTests
 from zquantum.core.utils import compare_unitary
-from zquantum.qaoa.ansatzes.x_ansatz import XAnsatz, XZAnsatz
+from zquantum.qaoa.ansatzes import XAnsatz, XZAnsatz
 
 
 def create_thetas(number_of_params):
