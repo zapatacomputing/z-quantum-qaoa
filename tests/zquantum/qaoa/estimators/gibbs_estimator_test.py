@@ -56,7 +56,7 @@ class TestGibbsEstimator:
 
     def test_gibbs_estimator_returns_correct_values(self, estimator, backend, operator):
         # Given
-        estimation_tasks = [EstimationTask(operator, Circuit([H(0)]), 10)]
+        estimation_tasks = [EstimationTask(operator, Circuit([H(0)]), 10000)]
 
         expval_0 = np.exp(1 * -estimator.alpha)  # Expectation value of bitstring 0
         expval_1 = np.exp(-1 * -estimator.alpha)  # Expectation value of bitstring 1
@@ -72,4 +72,4 @@ class TestGibbsEstimator:
 
         # Then
         assert len(expectation_values) == len(estimation_tasks)
-        assert expectation_values[0].values == pytest.approx(target_value)
+        assert expectation_values[0].values == pytest.approx(target_value, rel=2e-1)
