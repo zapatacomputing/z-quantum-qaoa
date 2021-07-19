@@ -1,15 +1,12 @@
+from zquantum.core.cost_function import AnsatzBasedCostFunction
 from zquantum.core.interfaces.ansatz import Ansatz
 from zquantum.core.interfaces.backend import QuantumBackend
 from zquantum.core.interfaces.optimizer import Optimizer
 from zquantum.core.openfermion import change_operator_type
 from openfermion import QubitOperator, IsingOperator
 from openfermion.utils import count_qubits
-from zquantum.core.circuits import Circuit
 from zquantum.core.interfaces.backend import QuantumBackend
 import numpy as np
-from zquantum.core.cost_function import AnsatzBasedCostFunction
-
-# TODO: cost function should be a user input too for modularity?
 from zquantum.core.measurement import Measurements
 from typing import Optional, List, Tuple
 
@@ -43,38 +40,43 @@ class RecursiveQAOA:
     def __call__(
         self,
         n_c: int,
-        backend: QuantumBackend,
-        n_layers: int,
-        n_samples: int,
-        initial_params: np.ndarray,
         ansatz: Ansatz,
-        optimizer: Optimizer,
+        n_layers: int,
         estimation_method,
         estimation_preprocessors,
+        initial_params: np.ndarray,
+        optimizer: Optimizer,
+        n_samples: int,
+        backend: QuantumBackend,
         qubit_map: Optional[List[int]] = [],
+        # TODO: better way of having these params?
     ) -> IsingOperator:
         """Args:
             n_c: The threshold number of qubits at which recursion stops, as described in the original paper. Cannot be greater than number of qubits.
             qubit_map: A list that maps qubits in reduced Hamiltonian back to original qubits, used for subsequent recursions.
 
         Returns:
-            The solution to recursive QAOA as a bitstring.
+            The solution to recursive QAOA as a bitstring. (tuple?)
         """
         assert n_c < self.number_of_qubits
         if not qubit_map:
             for i in range(self.number_of_qubits):
                 qubit_map.append(i)
 
-        circuit = _run_qaoa(
+        # Run QAOA
+        ansatz = ansatz(n_layers, self._cost_hamiltonian)
+        cost_function = AnsatzBasedCostFunction(
             self._cost_hamiltonian,
-            n_layers,
-            backend,
-            initial_params,
             ansatz,
-            optimizer,
+            backend,
             estimation_method,
             estimation_preprocessors,
         )
+        opt_results = optimizer.minimize(cost_function, initial_params)
+
+        # Circuit with optimal parameters.
+        circuit = ansatz.get_executable_circuit(opt_results.opt_params)
+
         # For each term, calculate <psi(beta, gamma) | Z_i Z_j | psi(beta, gamma)>
         # with optimal parameters.
         distribution = backend.get_bitstring_distribution(circuit, n_samples=n_samples)
@@ -176,39 +178,17 @@ class RecursiveQAOA:
             count_qubits(change_operator_type(new_cost_hamiltonian, QubitOperator))
             > n_c
         ):
-            next_recursion = RecursiveQAOA(
-                new_cost_hamiltonian, backend, n_layers, n_samples
+            next_recursion = RecursiveQAOA(new_cost_hamiltonian)
+            return next_recursion(
+                n_c,
+                cost_function,
+                initial_params,
+                optimizer,
+                n_samples,
+                backend,
+                qubit_map,
             )
-            return next_recursion(n_c, qubit_map)
         else:
             return new_cost_hamiltonian
             # TODO: brute force the answer and map answer onto original qubits.
             # TODO: make sure it works when highest expval is negative.
-
-
-# Better way of writing these params? kwargs?
-def _run_qaoa(
-    cost_hamiltonian: IsingOperator,
-    n_layers: int,
-    backend: QuantumBackend,
-    initial_params: np.ndarray,
-    ansatz: Ansatz,
-    optimizer: Optimizer,
-    estimation_method,
-    estimation_preprocessors,
-) -> Circuit:
-    """Returns optimized circuit"""
-    ansatz = ansatz(n_layers, cost_hamiltonian=cost_hamiltonian)
-
-    cost_function = AnsatzBasedCostFunction(
-        cost_hamiltonian,
-        ansatz,
-        backend,
-        estimation_method,
-        estimation_preprocessors,
-    )
-
-    # When
-    opt_results = optimizer.minimize(cost_function, initial_params)
-    # return opt_results.opt_params
-    return ansatz.get_executable_circuit(opt_results.opt_params)
