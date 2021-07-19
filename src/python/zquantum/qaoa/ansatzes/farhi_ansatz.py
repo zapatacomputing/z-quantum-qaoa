@@ -2,7 +2,7 @@ from zquantum.core.interfaces.ansatz import Ansatz, ansatz_property
 
 from zquantum.core.circuits import Circuit, create_layer_of_gates, H
 from zquantum.core.evolution import time_evolution
-from zquantum.core.openfermion import qubitop_to_pyquilpauli, change_operator_type
+from zquantum.core.openfermion import change_operator_type
 
 from openfermion import QubitOperator, IsingOperator
 from openfermion.utils import count_qubits
@@ -69,17 +69,13 @@ class QAOAFarhiAnsatz(Ansatz):
         circuit += create_layer_of_gates(self.number_of_qubits, H)
 
         # Add time evolution layers
-        pyquil_cost_hamiltonian = qubitop_to_pyquilpauli(
-            change_operator_type(self._cost_hamiltonian, QubitOperator)
-        )
-        pyquil_mixer_hamiltonian = qubitop_to_pyquilpauli(self._mixer_hamiltonian)
-
         for i in range(self.number_of_layers):
             circuit += time_evolution(
-                pyquil_cost_hamiltonian, sympy.Symbol(f"gamma_{i}")
+                change_operator_type(self._cost_hamiltonian, QubitOperator),
+                sympy.Symbol(f"gamma_{i}"),
             )
             circuit += time_evolution(
-                pyquil_mixer_hamiltonian, sympy.Symbol(f"beta_{i}")
+                self._mixer_hamiltonian, sympy.Symbol(f"beta_{i}")
             )
 
         return circuit
