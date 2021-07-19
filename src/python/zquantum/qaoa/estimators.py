@@ -10,6 +10,7 @@ from zquantum.core.interfaces.estimation import (
     EstimateExpectationValues,
     EstimationTask,
 )
+from zquantum.core.utils import dec2bin
 
 
 class CvarEstimator(EstimateExpectationValues):
@@ -94,12 +95,10 @@ def _calculate_expectation_value_for_distribution(
     # Calculates expectation value per bitstring
     expectation_values_per_bitstring = {}
     for bitstring in distribution.distribution_dict:
-        expected_value = Measurements([bitstring]).get_expectation_values(
-            operator, use_bessel_correction=False
-        )
-        expectation_values_per_bitstring[bitstring] = np.sum(expected_value.values)
+        expected_value = _calculate_expectation_value_of_bitstring(bitstring, operator)
+        expectation_values_per_bitstring[bitstring] = expected_value
 
-    return _calculate_cvar(
+    return _sum_expectation_values(
         expectation_values_per_bitstring, distribution.distribution_dict, alpha
     )
 
@@ -110,51 +109,39 @@ def _calculate_expectation_value_for_wavefunction(
     expectation_values_per_bitstring = {}
     probability_per_bitstring = {}
 
-    from zquantum.core.openfermion import get_expectation_value
-    from zquantum.core.openfermion import change_operator_type, QubitOperator
-    from copy import copy
-
     n_qubits = wavefunction.amplitudes.shape[0].bit_length() - 1
 
-    for bitstring in range(2 ** n_qubits):
+    for decimal_bitstring in range(2 ** n_qubits):
+        # `decimal_bitstring` is the bitstring converted to decimal.
 
-        # There is a better way to do this.
-        wavefunction_of_bitstring = copy(wavefunction)
-        list = []
-        for i in range(2 ** n_qubits):
-            if i == bitstring:
-                list.append(1)
-            else:
-                list.append(0)
-        wavefunction_of_bitstring.amplitudes = np.array(list)
+        # Convert decimal bitstring into bitstring
+        bitstring = "".join([str(int) for int in dec2bin(decimal_bitstring, n_qubits)])
 
-        # Calculate expectation values for each bitstring based on the operator.
-        expval = get_expectation_value(
-            change_operator_type(operator, QubitOperator), wavefunction_of_bitstring
-        )
-        expectation_values_per_bitstring[bin(bitstring)[2:]] = float(expval)
+        # Calculate expectation values for each bitstring.
+        expected_value = _calculate_expectation_value_of_bitstring(bitstring, operator)
+        expectation_values_per_bitstring[bitstring] = expected_value
 
         # Compute the probability p(x) for each n-bitstring x from the wavefunction,
         # p(x) = |amplitude of x| ^ 2.
-        probability = np.abs(wavefunction.amplitudes[bitstring]) ** 2
-        probability_per_bitstring[bin(bitstring)[2:]] = float(probability)
+        probability = np.abs(wavefunction.amplitudes[decimal_bitstring]) ** 2
+        probability_per_bitstring[bitstring] = float(probability)
 
-    return _calculate_cvar(
+    return _sum_expectation_values(
         expectation_values_per_bitstring, probability_per_bitstring, alpha
     )
 
 
-def _calculate_cvar(
+def _sum_expectation_values(
     expectation_values_per_bitstring: Dict[str, float],
     probability_per_bitstring: Dict[str, float],
     alpha: float,
 ) -> float:
-    """Returns the cumulative sum of bitstrings until the cumulative probability of bitstrings
+    """Returns the cumulative sum of expectation values until the cumulative probability of bitstrings
     s_k = p(x_1) + … + p(x_k) >= alpha
 
     Args:
-        expectation_values_per_bitstring: dictionary with bitstrings as keys and the expectation value of said bitstring its corresponding value.
-        probability_per_bitstring: dictionary with bitstrings as keys and the probability of said bitstring its corresponding value.
+        expectation_values_per_bitstring: dictionary of bitstrings and their corresponding expectation values.
+        probability_per_bitstring: dictionary of bitstrings and their corresponding expectation probabilities.
         alpha: see description in the `__call__()` method.
     """
     # Sorts expectation values by values.
@@ -177,3 +164,11 @@ def _calculate_cvar(
             break
     final_value = cumulative_value / alpha
     return final_value
+
+
+def _calculate_expectation_value_of_bitstring(bitstring: str, operator: IsingOperator):
+    """Calculate expectation value for a bitstring based on an operator."""
+    expected_value = Measurements([bitstring]).get_expectation_values(
+        operator, use_bessel_correction=False
+    )
+    return np.sum(expected_value.values)
