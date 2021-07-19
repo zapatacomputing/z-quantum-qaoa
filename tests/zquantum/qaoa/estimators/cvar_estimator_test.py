@@ -9,6 +9,7 @@ from zquantum.core.measurement import Measurements
 from zquantum.qaoa.estimators import CvarEstimator
 
 from zquantum.core.interfaces.estimation import EstimationTask
+from qequlacs.simulator import QulacsSimulator
 
 
 class TestCvarEstimator:
@@ -82,6 +83,29 @@ class TestCvarEstimator:
         expectation_values = estimator(
             backend=backend,
             estimation_tasks=estimation_tasks,
+        )
+
+        # Then
+        assert len(expectation_values) == len(estimation_tasks)
+        assert expectation_values[0].values == pytest.approx(target_value)
+
+    def test_cvar_estimator_returns_correct_values_without_sampling(
+        self, estimator, operator
+    ):
+        # Given
+        estimation_tasks = [
+            EstimationTask(operator, Circuit([H(0)]), number_of_shots=None)
+        ]
+        if estimator.alpha <= 0.5:
+            target_value = -1
+        else:
+            target_value = (-1 * 0.5 + 1 * (estimator.alpha - 0.5)) / estimator.alpha
+
+        # When
+        expectation_values = estimator(
+            backend=QulacsSimulator(),
+            estimation_tasks=estimation_tasks,
+            use_exact_expectation_values=True,
         )
 
         # Then
