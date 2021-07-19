@@ -1,15 +1,16 @@
+from zquantum.core.interfaces.ansatz import Ansatz
 from zquantum.core.interfaces.backend import QuantumBackend
+from zquantum.core.interfaces.optimizer import Optimizer
 from zquantum.core.openfermion import change_operator_type
 from openfermion import QubitOperator, IsingOperator
 from openfermion.utils import count_qubits
 from zquantum.core.circuits import Circuit
 from zquantum.core.interfaces.backend import QuantumBackend
 import numpy as np
-from zquantum.qaoa.ansatzes.farhi_ansatz import QAOAFarhiAnsatz
-from zquantum.optimizers.scipy_optimizer import ScipyOptimizer
-from zquantum.core.estimation import calculate_exact_expectation_values
 from zquantum.core.cost_function import AnsatzBasedCostFunction
-from zquantum.core.measurement import ExpectationValues, Measurements
+
+# TODO: cost function should be a user input too for modularity?
+from zquantum.core.measurement import Measurements
 from typing import Optional, List, Tuple
 
 
@@ -17,9 +18,6 @@ class RecursiveQAOA:
     def __init__(
         self,
         cost_hamiltonian: IsingOperator,
-        backend: QuantumBackend,
-        n_layers: int,
-        n_samples: int,
     ) -> None:
         """This is an implementation of recursive QAOA (RQAOA) from https://arxiv.org/abs/1910.08980 page 4.
 
@@ -36,9 +34,6 @@ class RecursiveQAOA:
             number_of_qubits: number of qubits used for the initial QAOA circuit
         """
         self._cost_hamiltonian = cost_hamiltonian
-        self._backend = backend
-        self._n_layers = n_layers
-        self._n_samples = n_samples
 
     @property
     def number_of_qubits(self):
@@ -48,6 +43,14 @@ class RecursiveQAOA:
     def __call__(
         self,
         n_c: int,
+        backend: QuantumBackend,
+        n_layers: int,
+        n_samples: int,
+        initial_params: np.ndarray,
+        ansatz: Ansatz,
+        optimizer: Optimizer,
+        estimation_method,
+        estimation_preprocessors,
         qubit_map: Optional[List[int]] = [],
     ) -> IsingOperator:
         """Args:
@@ -62,19 +65,26 @@ class RecursiveQAOA:
             for i in range(self.number_of_qubits):
                 qubit_map.append(i)
 
-        circuit = _run_qaoa(self._cost_hamiltonian, self._n_layers, self._backend)
-        # For each term
-        # calculate <psi(beta, gamma) | Z_i Z_j | psi(beta, gamma)> w optimal parameters
-        distribution = self._backend.get_bitstring_distribution(
-            circuit, n_samples=self._n_samples
+        circuit = _run_qaoa(
+            self._cost_hamiltonian,
+            n_layers,
+            backend,
+            initial_params,
+            ansatz,
+            optimizer,
+            estimation_method,
+            estimation_preprocessors,
         )
+        # For each term, calculate <psi(beta, gamma) | Z_i Z_j | psi(beta, gamma)>
+        # with optimal parameters.
+        distribution = backend.get_bitstring_distribution(circuit, n_samples=n_samples)
         largest_expval = 0.0
 
         for term in self._cost_hamiltonian:
-            # Calculate expval of term
-            # Allow usuage of different objective functions (CVaR, Gibbs)?
+            # Calculate expectation value of term
+            # TODO: Allow usuage of different objective functions (CVaR, Gibbs)
 
-            # If term is a constant term, don't calculate expval.
+            # If term is a constant term, don't calculate expectation value.
             if () not in term.terms:
                 expectation_values_per_bitstring = {}
                 for bitstring in distribution.distribution_dict:
@@ -167,7 +177,7 @@ class RecursiveQAOA:
             > n_c
         ):
             next_recursion = RecursiveQAOA(
-                new_cost_hamiltonian, self._backend, self._n_layers, self._n_samples
+                new_cost_hamiltonian, backend, n_layers, n_samples
             )
             return next_recursion(n_c, qubit_map)
         else:
@@ -176,23 +186,28 @@ class RecursiveQAOA:
             # TODO: make sure it works when highest expval is negative.
 
 
+# Better way of writing these params? kwargs?
 def _run_qaoa(
-    cost_hamiltonian: IsingOperator, n_layers: int, backend: QuantumBackend
+    cost_hamiltonian: IsingOperator,
+    n_layers: int,
+    backend: QuantumBackend,
+    initial_params: np.ndarray,
+    ansatz: Ansatz,
+    optimizer: Optimizer,
+    estimation_method,
+    estimation_preprocessors,
 ) -> Circuit:
     """Returns optimized circuit"""
-    ansatz = QAOAFarhiAnsatz(n_layers, cost_hamiltonian=cost_hamiltonian)
+    ansatz = ansatz(n_layers, cost_hamiltonian=cost_hamiltonian)
 
-    estimation_method = calculate_exact_expectation_values
-    optimizer = ScipyOptimizer(method="L-BFGS-B")
     cost_function = AnsatzBasedCostFunction(
         cost_hamiltonian,
         ansatz,
         backend,
         estimation_method,
+        estimation_preprocessors,
     )
 
-    # TODO: Make `initial_params` a non optional user input.
-    initial_params = np.random.rand(n_layers * 2) * np.pi
     # When
     opt_results = optimizer.minimize(cost_function, initial_params)
     # return opt_results.opt_params
