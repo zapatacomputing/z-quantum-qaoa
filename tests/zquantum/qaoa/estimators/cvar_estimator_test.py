@@ -9,7 +9,8 @@ from zquantum.core.measurement import Measurements
 from zquantum.qaoa.estimators import CvarEstimator
 
 from zquantum.core.interfaces.estimation import EstimationTask
-from qequlacs.simulator import QulacsSimulator
+from pyquil.wavefunction import Wavefunction
+import numpy as np
 
 
 class TestCvarEstimator:
@@ -37,7 +38,11 @@ class TestCvarEstimator:
             bitstrings = [("0"), ("1")]
             return Measurements(bitstrings)
 
+        def custom_get_wavefunction(circuit):
+            return Wavefunction(np.array([np.sqrt(0.5) + 0j, np.sqrt(0.5) + 0j]))
+
         backend.run_circuit_and_measure = custom_run_circuit_and_measure
+        backend.get_wavefunction = custom_get_wavefunction
         return backend
 
     def test_raises_exception_if_operator_is_not_ising(
@@ -90,7 +95,7 @@ class TestCvarEstimator:
         assert expectation_values[0].values == pytest.approx(target_value)
 
     def test_cvar_estimator_returns_correct_values_without_sampling(
-        self, estimator, operator
+        self, estimator, backend, operator
     ):
         # Given
         estimation_tasks = [
@@ -103,7 +108,7 @@ class TestCvarEstimator:
 
         # When
         expectation_values = estimator(
-            backend=QulacsSimulator(),
+            backend=backend,
             estimation_tasks=estimation_tasks,
             use_exact_expectation_values=True,
         )
