@@ -115,4 +115,4 @@ class TestCvarEstimator:
 
         # Then
         assert len(expectation_values) == len(estimation_tasks)
-        assert expectation_values[0].values == pytest.approx(target_value, abs=2e-2)
+        assert expectation_values[0].values == pytest.approx(target_value, abs=2e-1)
