@@ -1,16 +1,11 @@
 import pytest
 from openfermion import QubitOperator, IsingOperator
 
-from zquantum.core.interfaces.mock_objects import (
-    MockQuantumBackend,
-)
+from zquantum.core.symbolic_simulator import SymbolicSimulator
 from zquantum.core.circuits import Circuit, X, H
-from zquantum.core.measurement import Measurements
 from zquantum.qaoa.estimators import CvarEstimator
 
 from zquantum.core.interfaces.estimation import EstimationTask
-from pyquil.wavefunction import Wavefunction
-import numpy as np
 
 
 class TestCvarEstimator:
@@ -58,15 +53,8 @@ class TestCvarEstimator:
         return [EstimationTask(operator, circuit, 10)]
 
     @pytest.fixture()
-    def backend(self, request):
-        backend = MockQuantumBackend()
-
-        def custom_get_wavefunction(circuit):
-            # Returns wavefunction for circuit == Circuit([H(0)])
-            return Wavefunction(np.array([np.sqrt(0.5) + 0j, np.sqrt(0.5) + 0j]))
-
-        backend.get_wavefunction = custom_get_wavefunction
-        return backend
+    def backend(self):
+        return SymbolicSimulator()
 
     def test_raises_exception_if_operator_is_not_ising(
         self, estimator, backend, circuit
