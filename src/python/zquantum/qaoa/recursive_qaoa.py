@@ -11,6 +11,7 @@ from zquantum.core.measurement import Measurements
 from typing import Optional, List, Tuple
 from zquantum.qaoa.problems import solve_problem_by_exhaustive_search
 from zquantum.qaoa.ansatzes.farhi_ansatz import QAOAFarhiAnsatz
+from zquantum.core.bitstring_distribution import BitstringDistribution
 
 
 class RecursiveQAOA:
@@ -50,19 +51,21 @@ class RecursiveQAOA:
         optimizer: Optimizer,
         n_samples: int,
         backend: QuantumBackend,
-        qubit_map: Optional[List[int]] = [],
-    ) -> Tuple(int):
+        qubit_map: Optional[List[List[int]]] = None,
+    ) -> Tuple[int]:
         """Args:
             n_c: The threshold number of qubits at which recursion stops, as described in the original paper. Cannot be greater than number of qubits.
             qubit_map: A list that maps qubits in reduced Hamiltonian back to original qubits, used for subsequent recursions.
+                [(2, -1), (3, 1)]
 
         Returns:
             The solution to recursive QAOA as a bitstring. (tuple?)
         """
         assert n_c < self.number_of_qubits
         if not qubit_map:
+            qubit_map = []
             for i in range(self.number_of_qubits):
-                qubit_map.append(i)
+                qubit_map.append([i, 1])
 
         # Run QAOA
         ansatz = QAOAFarhiAnsatz(n_layers, self._cost_hamiltonian)
@@ -88,27 +91,12 @@ class RecursiveQAOA:
 
             # If term is a constant term, don't calculate expectation value.
             if () not in term.terms:
-                expectation_values_per_bitstring = {}
-                for bitstring in distribution.distribution_dict:
+                expval_of_term = _get_expectation_value_of_distribution(
+                    distribution, operator=term
+                )
 
-                    expected_value = Measurements([bitstring]).get_expectation_values(
-                        change_operator_type(term, IsingOperator),
-                        use_bessel_correction=False,  # TODO is this the correct use of term. term is the operator
-                    )
-
-                    expectation_values_per_bitstring[bitstring] = np.sum(
-                        expected_value.values
-                    )
-
-                cumulative_value = 0.0
-                # Get total expectation value (mean of expectation values of all bitstrings weighted by distribution)
-                for bitstring in expectation_values_per_bitstring:
-                    prob = distribution.distribution_dict[bitstring]
-                    expectation_value = expectation_values_per_bitstring[bitstring]
-                    cumulative_value += prob * expectation_value
-
-                if np.abs(cumulative_value) > np.abs(largest_expval):
-                    largest_expval = cumulative_value
+                if np.abs(expval_of_term) > np.abs(largest_expval):
+                    largest_expval = expval_of_term
                     term_with_largest_expval = term
 
         # Loop through all terms again and calculate the mapped result of the term.
@@ -118,10 +106,11 @@ class RecursiveQAOA:
 
         qubit_to_get_rid_of: int = term_with_largest_expval[0][0]
         for i in range(qubit_to_get_rid_of + 1, len(qubit_map)):
-            qubit_map[i] -= 1
-        qubit_map[qubit_to_get_rid_of] = qubit_map[
-            term_with_largest_expval[1][0]
-        ] * int(np.sign(largest_expval))
+            qubit_map[i][0] -= 1
+        qubit_map[qubit_to_get_rid_of] = [
+            qubit_map[term_with_largest_expval[1][0]][0],
+            int(np.sign(largest_expval)),
+        ]
 
         new_cost_hamiltonian = IsingOperator((), 0)
 
@@ -138,11 +127,7 @@ class RecursiveQAOA:
                         new_qubit_indice = term_with_largest_expval[1][0]
 
                     # Map the new cost hamiltonian onto reduced qubits
-                    new_qubit_indice = qubit_map[new_qubit_indice]
-                    # if new_qubit_indice < 0:
-                    #     coefficient *= -1
-                    new_qubit_indice = int(np.abs(new_qubit_indice))
-                    # bc np.abs returns type 'numpy.int32'
+                    new_qubit_indice = qubit_map[new_qubit_indice][0]
                     new_qubit = (new_qubit_indice, "Z")
                     new_term += (new_qubit,)
 
@@ -150,10 +135,10 @@ class RecursiveQAOA:
                     new_term, np.sign(largest_expval) * coefficient
                 )
 
-        assert (
-            count_qubits(change_operator_type(new_cost_hamiltonian, QubitOperator))
-            == max(qubit_map) + 1
-        )
+        # assert (
+        #     count_qubits(change_operator_type(new_cost_hamiltonian, QubitOperator))
+        #     == max(np.abs(qubit_map)) + 1
+        # )
 
         assert (
             count_qubits(change_operator_type(new_cost_hamiltonian, QubitOperator))
@@ -180,16 +165,19 @@ class RecursiveQAOA:
             )
         else:
             answers = solve_problem_by_exhaustive_search(new_cost_hamiltonian)
-            assert [len(answer) == max(qubit_map) for answer in answers[1]]
+            for answer in answers[1]:
+                assert len(answer) == count_qubits(
+                    change_operator_type(new_cost_hamiltonian, QubitOperator)
+                )
             answer = answers[1][0]
 
             # Map the answer of the reduced Hamiltonian back to the original number of qubits.
-            solutions_for_original_qubits = []
+            solutions_for_original_qubits: List[int] = []
             for qubit in qubit_map:
-                this_answer = answer[np.abs(qubit)]
+                this_answer = answer[np.abs(qubit[0])]
 
                 # If negative, flip the qubit.
-                if np.sign(qubit) == -1.0:
+                if qubit[1] == -1:
                     if this_answer == 0:
                         this_answer = 1
                     else:
@@ -197,6 +185,29 @@ class RecursiveQAOA:
                 solutions_for_original_qubits.append(this_answer)
             # solutions_for_original_qubits is correct given qubit_map and answer
 
-            breakpoint()
             return tuple(solutions_for_original_qubits)
             # TODO: make sure it works when highest expval is negative.
+
+
+def _get_expectation_value_of_distribution(
+    distribution: BitstringDistribution, operator: IsingOperator
+) -> float:
+    """Calculates expectation values of a distribution"""
+    expectation_values_per_bitstring = {}
+    for bitstring in distribution.distribution_dict:
+
+        expected_value = Measurements([bitstring]).get_expectation_values(
+            operator,
+            use_bessel_correction=False,
+        )
+
+        expectation_values_per_bitstring[bitstring] = np.sum(expected_value.values)
+
+    cumulative_value = 0.0
+    # Get total expectation value (mean of expectation values of all bitstrings weighted by distribution)
+    for bitstring in expectation_values_per_bitstring:
+        prob = distribution.distribution_dict[bitstring]
+        expectation_value = expectation_values_per_bitstring[bitstring]
+        cumulative_value += prob * expectation_value
+
+    return cumulative_value
