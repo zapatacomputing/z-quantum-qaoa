@@ -34,14 +34,10 @@ class TestCvarEstimator:
     def backend(self, request):
         backend = MockQuantumBackend()
 
-        def custom_run_circuit_and_measure(circuit, n_samples):
-            bitstrings = [("0"), ("1")]
-            return Measurements(bitstrings)
-
         def custom_get_wavefunction(circuit):
+            assert circuit == Circuit([H(0)])
             return Wavefunction(np.array([np.sqrt(0.5) + 0j, np.sqrt(0.5) + 0j]))
 
-        backend.run_circuit_and_measure = custom_run_circuit_and_measure
         backend.get_wavefunction = custom_get_wavefunction
         return backend
 
@@ -78,7 +74,7 @@ class TestCvarEstimator:
 
     def test_cvar_estimator_returns_correct_values(self, estimator, backend, operator):
         # Given
-        estimation_tasks = [EstimationTask(operator, Circuit([H(0)]), 10)]
+        estimation_tasks = [EstimationTask(operator, Circuit([H(0)]), 10000)]
         if estimator.alpha <= 0.5:
             target_value = -1
         else:
@@ -92,7 +88,7 @@ class TestCvarEstimator:
 
         # Then
         assert len(expectation_values) == len(estimation_tasks)
-        assert expectation_values[0].values == pytest.approx(target_value)
+        assert expectation_values[0].values == pytest.approx(target_value, abs=2e-2)
 
     def test_cvar_estimator_returns_correct_values_without_sampling(
         self, estimator, backend, operator
