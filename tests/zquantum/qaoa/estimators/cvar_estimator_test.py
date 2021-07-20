@@ -25,19 +25,19 @@ class TestCvarEstimator:
                 "use_exact_expectation_values": True,
             },
             {
-                "alpha": 0.5,
+                "alpha": 0.8,
                 "use_exact_expectation_values": False,
             },
             {
-                "alpha": 0.5,
+                "alpha": 0.8,
                 "use_exact_expectation_values": True,
             },
             {
-                "alpha": 0.8,
+                "alpha": 1.0,
                 "use_exact_expectation_values": False,
             },
             {
-                "alpha": 0.8,
+                "alpha": 1.0,
                 "use_exact_expectation_values": True,
             },
         ]

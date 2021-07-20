@@ -36,9 +36,7 @@ class CvarEstimator(EstimateExpectationValues):
         self.use_exact_expectation_values = use_exact_expectation_values
 
     def __call__(
-        self,
-        backend: QuantumBackend,
-        estimation_tasks: List[EstimationTask],
+        self, backend: QuantumBackend, estimation_tasks: List[EstimationTask]
     ) -> List[ExpectationValues]:
         """Given a circuit, backend, and target operators, this method produces expectation values
         using CVaR method.
