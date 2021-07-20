@@ -14,25 +14,31 @@ from zquantum.core.utils import dec2bin
 
 
 class CvarEstimator(EstimateExpectationValues):
-    """An estimator for calculating expectation value using CVaR method.
-    The main idea is that for diagonal operators the ground state of the Hamiltonian is a base state.
-    In particular for the combinatorial optimization problems, we often care only about getting a single bitstring representing the solution.
-    Therefore, it might be beneficial for the optimization process to discard samples that represent inferior solutions.
-    CVaR Estimator takes uses only a top X percentile of the samples for calculating the expectation value, where X = alpha*100.
+    def __init__(
+        self, alpha: float, use_exact_expectation_values: Optional[bool] = False
+    ) -> None:
+        """An estimator for calculating expectation value using CVaR method.
+        The main idea is that for diagonal operators the ground state of the Hamiltonian is a base state.
+        In particular for the combinatorial optimization problems, we often care only about getting a single bitstring representing the solution.
+        Therefore, it might be beneficial for the optimization process to discard samples that represent inferior solutions.
+        CVaR Estimator takes uses only a top X percentile of the samples for calculating the expectation value, where X = alpha*100.
 
-    Reference: https://arxiv.org/abs/1907.04769
-    "Improving Variational Quantum Optimization using CVaR", P. Barkoutsos, G. Nannicini, A. Robert, I. Tavernelli, and S. Woerner
-    """
+        Reference: https://arxiv.org/abs/1907.04769
+        "Improving Variational Quantum Optimization using CVaR", P. Barkoutsos, G. Nannicini, A. Robert, I. Tavernelli, and S. Woerner
 
-    def __init__(self, alpha: float) -> None:
+        Args:
+            alpha: defines what part of the measurements should be taken into account in the estimation process.
+            use_exact_expectation_values: whether to calculate expectation values by using exact wavefunctions or by taking samples.
+                (If True, the number of shots in each estimation task will be disregarded.)
+        """
         super().__init__()
         self.alpha = alpha
+        self.use_exact_expectation_values = use_exact_expectation_values
 
     def __call__(
         self,
         backend: QuantumBackend,
         estimation_tasks: List[EstimationTask],
-        use_exact_expectation_values: Optional[bool] = False,
     ) -> List[ExpectationValues]:
         """Given a circuit, backend, and target operators, this method produces expectation values
         using CVaR method.
@@ -40,9 +46,6 @@ class CvarEstimator(EstimateExpectationValues):
         Args:
             backend: the backend that will be used to run the circuits
             estimation_tasks: the estimation tasks defining the problem. Each task consist of target operator, circuit and number of shots.
-            alpha: defines what part of the measurements should be taken into account in the estimation process.
-            use_exact_expectation_values: whether to calculate expectation values by using exact wavefunctions or by taking samples.
-                (If true, the number of shots in each estimation task will be disregarded.)
         """
         if self.alpha > 1 or self.alpha <= 0:
             raise ValueError("alpha needs to be a value between 0 and 1.")
@@ -51,7 +54,7 @@ class CvarEstimator(EstimateExpectationValues):
             *[(e.circuit, e.operator, e.number_of_shots) for e in estimation_tasks]
         )
 
-        if not use_exact_expectation_values:
+        if not self.use_exact_expectation_values:
             distributions_list = [
                 backend.get_bitstring_distribution(circuit, n_samples=n_shots)
                 for circuit, n_shots in zip(circuits, shots_per_circuit)
@@ -166,7 +169,9 @@ def _sum_expectation_values(
     return final_value
 
 
-def _calculate_expectation_value_of_bitstring(bitstring: str, operator: IsingOperator):
+def _calculate_expectation_value_of_bitstring(
+    bitstring: str, operator: IsingOperator
+) -> float:
     """Calculate expectation value for a bitstring based on an operator."""
     expected_value = Measurements([bitstring]).get_expectation_values(
         operator, use_bessel_correction=False

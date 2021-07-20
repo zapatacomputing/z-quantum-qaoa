@@ -14,9 +14,36 @@ import numpy as np
 
 
 class TestCvarEstimator:
-    @pytest.fixture(params=[1.0, 0.8, 0.5, 0.2])
+    @pytest.fixture(
+        params=[
+            {
+                "alpha": 0.2,
+                "use_exact_expectation_values": False,
+            },
+            {
+                "alpha": 0.2,
+                "use_exact_expectation_values": True,
+            },
+            {
+                "alpha": 0.5,
+                "use_exact_expectation_values": False,
+            },
+            {
+                "alpha": 0.5,
+                "use_exact_expectation_values": True,
+            },
+            {
+                "alpha": 0.8,
+                "use_exact_expectation_values": False,
+            },
+            {
+                "alpha": 0.8,
+                "use_exact_expectation_values": True,
+            },
+        ]
+    )
     def estimator(self, request):
-        return CvarEstimator(alpha=request.param)
+        return CvarEstimator(**request.param)
 
     @pytest.fixture()
     def circuit(self):
@@ -35,7 +62,7 @@ class TestCvarEstimator:
         backend = MockQuantumBackend()
 
         def custom_get_wavefunction(circuit):
-            assert circuit == Circuit([H(0)])
+            # Returns wavefunction for circuit == Circuit([H(0)])
             return Wavefunction(np.array([np.sqrt(0.5) + 0j, np.sqrt(0.5) + 0j]))
 
         backend.get_wavefunction = custom_get_wavefunction
@@ -89,26 +116,3 @@ class TestCvarEstimator:
         # Then
         assert len(expectation_values) == len(estimation_tasks)
         assert expectation_values[0].values == pytest.approx(target_value, abs=2e-2)
-
-    def test_cvar_estimator_returns_correct_values_without_sampling(
-        self, estimator, backend, operator
-    ):
-        # Given
-        estimation_tasks = [
-            EstimationTask(operator, Circuit([H(0)]), number_of_shots=None)
-        ]
-        if estimator.alpha <= 0.5:
-            target_value = -1
-        else:
-            target_value = (-1 * 0.5 + 1 * (estimator.alpha - 0.5)) / estimator.alpha
-
-        # When
-        expectation_values = estimator(
-            backend=backend,
-            estimation_tasks=estimation_tasks,
-            use_exact_expectation_values=True,
-        )
-
-        # Then
-        assert len(expectation_values) == len(estimation_tasks)
-        assert expectation_values[0].values == pytest.approx(target_value)
