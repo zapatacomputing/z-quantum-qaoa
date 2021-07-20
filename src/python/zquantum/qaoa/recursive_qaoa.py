@@ -9,6 +9,8 @@ from zquantum.core.interfaces.backend import QuantumBackend
 import numpy as np
 from zquantum.core.measurement import Measurements
 from typing import Optional, List, Tuple
+from zquantum.qaoa.problems import solve_problem_by_exhaustive_search
+from zquantum.qaoa.ansatzes.farhi_ansatz import QAOAFarhiAnsatz
 
 
 class RecursiveQAOA:
@@ -49,8 +51,7 @@ class RecursiveQAOA:
         n_samples: int,
         backend: QuantumBackend,
         qubit_map: Optional[List[int]] = [],
-        # TODO: better way of having these params?
-    ) -> IsingOperator:
+    ) -> Tuple(int):
         """Args:
             n_c: The threshold number of qubits at which recursion stops, as described in the original paper. Cannot be greater than number of qubits.
             qubit_map: A list that maps qubits in reduced Hamiltonian back to original qubits, used for subsequent recursions.
@@ -64,7 +65,7 @@ class RecursiveQAOA:
                 qubit_map.append(i)
 
         # Run QAOA
-        ansatz = ansatz(n_layers, self._cost_hamiltonian)
+        ansatz = QAOAFarhiAnsatz(n_layers, self._cost_hamiltonian)
         cost_function = AnsatzBasedCostFunction(
             self._cost_hamiltonian,
             ansatz,
@@ -84,7 +85,6 @@ class RecursiveQAOA:
 
         for term in self._cost_hamiltonian:
             # Calculate expectation value of term
-            # TODO: Allow usuage of different objective functions (CVaR, Gibbs)
 
             # If term is a constant term, don't calculate expectation value.
             if () not in term.terms:
@@ -116,20 +116,12 @@ class RecursiveQAOA:
             term_with_largest_expval = term
         # term_with_largest_expval is now a subscriptable tuple like ((0, 'Z'), (1, 'Z'))
 
-        import pdb
-
-        pdb.set_trace()
-
         qubit_to_get_rid_of: int = term_with_largest_expval[0][0]
         for i in range(qubit_to_get_rid_of + 1, len(qubit_map)):
             qubit_map[i] -= 1
         qubit_map[qubit_to_get_rid_of] = qubit_map[
             term_with_largest_expval[1][0]
         ] * int(np.sign(largest_expval))
-
-        import pdb
-
-        pdb.set_trace()
 
         new_cost_hamiltonian = IsingOperator((), 0)
 
@@ -145,7 +137,7 @@ class RecursiveQAOA:
                     if new_qubit_indice == qubit_to_get_rid_of:
                         new_qubit_indice = term_with_largest_expval[1][0]
 
-                    # Map the qubit onto ...
+                    # Map the new cost hamiltonian onto reduced qubits
                     new_qubit_indice = qubit_map[new_qubit_indice]
                     # if new_qubit_indice < 0:
                     #     coefficient *= -1
@@ -158,11 +150,6 @@ class RecursiveQAOA:
                     new_term, np.sign(largest_expval) * coefficient
                 )
 
-        # Now I have to make new cost hamiltonian fucking reduced to basic terms I guess.
-
-        import pdb
-
-        pdb.set_trace()
         assert (
             count_qubits(change_operator_type(new_cost_hamiltonian, QubitOperator))
             == max(qubit_map) + 1
@@ -180,15 +167,36 @@ class RecursiveQAOA:
         ):
             next_recursion = RecursiveQAOA(new_cost_hamiltonian)
             return next_recursion(
-                n_c,
-                cost_function,
-                initial_params,
-                optimizer,
-                n_samples,
-                backend,
-                qubit_map,
+                n_c=n_c,
+                ansatz=ansatz,
+                n_layers=n_layers,
+                estimation_method=estimation_method,
+                estimation_preprocessors=estimation_preprocessors,
+                initial_params=initial_params,
+                optimizer=optimizer,
+                n_samples=n_samples,
+                backend=backend,
+                qubit_map=qubit_map,
             )
         else:
-            return new_cost_hamiltonian
-            # TODO: brute force the answer and map answer onto original qubits.
+            answers = solve_problem_by_exhaustive_search(new_cost_hamiltonian)
+            assert [len(answer) == max(qubit_map) for answer in answers[1]]
+            answer = answers[1][0]
+
+            # Map the answer of the reduced Hamiltonian back to the original number of qubits.
+            solutions_for_original_qubits = []
+            for qubit in qubit_map:
+                this_answer = answer[np.abs(qubit)]
+
+                # If negative, flip the qubit.
+                if np.sign(qubit) == -1.0:
+                    if this_answer == 0:
+                        this_answer = 1
+                    else:
+                        this_answer = 0
+                solutions_for_original_qubits.append(this_answer)
+            # solutions_for_original_qubits is correct given qubit_map and answer
+
+            breakpoint()
+            return tuple(solutions_for_original_qubits)
             # TODO: make sure it works when highest expval is negative.
