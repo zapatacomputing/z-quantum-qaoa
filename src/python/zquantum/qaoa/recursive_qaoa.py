@@ -71,48 +71,45 @@ class RecursiveQAOA:
 
         # Run QAOA
         # TODO Have ansatz and cost funcs be partials inputs?
-        # ansatz = QAOAFarhiAnsatz(n_layers, self._cost_hamiltonian)
-        # cost_function = AnsatzBasedCostFunction(
-        #     self._cost_hamiltonian,
-        #     ansatz,
-        #     backend,
-        #     estimation_method,
-        #     estimation_preprocessors,
-        # )
-        # opt_results = optimizer.minimize(cost_function, initial_params)
+        ansatz = QAOAFarhiAnsatz(n_layers, self._cost_hamiltonian)
+        cost_function = AnsatzBasedCostFunction(
+            self._cost_hamiltonian,
+            ansatz,
+            backend,
+            estimation_method,
+            estimation_preprocessors,
+        )
+        opt_results = optimizer.minimize(cost_function, initial_params)
 
-        # # Circuit with optimal parameters.
-        # circuit = ansatz.get_executable_circuit(opt_results.opt_params)
+        # Circuit with optimal parameters.
+        circuit = ansatz.get_executable_circuit(opt_results.opt_params)
 
-        # # abc = opt_results.opt_params - initial_params
-        # # return opt_results.opt_value
-        # # breakpoint()
+        # abc = opt_results.opt_params - initial_params
+        # return opt_results.opt_value
+        # breakpoint()
 
-        # # For each term, calculate <psi(beta, gamma) | Z_i Z_j | psi(beta, gamma)>
-        # # with optimal parameters.
-        # distribution = backend.get_bitstring_distribution(circuit, n_samples=n_samples)
-        # largest_expval = 0.0
+        # For each term, calculate <psi(beta, gamma) | Z_i Z_j | psi(beta, gamma)>
+        # with optimal parameters.
+        distribution = backend.get_bitstring_distribution(circuit, n_samples=n_samples)
+        largest_expval = 0.0
 
-        # for term in self._cost_hamiltonian:
-        #     # Calculate expectation value of term
+        for term in self._cost_hamiltonian:
+            # Calculate expectation value of term
 
-        #     # If term is a constant term, don't calculate expectation value.
-        #     if () not in term.terms:
-        #         expval_of_term = _get_expectation_value_of_distribution(
-        #             distribution, operator=term
-        #         )
+            # If term is a constant term, don't calculate expectation value.
+            if () not in term.terms:
+                expval_of_term = _get_expectation_value_of_distribution(
+                    distribution, operator=term
+                )
 
-        #         if np.abs(expval_of_term) > np.abs(largest_expval):
-        #             largest_expval = expval_of_term
-        #             term_with_largest_expval = term
+                if np.abs(expval_of_term) > np.abs(largest_expval):
+                    largest_expval = expval_of_term
+                    term_with_largest_expval = term
 
-        # # Loop through all terms again and calculate the mapped result of the term.
-        # for term in term_with_largest_expval.terms:
-        #     term_with_largest_expval = term
-        # # term_with_largest_expval is now a subscriptable tuple like ((0, 'Z'), (1, 'Z'))
-
-        term_with_largest_expval = ((0, "Z"), (2, "Z"))
-        largest_expval = -0.7630000000000002
+        # Loop through all terms again and calculate the mapped result of the term.
+        for term in term_with_largest_expval.terms:
+            term_with_largest_expval = term
+        # term_with_largest_expval is now a subscriptable tuple like ((0, 'Z'), (1, 'Z'))
 
         qubit_to_get_rid_of: int = term_with_largest_expval[1][0]
         # qubit_to_get_rid_of_og = qubit_to_get_rid_of
@@ -167,16 +164,17 @@ class RecursiveQAOA:
 
                 new_cost_hamiltonian += IsingOperator(new_term, coefficient)
 
-        # Check qubit map is correct
-        assert (
-            count_qubits(change_operator_type(new_cost_hamiltonian, QubitOperator))
-            == max(np.abs(qubit_map).tolist())[0] + 1
-        )
-
+        # Check new cost hamiltonian has correct amount of qubits
         assert (
             count_qubits(change_operator_type(new_cost_hamiltonian, QubitOperator))
             == count_qubits(change_operator_type(self._cost_hamiltonian, QubitOperator))
             - 1
+        )
+
+        # Check qubit map has correct amount of qubits
+        assert (
+            count_qubits(change_operator_type(new_cost_hamiltonian, QubitOperator))
+            == max(np.abs(qubit_map).tolist())[0] + 1
         )
 
         if (
