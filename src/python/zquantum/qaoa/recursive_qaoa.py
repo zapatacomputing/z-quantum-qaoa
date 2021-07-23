@@ -37,7 +37,7 @@ class RecursiveQAOA:
 
     @property
     def number_of_qubits(self):
-        """Returns number of qubits used for the initial QAOA circuit."""
+        """Returns number of qubits used for the QAOA circuit of this recursion."""
         return count_qubits(change_operator_type(self._cost_hamiltonian, QubitOperator))
 
     def __call__(
@@ -52,14 +52,16 @@ class RecursiveQAOA:
         n_samples: int,
         backend: QuantumBackend,
         qubit_map: Optional[List[List[int]]] = None,
-    ) -> Tuple[int]:
+    ) -> List[Tuple]:
         """Args:
             n_c: The threshold number of qubits at which recursion stops, as described in the original paper. Cannot be greater than number of qubits.
             qubit_map: A list that maps qubits in reduced Hamiltonian back to original qubits, used for subsequent recursions.
                 [(2, -1), (3, 1)]
+                first term of tuple is qubit the index of tuple to be mapped onto,
+                2nd term is if it will be mapped onto posibive or opposite of the qubit it's being mapped onto.
 
         Returns:
-            The solution to recursive QAOA as a bitstring. (tuple?)
+            List[Tuple[int]] The solution(s) to recursive QAOA as a list of tuples, each tuple is a tuple of bits
         """
         assert n_c < self.number_of_qubits
         if not qubit_map:
@@ -68,49 +70,80 @@ class RecursiveQAOA:
                 qubit_map.append([i, 1])
 
         # Run QAOA
-        ansatz = QAOAFarhiAnsatz(n_layers, self._cost_hamiltonian)
-        cost_function = AnsatzBasedCostFunction(
-            self._cost_hamiltonian,
-            ansatz,
-            backend,
-            estimation_method,
-            estimation_preprocessors,
-        )
-        opt_results = optimizer.minimize(cost_function, initial_params)
+        # TODO Have ansatz and cost funcs be partials inputs?
+        # ansatz = QAOAFarhiAnsatz(n_layers, self._cost_hamiltonian)
+        # cost_function = AnsatzBasedCostFunction(
+        #     self._cost_hamiltonian,
+        #     ansatz,
+        #     backend,
+        #     estimation_method,
+        #     estimation_preprocessors,
+        # )
+        # opt_results = optimizer.minimize(cost_function, initial_params)
 
-        # Circuit with optimal parameters.
-        circuit = ansatz.get_executable_circuit(opt_results.opt_params)
+        # # Circuit with optimal parameters.
+        # circuit = ansatz.get_executable_circuit(opt_results.opt_params)
 
-        # For each term, calculate <psi(beta, gamma) | Z_i Z_j | psi(beta, gamma)>
-        # with optimal parameters.
-        distribution = backend.get_bitstring_distribution(circuit, n_samples=n_samples)
-        largest_expval = 0.0
+        # # abc = opt_results.opt_params - initial_params
+        # # return opt_results.opt_value
+        # # breakpoint()
 
-        for term in self._cost_hamiltonian:
-            # Calculate expectation value of term
+        # # For each term, calculate <psi(beta, gamma) | Z_i Z_j | psi(beta, gamma)>
+        # # with optimal parameters.
+        # distribution = backend.get_bitstring_distribution(circuit, n_samples=n_samples)
+        # largest_expval = 0.0
 
-            # If term is a constant term, don't calculate expectation value.
-            if () not in term.terms:
-                expval_of_term = _get_expectation_value_of_distribution(
-                    distribution, operator=term
-                )
+        # for term in self._cost_hamiltonian:
+        #     # Calculate expectation value of term
 
-                if np.abs(expval_of_term) > np.abs(largest_expval):
-                    largest_expval = expval_of_term
-                    term_with_largest_expval = term
+        #     # If term is a constant term, don't calculate expectation value.
+        #     if () not in term.terms:
+        #         expval_of_term = _get_expectation_value_of_distribution(
+        #             distribution, operator=term
+        #         )
 
-        # Loop through all terms again and calculate the mapped result of the term.
-        for term in term_with_largest_expval.terms:
-            term_with_largest_expval = term
-        # term_with_largest_expval is now a subscriptable tuple like ((0, 'Z'), (1, 'Z'))
+        #         if np.abs(expval_of_term) > np.abs(largest_expval):
+        #             largest_expval = expval_of_term
+        #             term_with_largest_expval = term
 
-        qubit_to_get_rid_of: int = term_with_largest_expval[0][0]
-        for i in range(qubit_to_get_rid_of + 1, len(qubit_map)):
-            qubit_map[i][0] -= 1
-        qubit_map[qubit_to_get_rid_of] = [
-            qubit_map[term_with_largest_expval[1][0]][0],
-            int(np.sign(largest_expval)),
-        ]
+        # # Loop through all terms again and calculate the mapped result of the term.
+        # for term in term_with_largest_expval.terms:
+        #     term_with_largest_expval = term
+        # # term_with_largest_expval is now a subscriptable tuple like ((0, 'Z'), (1, 'Z'))
+
+        term_with_largest_expval = ((0, "Z"), (2, "Z"))
+        largest_expval = -0.7630000000000002
+
+        qubit_to_get_rid_of: int = term_with_largest_expval[1][0]
+        # qubit_to_get_rid_of_og = qubit_to_get_rid_of
+        # for qubit in range(self.number_of_qubits):
+        #     if qubit_map[qubit][0] == qubit_to_get_rid_of:
+        #         qubit_to_get_rid_of_og = qubit
+        #         break
+
+        breakpoint()
+        # i is original qubit, qubit_map[i][0] is current qubit evquivalent of original qubit.
+        for i in range(len(qubit_map)):
+            if qubit_map[i][0] > qubit_to_get_rid_of:
+                # map qubit to the qubit 1 below it
+                qubit_map[i][0] -= 1
+            elif qubit_map[i][0] == qubit_to_get_rid_of:
+                # map qubit onto the qubit it's being replaced with
+                qubit_map[i][0] = qubit_map[term_with_largest_expval[0][0]][0]
+                qubit_map[i][1] *= int(np.sign(largest_expval))
+                breakpoint()
+
+        # After the others are done and `qubit_map[term_with_largest_expval[1][0]][0]` is up to date
+        # for i in range(len(qubit_map)):
+
+        # breakpoint()
+        # for i in range(qubit_to_get_rid_of_og + 1, len(qubit_map)):
+        #     qubit_map[i][0] -= 1
+        # qubit_map[qubit_to_get_rid_of] = [
+        #     qubit_map[term_with_largest_expval[1][0]][0],
+        #     int(np.sign(largest_expval)),
+        # ]
+        breakpoint()
 
         new_cost_hamiltonian = IsingOperator((), 0)
 
@@ -122,23 +155,23 @@ class RecursiveQAOA:
                 new_term: Tuple = ()
                 for qubit in term:
                     # qubit is a component of qubit operator on 1 qubit ex. (2, 'Z')
-                    new_qubit_indice: int = qubit[0]
-                    if new_qubit_indice == qubit_to_get_rid_of:
-                        new_qubit_indice = term_with_largest_expval[1][0]
+                    qubit_indice: int = qubit[0]
 
                     # Map the new cost hamiltonian onto reduced qubits
-                    new_qubit_indice = qubit_map[new_qubit_indice][0]
+                    new_qubit_indice = qubit_map[qubit_indice][0]
                     new_qubit = (new_qubit_indice, "Z")
                     new_term += (new_qubit,)
 
-                new_cost_hamiltonian += IsingOperator(
-                    new_term, np.sign(largest_expval) * coefficient
-                )
+                    if qubit_indice == qubit_to_get_rid_of:
+                        coefficient *= np.sign(largest_expval)
 
-        # assert (
-        #     count_qubits(change_operator_type(new_cost_hamiltonian, QubitOperator))
-        #     == max(np.abs(qubit_map)) + 1
-        # )
+                new_cost_hamiltonian += IsingOperator(new_term, coefficient)
+
+        # Check qubit map is correct
+        assert (
+            count_qubits(change_operator_type(new_cost_hamiltonian, QubitOperator))
+            == max(np.abs(qubit_map).tolist())[0] + 1
+        )
 
         assert (
             count_qubits(change_operator_type(new_cost_hamiltonian, QubitOperator))
@@ -169,24 +202,28 @@ class RecursiveQAOA:
                 assert len(answer) == count_qubits(
                     change_operator_type(new_cost_hamiltonian, QubitOperator)
                 )
-            answer = answers[1][0]
 
             # Map the answer of the reduced Hamiltonian back to the original number of qubits.
-            solutions_for_original_qubits: List[int] = []
-            for qubit in qubit_map:
-                this_answer = answer[np.abs(qubit[0])]
+            solutions: List[Tuple] = []
 
-                # If negative, flip the qubit.
-                if qubit[1] == -1:
-                    if this_answer == 0:
-                        this_answer = 1
-                    else:
-                        this_answer = 0
-                solutions_for_original_qubits.append(this_answer)
-            # solutions_for_original_qubits is correct given qubit_map and answer
+            for answer in answers[1]:
+                solution_for_original_qubits: List[int] = []
+                for qubit in qubit_map:
+                    this_answer = answer[np.abs(qubit[0])]
 
-            return tuple(solutions_for_original_qubits)
-            # TODO: make sure it works when highest expval is negative.
+                    # If negative, flip the qubit.
+                    if qubit[1] == -1:
+                        if this_answer == 0:
+                            this_answer = 1
+                        else:
+                            this_answer = 0
+                    solution_for_original_qubits.append(this_answer)
+                # solutions_for_original_qubits is correct given qubit_map and answer
+
+                solutions.append(tuple(solution_for_original_qubits))
+            breakpoint()
+
+            return solutions
 
 
 def _get_expectation_value_of_distribution(
