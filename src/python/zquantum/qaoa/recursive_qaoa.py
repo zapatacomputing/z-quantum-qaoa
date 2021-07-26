@@ -43,7 +43,7 @@ class RecursiveQAOA:
     def __call__(
         self,
         n_c: int,
-        ansatz: Ansatz,
+        ansatz,
         n_layers: int,
         estimation_method,
         estimation_preprocessors,
@@ -84,10 +84,6 @@ class RecursiveQAOA:
         # Circuit with optimal parameters.
         circuit = ansatz.get_executable_circuit(opt_results.opt_params)
 
-        # abc = opt_results.opt_params - initial_params
-        # return opt_results.opt_value
-        # breakpoint()
-
         # For each term, calculate <psi(beta, gamma) | Z_i Z_j | psi(beta, gamma)>
         # with optimal parameters.
         distribution = backend.get_bitstring_distribution(circuit, n_samples=n_samples)
@@ -118,7 +114,6 @@ class RecursiveQAOA:
         #         qubit_to_get_rid_of_og = qubit
         #         break
 
-        breakpoint()
         # i is original qubit, qubit_map[i][0] is current qubit evquivalent of original qubit.
         for i in range(len(qubit_map)):
             if qubit_map[i][0] > qubit_to_get_rid_of:
@@ -128,7 +123,6 @@ class RecursiveQAOA:
                 # map qubit onto the qubit it's being replaced with
                 qubit_map[i][0] = qubit_map[term_with_largest_expval[0][0]][0]
                 qubit_map[i][1] *= int(np.sign(largest_expval))
-                breakpoint()
 
         # After the others are done and `qubit_map[term_with_largest_expval[1][0]][0]` is up to date
         # for i in range(len(qubit_map)):
@@ -140,7 +134,6 @@ class RecursiveQAOA:
         #     qubit_map[term_with_largest_expval[1][0]][0],
         #     int(np.sign(largest_expval)),
         # ]
-        breakpoint()
 
         new_cost_hamiltonian = IsingOperator((), 0)
 
