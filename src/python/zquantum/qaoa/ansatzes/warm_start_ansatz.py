@@ -1,7 +1,7 @@
 from zquantum.core.interfaces.ansatz import Ansatz, ansatz_property
 from zquantum.core.circuits import Circuit, create_layer_of_gates, RY, RZ
 from zquantum.core.evolution import time_evolution
-from zquantum.core.openfermion import qubitop_to_pyquilpauli, change_operator_type
+from zquantum.core.openfermion import change_operator_type
 
 from openfermion import QubitOperator, IsingOperator
 from openfermion.utils import count_qubits
@@ -66,14 +66,11 @@ class WarmStartQAOAAnsatz(Ansatz):
         # Prepare initial state
         circuit += create_layer_of_gates(self.number_of_qubits, RY, self._thetas)
 
-        pyquil_cost_hamiltonian = qubitop_to_pyquilpauli(
-            change_operator_type(self._cost_hamiltonian, QubitOperator)
-        )
-
         # Add time evolution layers
         for i in range(self.number_of_layers):
             circuit += time_evolution(
-                pyquil_cost_hamiltonian, sympy.Symbol(f"gamma_{i}")
+                change_operator_type(self._cost_hamiltonian, QubitOperator),
+                sympy.Symbol(f"gamma_{i}"),
             )
             circuit += create_layer_of_gates(self.number_of_qubits, RY, -self._thetas)
             circuit += create_layer_of_gates(

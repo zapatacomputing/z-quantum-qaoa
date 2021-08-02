@@ -11,15 +11,13 @@ from zquantum.core.interfaces.estimation import (
 )
 
 
-class CvarEstimator(EstimateExpectationValues):
-    """An estimator for calculating expectation value using CVaR method.
-    The main idea is that for diagonal operators the ground state of the Hamiltonian is a base state.
-    In particular for the combinatorial optimization problems, we often care only about getting a single bitstring representing the solution.
-    Therefore, it might be beneficial for the optimization process to discard samples that represent inferior solutions.
-    CVaR Estimator takes uses only a top X percentile of the samples for calculating the expectation value, where X = alpha*100.
+class GibbsObjectiveEstimator(EstimateExpectationValues):
+    """An estimator for calculating expectation value using the Gibbs objective function method.
+    The main idea is that we exponentiate the negative expectation value of each sample, which amplifies bitstrings with
+    low energies while reducing the role that high energy bitstrings play in determining the cost.
 
-    Reference: https://arxiv.org/abs/1907.04769
-    "Improving Variational Quantum Optimization using CVaR", P. Barkoutsos, G. Nannicini, A. Robert, I. Tavernelli, and S. Woerner
+    Reference: https://arxiv.org/abs/1909.07621 Section III
+    "Quantum Optimization with a Novel Gibbs Objective Function and Ansatz Architecture Search", L. Li, M. Fan, M. Coram, P. Riley, and S. Leichenauer
     """
 
     def __init__(self, alpha: float) -> None:
@@ -30,15 +28,15 @@ class CvarEstimator(EstimateExpectationValues):
         self, backend: QuantumBackend, estimation_tasks: List[EstimationTask]
     ) -> List[ExpectationValues]:
         """Given a circuit, backend, and target operators, this method produces expectation values
-        using CVaR method.
+        using Gibbs objective function.
 
         Args:
             backend: the backend that will be used to run the circuits
             estimation_tasks: the estimation tasks defining the problem. Each task consist of target operator, circuit and number of shots.
-            alpha: defines what part of the measurements should be taken into account in the estimation process.
+            alpha: defines to exponent coefficient, `exp(-alpha * expectation_value)`. See equation 2 in the original paper.
         """
-        if self.alpha > 1 or self.alpha <= 0:
-            raise ValueError("alpha needs to be a value between 0 and 1.")
+        if self.alpha <= 0:
+            raise ValueError("alpha needs to be a value greater than 0.")
 
         circuits, operators, shots_per_circuit = zip(
             *[(e.circuit, e.operator, e.number_of_shots) for e in estimation_tasks]
@@ -65,6 +63,7 @@ class CvarEstimator(EstimateExpectationValues):
 def _calculate_expectation_value_for_distribution(
     distribution: BitstringDistribution, operator: IsingOperator, alpha: float
 ) -> float:
+
     # Calculates expectation value per bitstring
     expectation_values_per_bitstring = {}
     for bitstring in distribution.distribution_dict:
@@ -73,23 +72,15 @@ def _calculate_expectation_value_for_distribution(
         )
         expectation_values_per_bitstring[bitstring] = np.sum(expected_value.values)
 
-    # Sorts expectation values by values.
-    sorted_expectation_values_per_bitstring_list = sorted(
-        expectation_values_per_bitstring.items(), key=lambda item: item[1]
-    )
-
-    cumulative_prob = 0.0
     cumulative_value = 0.0
-    # Sums expectation values for each bitstring, starting from the one with the smallest one.
-    # When the cumulative probability associated with these bitstrings is higher than alpha,
-    # it stops and effectively discards all the remaining values.
-    for bitstring, expectation_value in sorted_expectation_values_per_bitstring_list:
+    # Get total expectation value (mean of expectation values of all bitstrings weighted by distribution)
+    for bitstring in expectation_values_per_bitstring:
         prob = distribution.distribution_dict[bitstring]
-        if cumulative_prob + prob < alpha:
-            cumulative_prob += prob
-            cumulative_value += prob * expectation_value
-        else:
-            cumulative_value += (alpha - cumulative_prob) * expectation_value
-            break
-    final_value = cumulative_value / alpha
+
+        # For the i-th sampled bitstring, compute exp(-alpha E_i) See equation 2 in the original paper.
+        expectation_value = np.exp(-alpha * expectation_values_per_bitstring[bitstring])
+        cumulative_value += prob * expectation_value
+
+    final_value = -np.log(cumulative_value)
+
     return final_value

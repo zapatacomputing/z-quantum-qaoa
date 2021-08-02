@@ -1,20 +1,44 @@
 import pytest
 from openfermion import QubitOperator, IsingOperator
 
-from zquantum.core.interfaces.mock_objects import (
-    MockQuantumBackend,
-)
+from zquantum.core.symbolic_simulator import SymbolicSimulator
 from zquantum.core.circuits import Circuit, X, H
-from zquantum.core.measurement import Measurements
 from zquantum.qaoa.estimators import CvarEstimator
 
 from zquantum.core.interfaces.estimation import EstimationTask
 
 
 class TestCvarEstimator:
-    @pytest.fixture(params=[1.0, 0.8, 0.5, 0.2])
+    @pytest.fixture(
+        params=[
+            {
+                "alpha": 0.2,
+                "use_exact_expectation_values": False,
+            },
+            {
+                "alpha": 0.2,
+                "use_exact_expectation_values": True,
+            },
+            {
+                "alpha": 0.8,
+                "use_exact_expectation_values": False,
+            },
+            {
+                "alpha": 0.8,
+                "use_exact_expectation_values": True,
+            },
+            {
+                "alpha": 1.0,
+                "use_exact_expectation_values": False,
+            },
+            {
+                "alpha": 1.0,
+                "use_exact_expectation_values": True,
+            },
+        ]
+    )
     def estimator(self, request):
-        return CvarEstimator(alpha=request.param)
+        return CvarEstimator(**request.param)
 
     @pytest.fixture()
     def circuit(self):
@@ -29,15 +53,8 @@ class TestCvarEstimator:
         return [EstimationTask(operator, circuit, 10)]
 
     @pytest.fixture()
-    def backend(self, request):
-        backend = MockQuantumBackend()
-
-        def custom_run_circuit_and_measure(circuit, n_samples):
-            bitstrings = [("0"), ("1")]
-            return Measurements(bitstrings)
-
-        backend.run_circuit_and_measure = custom_run_circuit_and_measure
-        return backend
+    def backend(self):
+        return SymbolicSimulator()
 
     def test_raises_exception_if_operator_is_not_ising(
         self, estimator, backend, circuit
@@ -72,7 +89,7 @@ class TestCvarEstimator:
 
     def test_cvar_estimator_returns_correct_values(self, estimator, backend, operator):
         # Given
-        estimation_tasks = [EstimationTask(operator, Circuit([H(0)]), 10)]
+        estimation_tasks = [EstimationTask(operator, Circuit([H(0)]), 10000)]
         if estimator.alpha <= 0.5:
             target_value = -1
         else:
@@ -86,4 +103,4 @@ class TestCvarEstimator:
 
         # Then
         assert len(expectation_values) == len(estimation_tasks)
-        assert expectation_values[0].values == pytest.approx(target_value)
+        assert expectation_values[0].values == pytest.approx(target_value, abs=2e-1)
