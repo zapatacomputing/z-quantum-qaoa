@@ -10,6 +10,14 @@ from zquantum.qaoa.estimators import GibbsObjectiveEstimator
 from zquantum.core.interfaces.estimation import EstimationTask
 import numpy as np
 
+from zquantum.core.interfaces.estimator_contract import ESTIMATOR_CONTRACT
+
+
+@pytest.mark.parametrize("contract", ESTIMATOR_CONTRACT)
+def test_estimator_contract(contract):
+    estimator = GibbsObjectiveEstimator(alpha=0.2)
+    assert contract(estimator)
+
 
 class TestGibbsEstimator:
     @pytest.fixture(params=[1.0, 0.8, 0.5, 0.2])
@@ -71,5 +79,4 @@ class TestGibbsEstimator:
         )
 
         # Then
-        assert len(expectation_values) == len(estimation_tasks)
         assert expectation_values[0].values == pytest.approx(target_value, rel=2e-1)
