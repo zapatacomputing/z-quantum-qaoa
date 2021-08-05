@@ -109,11 +109,11 @@ def evaluate_solution(
         raise ValueError("Length of solution must match size of the graph.")
     if any(el not in [0, 1] for el in solution):
         raise ValueError("Solution must consist of either 0s or 1s.")
-    return _evaluate_solution_for_hamiltonian(get_hamiltonian(graph), solution)
+    return _evaluate_solution_for_hamiltonian(solution, get_hamiltonian(graph))
 
 
 def _evaluate_solution_for_hamiltonian(
-    solution: List[int], hamiltonian: QubitOperator
+    solution: Tuple[int], hamiltonian: QubitOperator
 ) -> float:
     """Evaluates a solution of a hamiltonian by its calculating expectation value.
 
