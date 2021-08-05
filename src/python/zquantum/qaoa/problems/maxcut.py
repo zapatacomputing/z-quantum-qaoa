@@ -1,9 +1,7 @@
-from typing import Dict, List, Tuple
+from typing import List, Tuple
 
-import numpy as np
 import networkx as nx
 from openfermion import QubitOperator
-from zquantum.core.utils import dec2bin
 from ._problem_evaluation import (
     solve_graph_problem_by_exhaustive_search,
     evaluate_solution,
