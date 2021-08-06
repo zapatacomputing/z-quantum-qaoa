@@ -7,6 +7,14 @@ from zquantum.qaoa.estimators import CvarEstimator
 
 from zquantum.core.interfaces.estimation import EstimationTask
 
+from zquantum.core.interfaces.estimator_contract import ESTIMATOR_CONTRACT
+
+
+@pytest.mark.parametrize("contract", ESTIMATOR_CONTRACT)
+def test_estimator_contract(contract):
+    estimator = CvarEstimator(alpha=0.2)
+    assert contract(estimator)
+
 
 class TestCvarEstimator:
     @pytest.fixture(
@@ -102,5 +110,4 @@ class TestCvarEstimator:
         )
 
         # Then
-        assert len(expectation_values) == len(estimation_tasks)
         assert expectation_values[0].values == pytest.approx(target_value, abs=2e-1)
