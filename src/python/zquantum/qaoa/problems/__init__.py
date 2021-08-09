@@ -23,3 +23,5 @@ from .stable_set import (
 )
 
 from .generators import get_random_hamiltonians_for_problem
+
+from ._problem_evaluation import solve_problem_by_exhaustive_search

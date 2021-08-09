@@ -79,4 +79,4 @@ class TestGibbsEstimator:
         )
 
         # Then
-        assert expectation_values[0].values == pytest.approx(target_value, rel=2e-1)
+        assert expectation_values[0].values == pytest.approx(target_value, abs=2e-2)
