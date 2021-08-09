@@ -10,10 +10,10 @@ from zquantum.qaoa.estimators import GibbsObjectiveEstimator
 from zquantum.core.interfaces.estimation import EstimationTask
 import numpy as np
 
-from zquantum.core.interfaces.estimator_contract import ESTIMATOR_CONTRACT
+from zquantum.core.interfaces.estimator_contract import ESTIMATOR_CONTRACTS
 
 
-@pytest.mark.parametrize("contract", ESTIMATOR_CONTRACT)
+@pytest.mark.parametrize("contract", ESTIMATOR_CONTRACTS)
 def test_estimator_contract(contract):
     estimator = GibbsObjectiveEstimator(alpha=0.2)
     assert contract(estimator)

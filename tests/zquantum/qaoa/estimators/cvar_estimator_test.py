@@ -7,10 +7,10 @@ from zquantum.qaoa.estimators import CvarEstimator
 
 from zquantum.core.interfaces.estimation import EstimationTask
 
-from zquantum.core.interfaces.estimator_contract import ESTIMATOR_CONTRACT
+from zquantum.core.interfaces.estimator_contract import ESTIMATOR_CONTRACTS
 
 
-@pytest.mark.parametrize("contract", ESTIMATOR_CONTRACT)
+@pytest.mark.parametrize("contract", ESTIMATOR_CONTRACTS)
 def test_estimator_contract(contract):
     estimator = CvarEstimator(alpha=0.2)
     assert contract(estimator)
