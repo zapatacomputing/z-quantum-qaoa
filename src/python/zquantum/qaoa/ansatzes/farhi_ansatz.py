@@ -59,24 +59,27 @@ class QAOAFarhiAnsatz(Ansatz):
         Args:
             params: parameters of the circuit.
         """
-        if params is not None:
-            Warning(
-                "This method retuns a parametrizable circuit, params will be ignored."
-            )
+
         circuit = Circuit()
 
         # Prepare initial state
         circuit += create_layer_of_gates(self.number_of_qubits, H)
 
         # Add time evolution layers
-        for i in range(self.number_of_layers):
+        if params is None:
+            params = []
+            for i in range(self.number_of_layers):
+                params += sympy.Symbol(f"gamma_{i}")
+                params += sympy.Symbol(f"beta_{i}")
+
+        assert len(params) == self.number_of_params
+
+        for i in range(0, self.number_of_layers, 2):
             circuit += time_evolution(
                 change_operator_type(self._cost_hamiltonian, QubitOperator),
-                sympy.Symbol(f"gamma_{i}"),
+                params[i],
             )
-            circuit += time_evolution(
-                self._mixer_hamiltonian, sympy.Symbol(f"beta_{i}")
-            )
+            circuit += time_evolution(self._mixer_hamiltonian, params[i + 1])
 
         return circuit
 
