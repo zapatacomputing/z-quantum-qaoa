@@ -17,9 +17,11 @@ def solve_graph_problem_by_exhaustive_search(
     """
     Solves given graph problem using exhaustive search.
     It searches for degeneracy and returns all the best solutions if more than one exists.
+
     Args:
         graph: graph for which we want to solve the problem
         cost_function: function which calculates the cost of solution of a given problem.
+
     Returns:
         float: value of the best solution
         List[Tuple[int]]: list of solutions which correspond to the best value, each solution is a tuple of ints.
@@ -47,10 +49,12 @@ def evaluate_solution(
     get_hamiltonian: Callable[[nx.Graph], QubitOperator],
 ) -> float:
     """Evaluates a solution of a graph problem by calculating expectation value of its Hamiltonian.
+
     Args:
         solution: solution to a problem
         graph: a graph for which we want to solve the problem
         get_hamiltonian: function which translates graph into a Hamiltonian representing a problem.
+
     Returns:
         float: value of a solution.
     """
