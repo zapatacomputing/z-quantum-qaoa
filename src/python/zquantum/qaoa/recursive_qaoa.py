@@ -75,11 +75,11 @@ class RecursiveQAOA:
                 ansatz,
                 initial_params,
                 optimizer,
-                estimation_tasks_factory,
+                estimation_tasks_factory_generator,
                 cost_function_factory,
             )
 
-            solutions = RecursiveQAOA(cost_hamiltonian)
+            solutions = recursive_qaoa(cost_hamiltonian)
         """
 
         self._n_c = n_c
@@ -117,81 +117,39 @@ class RecursiveQAOA:
         assert self._n_c < n_qubits
 
         if qubit_map is None:
-            qubit_map = []
-            for i in range(n_qubits):
-                qubit_map.append([i, 1])
+            qubit_map = _create_default_qubit_map(n_qubits)
 
         ansatz = copy(self._ansatz)
         ansatz._cost_hamiltonian = cost_hamiltonian
 
-        # Run QAOA
         estimation_tasks_factory = self._estimation_tasks_factory(
             cost_hamiltonian, ansatz
         )
         cost_function = self._cost_function_factory(
-            estimation_tasks_factory,
+            estimation_tasks_factory=estimation_tasks_factory,
         )
+
+        # Run & optimize QAOA
         opt_results = self._optimizer.minimize(cost_function, self._initial_params)
 
-        # For each term, calculate <psi(beta, gamma) | Z_i Z_j | psi(beta, gamma)>
-        # with optimal beta and gamma.
-        largest_expval = 0.0
+        (
+            term_with_largest_expval,
+            largest_expval,
+        ) = _find_term_with_strongest_correlation(
+            cost_hamiltonian,
+            ansatz,
+            opt_results.opt_params,
+            self._estimation_tasks_factory,
+            self._cost_function_factory,
+        )
 
-        for term in cost_hamiltonian:
-            # If term is a constant term, don't calculate expectation value.
-            if () not in term.terms:
+        qubit_map = _update_qubit_map(
+            qubit_map, term_with_largest_expval, largest_expval
+        )
 
-                # Calculate expectation value of term
-                estimation_tasks_factory_of_term = self._estimation_tasks_factory(
-                    term, ansatz
-                )
-                cost_function_of_term = self._cost_function_factory(
-                    estimation_tasks_factory_of_term
-                )
-                expval_of_term = cost_function_of_term(opt_results.opt_params)
-
-                if np.abs(expval_of_term) > np.abs(largest_expval):
-                    largest_expval = expval_of_term
-                    term_with_largest_expval = term
-
-        # Loop through all terms again and calculate the mapped result of the term.
-        for term in term_with_largest_expval.terms:
-            term_with_largest_expval = term
-        # term_with_largest_expval is now a subscriptable tuple like ((0, 'Z'), (1, 'Z'))
-
-        qubit_to_get_rid_of: int = term_with_largest_expval[1][0]
-
-        # i is original qubit, qubit_map[i][0] is current qubit equivalent of original qubit.
-        for i in range(len(qubit_map)):
-            if qubit_map[i][0] > qubit_to_get_rid_of:
-                # map qubit to the qubit 1 below it
-                qubit_map[i][0] -= 1
-            elif qubit_map[i][0] == qubit_to_get_rid_of:
-                # map qubit onto the qubit it's being replaced with
-                qubit_map[i][0] = qubit_map[term_with_largest_expval[0][0]][0]
-                qubit_map[i][1] *= int(np.sign(largest_expval))
-
-        reduced_cost_hamiltonian = IsingOperator((), 0)
-
-        terms = change_operator_type(cost_hamiltonian, QubitOperator).terms
-        for term in terms:
-            # term is tuple representing one term of QubitOperator, example ((2, 'Z'), (3, 'Z'))
-            if term != term_with_largest_expval:
-                coefficient: float = terms[term]
-                new_term: Tuple = ()
-                for qubit in term:
-                    # qubit is a component of qubit operator on 1 qubit ex. (2, 'Z')
-                    qubit_indice: int = qubit[0]
-
-                    # Map the new cost hamiltonian onto reduced qubits
-                    new_qubit_indice = qubit_map[qubit_indice][0]
-                    new_qubit = (new_qubit_indice, "Z")
-                    new_term += (new_qubit,)
-
-                    if qubit_indice == qubit_to_get_rid_of:
-                        coefficient *= np.sign(largest_expval)
-
-                reduced_cost_hamiltonian += IsingOperator(new_term, coefficient)
+        reduced_cost_hamiltonian = _create_reduced_hamiltonian(
+            cost_hamiltonian, term_with_largest_expval, largest_expval, qubit_map
+        )
 
         # Check new cost hamiltonian has correct amount of qubits
         assert (
@@ -209,36 +167,188 @@ class RecursiveQAOA:
             count_qubits(change_operator_type(reduced_cost_hamiltonian, QubitOperator))
             > self._n_c
         ):
-            return self(
-                cost_hamiltonian=cost_hamiltonian,
-                qubit_map=qubit_map,
-            )
+            # If we didn't reach threshold `n_c`, we repeat the the above with the reduced
+            # cost hamiltonian.
+            return self(reduced_cost_hamiltonian, qubit_map)
 
         else:
             best_value, reduced_solutions = solve_problem_by_exhaustive_search(
-                reduced_cost_hamiltonian
+                change_operator_type(reduced_cost_hamiltonian, QubitOperator)
             )
             for solution in reduced_solutions:
                 assert len(solution) == count_qubits(
                     change_operator_type(reduced_cost_hamiltonian, QubitOperator)
                 )
 
-            # Map the answer of the reduced Hamiltonian back to the original number of qubits.
-            solutions: List[Tuple[int, ...]] = []
+            return _map_reduced_solutions_to_original_solutions(
+                reduced_solutions, qubit_map
+            )
 
-            for solution in reduced_solutions:
-                original_solution: List[int] = []
-                for qubit in qubit_map:
-                    this_answer = solution[np.abs(qubit[0])]
 
-                    # If negative, flip the qubit.
-                    if qubit[1] == -1:
-                        if this_answer == 0:
-                            this_answer = 1
-                        else:
-                            this_answer = 0
-                    original_solution.append(this_answer)
+def _create_default_qubit_map(n_qubits: int) -> List[List[int]]:
+    """Creates a qubit map that maps each qubit to itself."""
+    qubit_map = []
+    for i in range(n_qubits):
+        qubit_map.append([i, 1])
+    return qubit_map
 
-                solutions.append(tuple(original_solution))
 
-            return solutions
+def _find_term_with_strongest_correlation(
+    hamiltonian: IsingOperator,
+    ansatz: Ansatz,
+    optimal_params: np.ndarray,
+    estimation_tasks_factory: Callable[[IsingOperator, Ansatz], EstimationTasksFactory],
+    cost_function_factory: Callable[[EstimationTasksFactory], CostFunction],
+) -> Tuple[IsingOperator, float]:
+    """For each term Z_i Z_j, calculate the expectation value <psi(beta, gamma) | Z_i Z_j | psi(beta, gamma)>
+    with optimal beta and gamma. The idea is that the term with largest expectation value
+    has the largest correlation or anticorrelation between its qubits, and this information
+    can be used to eliminate a qubit. See equation (15) of the original paper.
+
+    Args:
+        hamiltonian: the hamiltonian that you want to find term with strongest correlation of.
+        ansatz: ansatz representing the circuit of the full hamiltonian, used to calculate psi(beta, gamma)
+        optimal_params: optimal values of beta, gamma
+        estimation_tasks_factory: See docstring of RecursiveQAOA
+        cost_function_factory: See docstring of RecursiveQAOA
+
+    Returns:
+        The term with the largest correlation, and the value of that term's expectation value.
+    """
+    largest_expval = 0.0
+
+    for term in hamiltonian:
+        # If term is a constant term, don't calculate expectation value.
+        if () not in term.terms:
+
+            # Calculate expectation value of term
+            estimation_tasks_factory_of_term = estimation_tasks_factory(term, ansatz)
+            cost_function_of_term = cost_function_factory(
+                estimation_tasks_factory=estimation_tasks_factory_of_term
+            )
+            expval_of_term = cost_function_of_term(optimal_params)
+
+            if np.abs(expval_of_term) > np.abs(largest_expval):
+                largest_expval = expval_of_term
+                term_with_largest_expval = term
+
+    return (term_with_largest_expval, largest_expval)
+
+
+def _update_qubit_map(
+    qubit_map: List[List[int]],
+    term_with_largest_expval: IsingOperator,
+    largest_expval: float,
+) -> List[List[int]]:
+    """Updates the qubit map by
+        1. Substituting one qubit of `term_with_largest_expval` with the other
+        2. Substituting all qubits larger than the gotten-rid-of-qubit with the qubit one below it
+    See equation (15) of the original paper.
+
+    Args:
+        qubit_map: the qubit map to be updated. a list that maps original qubits to new qubits,
+            see docstring of RecursiveQAOA
+        term_with_largest_expval: term with largest expectation value
+        largest_expval: the expectation value of `term_with_largest_expval`
+
+    Returns:
+        Updated qubit map
+
+    """
+    for term in term_with_largest_expval.terms:
+        term_with_largest_expval = term
+    # term_with_largest_expval is now a subscriptable tuple like ((0, 'Z'), (1, 'Z'))
+
+    new_qubit_map = copy(qubit_map)
+    qubit_to_get_rid_of: int = term_with_largest_expval[1][0]
+
+    # i is original qubit, qubit_map[i][0] is current qubit equivalent of original qubit.
+    for i in range(len(new_qubit_map)):
+        if new_qubit_map[i][0] > qubit_to_get_rid_of:
+            # map qubit to the qubit 1 below it
+            new_qubit_map[i][0] -= 1
+        elif new_qubit_map[i][0] == qubit_to_get_rid_of:
+            # map qubit onto the qubit it's being replaced with
+            new_qubit_map[i][0] = new_qubit_map[term_with_largest_expval[0][0]][0]
+            new_qubit_map[i][1] *= int(np.sign(largest_expval))
+
+    return new_qubit_map
+
+
+def _create_reduced_hamiltonian(
+    hamiltonian: IsingOperator,
+    term_with_largest_expval: IsingOperator,
+    largest_expval: float,
+    qubit_map: List[List[int]],
+) -> IsingOperator:
+    """Reduce the cost hamiltonian by substituting one qubit of the term with largest expectation
+    value with the other qubit of the term. See equation (15) of the original paper.
+
+    Args:
+        hamiltonian: hamiltonian to be reduced
+        term_with_largest_expval: term with largest expectation value
+        largest_expval: the expectation value of `term_with_largest_expval`
+        qubit_map: list that maps original qubits to new qubits, see docstring of RecursiveQAOA
+
+    Returns:
+        Reduced hamiltonian.
+    """
+    for term in term_with_largest_expval.terms:
+        term_with_largest_expval = term
+    # term_with_largest_expval is now a subscriptable tuple like ((0, 'Z'), (1, 'Z'))
+
+    qubit_to_get_rid_of: int = term_with_largest_expval[1][0]
+    reduced_hamiltonian = IsingOperator()
+
+    for (term, coefficient) in hamiltonian.terms.items():
+        # term is tuple representing one term of IsingOperator, example ((2, 'Z'), (3, 'Z'))
+        if term != term_with_largest_expval:
+            new_term: Tuple = ()
+            for qubit in term:
+                # qubit is a component of qubit operator on 1 qubit ex. (2, 'Z')
+                qubit_indice: int = qubit[0]
+
+                # Map the new cost hamiltonian onto reduced qubits
+                new_qubit_indice = qubit_map[qubit_indice][0]
+                new_qubit = (new_qubit_indice, "Z")
+                new_term += (new_qubit,)
+
+                if qubit_indice == qubit_to_get_rid_of:
+                    coefficient *= np.sign(largest_expval)
+
+            reduced_hamiltonian += IsingOperator(new_term, coefficient)
+
+    return reduced_hamiltonian
+
+
+def _map_reduced_solutions_to_original_solutions(
+    reduced_solutions: List[Tuple[int]], qubit_map: List[List[int]]
+):
+    """Maps the answer of the reduced Hamiltonian back to the original number of qubits.
+
+    Args:
+        reduced_solutions: list of solutions, each solution is a tuple of ints.
+        qubit_map: list that maps original qubits to new qubits, see docstring of RecursiveQAOA
+
+    Returns:
+        list of solutions, each solution is a tuple of ints.
+    """
+
+    original_solutions: List[Tuple[int, ...]] = []
+
+    for reduced_solution in reduced_solutions:
+        original_solution: List[int] = []
+        for qubit in qubit_map:
+            this_answer = reduced_solution[np.abs(qubit[0])]
+
+            # If negative, flip the qubit.
+            if qubit[1] == -1:
+                if this_answer == 0:
+                    this_answer = 1
+                else:
+                    this_answer = 0
+            original_solution.append(this_answer)
+
+        original_solutions.append(tuple(original_solution))
+
+    return original_solutions
