@@ -164,7 +164,7 @@ class RecursiveQAOA:
 
         qubit_to_get_rid_of: int = term_with_largest_expval[1][0]
 
-        # i is original qubit, qubit_map[i][0] is current qubit evquivalent of original qubit.
+        # i is original qubit, qubit_map[i][0] is current qubit equivalent of original qubit.
         for i in range(len(qubit_map)):
             if qubit_map[i][0] > qubit_to_get_rid_of:
                 # map qubit to the qubit 1 below it
