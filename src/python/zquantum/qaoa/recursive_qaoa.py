@@ -143,12 +143,14 @@ class RecursiveQAOA:
             self._cost_function_factory,
         )
 
-        qubit_map = _update_qubit_map(
+        new_qubit_map = _update_qubit_map(
             qubit_map, term_with_largest_expval, largest_expval
         )
 
         reduced_cost_hamiltonian = _create_reduced_hamiltonian(
-            cost_hamiltonian, term_with_largest_expval, largest_expval, qubit_map
+            cost_hamiltonian,
+            term_with_largest_expval,
+            largest_expval,
         )
 
         # Check new cost hamiltonian has correct amount of qubits
@@ -160,7 +162,7 @@ class RecursiveQAOA:
         # Check qubit map has correct amount of qubits
         assert (
             count_qubits(change_operator_type(reduced_cost_hamiltonian, QubitOperator))
-            == max(np.abs(qubit_map).tolist())[0] + 1
+            == max(np.abs(new_qubit_map).tolist())[0] + 1
         )
 
         if (
@@ -169,7 +171,8 @@ class RecursiveQAOA:
         ):
             # If we didn't reach threshold `n_c`, we repeat the the above with the reduced
             # cost hamiltonian.
-            return self(reduced_cost_hamiltonian, qubit_map)
+
+            return self.__call__(reduced_cost_hamiltonian, new_qubit_map)
 
         else:
             best_value, reduced_solutions = solve_problem_by_exhaustive_search(
@@ -181,7 +184,7 @@ class RecursiveQAOA:
                 )
 
             return _map_reduced_solutions_to_original_solutions(
-                reduced_solutions, qubit_map
+                reduced_solutions, new_qubit_map
             )
 
 
@@ -259,7 +262,9 @@ def _update_qubit_map(
         term_with_largest_expval = term
     # term_with_largest_expval is now a subscriptable tuple like ((0, 'Z'), (1, 'Z'))
 
-    new_qubit_map = copy(qubit_map)
+    from copy import deepcopy
+
+    new_qubit_map = deepcopy(qubit_map)
     qubit_to_get_rid_of: int = term_with_largest_expval[1][0]
 
     # i is original qubit, qubit_map[i][0] is current qubit equivalent of original qubit.
@@ -270,16 +275,35 @@ def _update_qubit_map(
         elif new_qubit_map[i][0] == qubit_to_get_rid_of:
             # map qubit onto the qubit it's being replaced with
             new_qubit_map[i][0] = new_qubit_map[term_with_largest_expval[0][0]][0]
+            # TODO above line may have problems.
             new_qubit_map[i][1] *= int(np.sign(largest_expval))
 
     return new_qubit_map
+
+
+def _get_new_qubit_indice(old_indice: int, term_with_largest_expval) -> int:
+    # for term in term_with_largest_expval.terms:
+    #     term_with_largest_expval = term
+    # term_with_largest_expval is now a subscriptable tuple like ((0, 'Z'), (1, 'Z'))
+
+    new_indice = old_indice
+
+    qubit_to_get_rid_of: int = term_with_largest_expval[1][0]
+    qubit_itll_be_replaced_with: int = term_with_largest_expval[0][0]
+    if old_indice > qubit_to_get_rid_of:
+        # map qubit to the qubit 1 below it
+        new_indice = old_indice - 1
+    elif old_indice == qubit_to_get_rid_of:
+        # map qubit onto the qubit it's being replaced with
+        new_indice = qubit_itll_be_replaced_with
+
+    return new_indice
 
 
 def _create_reduced_hamiltonian(
     hamiltonian: IsingOperator,
     term_with_largest_expval: IsingOperator,
     largest_expval: float,
-    qubit_map: List[List[int]],
 ) -> IsingOperator:
     """Reduce the cost hamiltonian by substituting one qubit of the term with largest expectation
     value with the other qubit of the term. See equation (15) of the original paper.
@@ -288,7 +312,6 @@ def _create_reduced_hamiltonian(
         hamiltonian: hamiltonian to be reduced
         term_with_largest_expval: term with largest expectation value
         largest_expval: the expectation value of `term_with_largest_expval`
-        qubit_map: list that maps original qubits to new qubits, see docstring of RecursiveQAOA
 
     Returns:
         Reduced hamiltonian.
@@ -309,7 +332,9 @@ def _create_reduced_hamiltonian(
                 qubit_indice: int = qubit[0]
 
                 # Map the new cost hamiltonian onto reduced qubits
-                new_qubit_indice = qubit_map[qubit_indice][0]
+                new_qubit_indice = _get_new_qubit_indice(
+                    qubit_indice, term_with_largest_expval
+                )
                 new_qubit = (new_qubit_indice, "Z")
                 new_term += (new_qubit,)
 

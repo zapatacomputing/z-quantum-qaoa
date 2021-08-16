@@ -1,4 +1,4 @@
-from functools import partial
+from functools import partial, wraps
 
 import numpy as np
 import pytest
@@ -165,27 +165,35 @@ class TestRQAOA:
             qubit_map, term_with_largest_expval, largest_expval
         )
         reduced_ham = _create_reduced_hamiltonian(
-            hamiltonian, term_with_largest_expval, largest_expval, qubit_map
+            hamiltonian, term_with_largest_expval, largest_expval
         )
         assert reduced_ham.terms == expected_reduced_ham.terms
         assert new_qubit_map == expected_new_qubit_map
 
-    def test_update_qubit_map_works_properly_on_subsequent_recursions(self):
-        # (This test is for when the qubit map to be updated is not the default qubit map)
+    def test_reduce_cost_hamiltonian_works_properly_on_subsequent_recursions(self):
+        # (This test is for when the qubit map is not the default qubit map)
         qubit_map = [[0, 1], [1, 1], [1, -1], [2, 1], [1, 1]]
-        term_with_largest_expval = IsingOperator("Z0 Z1")
+        term_with_largest_expval = IsingOperator("Z0 Z1", -0.5)
         largest_expval = -42
 
-        # How the expected_new_qubit_map is calculated:
-        # [[0, 1], [1, 1], [1, -1], [2, 1], [1, 1]] -> original qubit map
-        # [[0, 1], [0, -1], [1, -1], [2, 1], [1, 1]] -> replace 1 with negative of 0
-        # [[0, 1], [0, -1], [0, 1], [2, 1], [0, -1]] -> replace things that depends on 1 with negative of 0
-        # [[0, 1], [0, -1], [0, 1], [1, 1], [0, -1]] -> nudge higher qubits down
-        expected_new_qubit_map = [[0, 1], [0, -1], [0, 1], [1, 1], [0, -1]]
-        new_qubit_map = _update_qubit_map(
-            qubit_map, term_with_largest_expval, largest_expval
+        expected_reduced_hamiltonian = (
+            IsingOperator("Z0 Z1", 1.5)
+            + IsingOperator("Z1 Z2", 1.0)
+            + IsingOperator("Z2 Z3", 1.0)
         )
-        assert new_qubit_map == expected_new_qubit_map
+
+        hamiltonian = (
+            IsingOperator("Z0 Z1", -0.5)
+            + IsingOperator("Z0 Z2", 2.0)
+            + IsingOperator("Z1 Z2", 0.5)
+            + IsingOperator("Z2 Z3", 1.0)
+            + IsingOperator("Z3 Z4", 1.0)
+        )
+
+        reduced_hamiltonian = _create_reduced_hamiltonian(
+            hamiltonian, term_with_largest_expval, largest_expval
+        )
+        assert reduced_hamiltonian == expected_reduced_hamiltonian
 
     @pytest.mark.parametrize(
         "qubit_map, expected_original_solutions",
@@ -234,9 +242,54 @@ class TestRQAOA:
         for solution in solutions:
             assert len(solution) == n_qubits
 
-        breakpoint()
-
         assert set(solutions) == set([(1, 0, 1, 0), (0, 1, 0, 1)])
 
+    @pytest.mark.parametrize(
+        "n_c, expected_n_recursions", [(5, 1), (4, 2), (3, 3), (2, 4)]
+    )
+    def test_RQAOA_does_correct_number_of_recursions(
+        self,
+        hamiltonian,
+        ansatz,
+        optimizer,
+        estimation_tasks_factory_generator,
+        cost_function_factory,
+        n_c,
+        expected_n_recursions,
+    ):
+        # Given a 6 qubit hamiltonian
+        n_qubits = 6
+        hamiltonian += IsingOperator("Z3 Z4") + IsingOperator("Z4 Z5")
 
-# TODO: Test that recursions are correct.
+        initial_params = np.array([0.42, 4.2])
+
+        recursive_qaoa = RecursiveQAOA(
+            n_c,
+            ansatz,
+            initial_params,
+            optimizer,
+            estimation_tasks_factory_generator,
+            cost_function_factory,
+        )
+
+        def counted_calls(f):
+            """A wrapper for counting number of function calls stolen from stackoverflow :p"""
+
+            @wraps(f)
+            def count_wrapper(*args, **kwargs):
+                count_wrapper.count += 1
+                return f(*args, **kwargs)
+
+            count_wrapper.count = 0
+            return count_wrapper
+
+        wrapped = counted_calls(recursive_qaoa.__call__)
+        recursive_qaoa.__call__ = wrapped
+        solutions = recursive_qaoa.__call__(hamiltonian)
+        assert wrapped.count == expected_n_recursions
+
+        for solution in solutions:
+            assert len(solution) == n_qubits
+
+
+# TODO: test that ValueError is raised if n_c is not correct value.
