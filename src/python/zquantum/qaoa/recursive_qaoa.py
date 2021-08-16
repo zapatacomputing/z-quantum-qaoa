@@ -1,13 +1,14 @@
-from zquantum.core.interfaces.cost_function import EstimationTasksFactory, CostFunction
+from copy import copy
+from typing import Callable, List, Tuple
+
+import numpy as np
+from openfermion import IsingOperator, QubitOperator
+from openfermion.utils import count_qubits
 from zquantum.core.interfaces.ansatz import Ansatz
+from zquantum.core.interfaces.cost_function import CostFunction, EstimationTasksFactory
 from zquantum.core.interfaces.optimizer import Optimizer
 from zquantum.core.openfermion import change_operator_type
-from openfermion import QubitOperator, IsingOperator
-from openfermion.utils import count_qubits
-import numpy as np
-from typing import Callable, Optional, List, Tuple
 from zquantum.qaoa.problems import solve_problem_by_exhaustive_search
-from copy import copy
 
 
 class RecursiveQAOA:
@@ -91,16 +92,16 @@ class RecursiveQAOA:
     def __call__(
         self,
         cost_hamiltonian: IsingOperator,
-        qubit_map: Optional[List[List[int]]] = None,
-    ) -> List[Tuple]:
+        qubit_map: List[List[int]] = None,
+    ) -> List[Tuple[int, ...]]:
         """Args:
             cost_hamiltonian: Hamiltonian representing the cost function.
             qubit_map: A list that maps qubits in reduced Hamiltonian back to original qubits, used for
                 subsequent recursions. (Not for the first recursion.)
                 Example:
-                    `qubit_map = [(2, -1), (3, 1)]`
-                        Indice of each tuple is the original qubit indice.
-                        1st term of tuple is qubit the index of tuple to be mapped onto,
+                    `qubit_map = [[2, -1], [3, 1]]`
+                        Indice of each inner list is the original qubit indice.
+                        1st term of inner list is qubit the index of tuple to be mapped onto,
                         2nd term is if it will be mapped onto the same value or opposite of the qubit it
                             is being mapped onto.
                         In the above qubit_map, the original qubit 0 is now represented by the opposite
@@ -108,24 +109,20 @@ class RecursiveQAOA:
                             qubit 3.
 
         Returns:
-            List[Tuple[int]] The solution(s) to recursive QAOA as a list of tuples; each tuple is a tuple
-                of integer bits.
+            The solution(s) to recursive QAOA as a list of tuples; each tuple is a tuple of bits.
         """
 
         n_qubits = count_qubits(change_operator_type(cost_hamiltonian, QubitOperator))
 
         assert self._n_c < n_qubits
 
-        if not qubit_map:
+        if qubit_map is None:
             qubit_map = []
             for i in range(n_qubits):
                 qubit_map.append([i, 1])
 
-        # TODO: is there a better way to allow ansatzes to be modular? Not all
-        # ansatzes have a `cost_hamiltonian` attribute.
-        # You can't `partial` a constructor, right?
         ansatz = copy(self._ansatz)
-        ansatz.cost_hamiltonian = cost_hamiltonian
+        ansatz._cost_hamiltonian = cost_hamiltonian
 
         # Run QAOA
         estimation_tasks_factory = self._estimation_tasks_factory(
@@ -227,7 +224,7 @@ class RecursiveQAOA:
                 )
 
             # Map the answer of the reduced Hamiltonian back to the original number of qubits.
-            solutions: List[Tuple] = []
+            solutions: List[Tuple[int, ...]] = []
 
             for solution in reduced_solutions:
                 original_solution: List[int] = []
