@@ -1,4 +1,4 @@
-from copy import copy
+from copy import copy, deepcopy
 from typing import Callable, List, Tuple
 
 import numpy as np
@@ -22,6 +22,8 @@ class RecursiveQAOA:
             [IsingOperator, Ansatz], EstimationTasksFactory
         ],
         cost_function_factory: Callable[[EstimationTasksFactory], CostFunction],
+        # TODO: is there a way to specify that cost_function_factory must have a keyword argument `estimation_tasks_factory`?
+        # Create a protocol?
     ) -> None:
         """This is an implementation of recursive QAOA (RQAOA) from https://arxiv.org/abs/1910.08980 page 4.
 
@@ -114,7 +116,10 @@ class RecursiveQAOA:
 
         n_qubits = count_qubits(change_operator_type(cost_hamiltonian, QubitOperator))
 
-        assert self._n_c < n_qubits
+        if self._n_c >= n_qubits or self._n_c <= 0:
+            raise ValueError(
+                "n_c needs to be a value less than number of qubits and greater than 0."
+            )
 
         if qubit_map is None:
             qubit_map = _create_default_qubit_map(n_qubits)
@@ -157,11 +162,19 @@ class RecursiveQAOA:
         assert (
             count_qubits(change_operator_type(reduced_cost_hamiltonian, QubitOperator))
             == count_qubits(change_operator_type(cost_hamiltonian, QubitOperator)) - 1
+            # If we have 1 qubit, the reduced cost hamiltonian would be empty and say it has
+            # 0 qubits.
+            or count_qubits(
+                change_operator_type(reduced_cost_hamiltonian, QubitOperator)
+            )
+            == 0
+            and count_qubits(change_operator_type(cost_hamiltonian, QubitOperator)) == 2
+            and self._n_c == 1
         )
 
         # Check qubit map has correct amount of qubits
         assert (
-            count_qubits(change_operator_type(reduced_cost_hamiltonian, QubitOperator))
+            count_qubits(change_operator_type(cost_hamiltonian, QubitOperator)) - 1
             == max(np.abs(new_qubit_map).tolist())[0] + 1
         )
 
@@ -171,17 +184,12 @@ class RecursiveQAOA:
         ):
             # If we didn't reach threshold `n_c`, we repeat the the above with the reduced
             # cost hamiltonian.
-
             return self.__call__(reduced_cost_hamiltonian, new_qubit_map)
 
         else:
             best_value, reduced_solutions = solve_problem_by_exhaustive_search(
                 change_operator_type(reduced_cost_hamiltonian, QubitOperator)
             )
-            for solution in reduced_solutions:
-                assert len(solution) == count_qubits(
-                    change_operator_type(reduced_cost_hamiltonian, QubitOperator)
-                )
 
             return _map_reduced_solutions_to_original_solutions(
                 reduced_solutions, new_qubit_map
@@ -258,38 +266,36 @@ def _update_qubit_map(
         Updated qubit map
 
     """
-    for term in term_with_largest_expval.terms:
-        term_with_largest_expval = term
-    # term_with_largest_expval is now a subscriptable tuple like ((0, 'Z'), (1, 'Z'))
-
-    from copy import deepcopy
+    assert len(term_with_largest_expval.terms.keys()) == 1
 
     new_qubit_map = deepcopy(qubit_map)
-    qubit_to_get_rid_of: int = term_with_largest_expval[1][0]
+
+    qubit_to_get_rid_of: int = [*term_with_largest_expval.terms][0][1][0]
 
     # i is original qubit, qubit_map[i][0] is current qubit equivalent of original qubit.
     for i in range(len(new_qubit_map)):
-        if new_qubit_map[i][0] > qubit_to_get_rid_of:
-            # map qubit to the qubit 1 below it
-            new_qubit_map[i][0] -= 1
-        elif new_qubit_map[i][0] == qubit_to_get_rid_of:
-            # map qubit onto the qubit it's being replaced with
-            new_qubit_map[i][0] = new_qubit_map[term_with_largest_expval[0][0]][0]
-            # TODO above line may have problems.
+        if new_qubit_map[i][0] == qubit_to_get_rid_of:
             new_qubit_map[i][1] *= int(np.sign(largest_expval))
+        new_qubit_map[i][0] = _get_new_qubit_indice(
+            new_qubit_map[i][0], term_with_largest_expval
+        )
 
     return new_qubit_map
 
 
-def _get_new_qubit_indice(old_indice: int, term_with_largest_expval) -> int:
-    # for term in term_with_largest_expval.terms:
-    #     term_with_largest_expval = term
-    # term_with_largest_expval is now a subscriptable tuple like ((0, 'Z'), (1, 'Z'))
+def _get_new_qubit_indice(
+    old_indice: int, term_with_largest_expval: IsingOperator
+) -> int:
+    assert len(term_with_largest_expval.terms.keys()) == 1
 
-    new_indice = old_indice
+    term_with_largest_expval = [*term_with_largest_expval.terms][0]
+    # term_with_largest_expval is now a subscriptable tuple like ((0, 'Z'), (1, 'Z'))
 
     qubit_to_get_rid_of: int = term_with_largest_expval[1][0]
     qubit_itll_be_replaced_with: int = term_with_largest_expval[0][0]
+
+    new_indice = old_indice
+
     if old_indice > qubit_to_get_rid_of:
         # map qubit to the qubit 1 below it
         new_indice = old_indice - 1
@@ -316,16 +322,16 @@ def _create_reduced_hamiltonian(
     Returns:
         Reduced hamiltonian.
     """
-    for term in term_with_largest_expval.terms:
-        term_with_largest_expval = term
-    # term_with_largest_expval is now a subscriptable tuple like ((0, 'Z'), (1, 'Z'))
+    assert len(term_with_largest_expval.terms.keys()) == 1
 
-    qubit_to_get_rid_of: int = term_with_largest_expval[1][0]
     reduced_hamiltonian = IsingOperator()
+
+    qubit_to_get_rid_of: int = [*term_with_largest_expval.terms][0][1][0]
 
     for (term, coefficient) in hamiltonian.terms.items():
         # term is tuple representing one term of IsingOperator, example ((2, 'Z'), (3, 'Z'))
-        if term != term_with_largest_expval:
+        if term not in term_with_largest_expval.terms:
+            # If term is not the term_with_largest_expval
             new_term: Tuple = ()
             for qubit in term:
                 # qubit is a component of qubit operator on 1 qubit ex. (2, 'Z')

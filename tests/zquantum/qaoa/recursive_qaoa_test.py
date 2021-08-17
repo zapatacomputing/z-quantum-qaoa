@@ -82,6 +82,29 @@ class TestRQAOA:
         optimizer._minimize = custom_minimize
         return optimizer
 
+    @pytest.mark.parametrize("n_c", [-1, 0, 4, 5])
+    def test_RQAOA_raises_exception_if_n_c_is_incorrect_value(
+        self,
+        hamiltonian,
+        ansatz,
+        optimizer,
+        estimation_tasks_factory_generator,
+        cost_function_factory,
+        n_c,
+    ):
+        initial_params = np.array([0.42, 4.2])
+
+        recursive_qaoa = RecursiveQAOA(
+            n_c,
+            ansatz,
+            initial_params,
+            optimizer,
+            estimation_tasks_factory_generator,
+            cost_function_factory,
+        )
+        with pytest.raises(ValueError):
+            recursive_qaoa(hamiltonian)
+
     @pytest.mark.parametrize(
         "n_qubits, expected_qubit_map",
         [
@@ -116,7 +139,7 @@ class TestRQAOA:
         assert np.sign(largest_expval) == -1
 
     @pytest.mark.parametrize(
-        "term_with_largest_expval, largest_expval, expected_reduced_ham, expected_new_qubit_map",
+        "term_with_largest_expval, largest_expval, expected_reduced_ham",
         [
             (
                 # suppose we want to get rid of qubit 1 and replace it with qubit 0.
@@ -127,7 +150,6 @@ class TestRQAOA:
                     + IsingOperator("Z0 Z1", 0.5)
                     + IsingOperator("Z1 Z2", 0.5)
                 ),
-                [[0, 1], [0, 1], [1, 1], [2, 1]],
             ),
             (
                 IsingOperator("Z0 Z1", 5.0),
@@ -137,7 +159,6 @@ class TestRQAOA:
                     + IsingOperator("Z0 Z1", -0.5)
                     + IsingOperator("Z1 Z2", 0.5)
                 ),
-                [[0, 1], [0, -1], [1, 1], [2, 1]],
             ),
             (
                 IsingOperator("Z0 Z3", 2),
@@ -147,7 +168,6 @@ class TestRQAOA:
                     + IsingOperator("Z1 Z2", 0.5)
                     + IsingOperator("Z2 Z0", -0.5)
                 ),
-                [[0, 1], [1, 1], [2, 1], [0, -1]],
             ),
         ],
     )
@@ -157,6 +177,37 @@ class TestRQAOA:
         term_with_largest_expval,
         largest_expval,
         expected_reduced_ham,
+    ):
+        reduced_ham = _create_reduced_hamiltonian(
+            hamiltonian, term_with_largest_expval, largest_expval
+        )
+        assert reduced_ham.terms == expected_reduced_ham.terms
+
+    @pytest.mark.parametrize(
+        "term_with_largest_expval, largest_expval, expected_new_qubit_map",
+        [
+            (
+                # suppose we want to get rid of qubit 1 and replace it with qubit 0.
+                IsingOperator("Z0 Z1", 5.0),
+                10,
+                [[0, 1], [0, 1], [1, 1], [2, 1]],
+            ),
+            (
+                IsingOperator("Z0 Z1", 5.0),
+                -10,
+                [[0, 1], [0, -1], [1, 1], [2, 1]],
+            ),
+            (
+                IsingOperator("Z0 Z3", 2),
+                -10,
+                [[0, 1], [1, 1], [2, 1], [0, -1]],
+            ),
+        ],
+    )
+    def test_update_qubit_map(
+        self,
+        term_with_largest_expval,
+        largest_expval,
         expected_new_qubit_map,
     ):
         qubit_map = _create_default_qubit_map(4)
@@ -164,40 +215,29 @@ class TestRQAOA:
         new_qubit_map = _update_qubit_map(
             qubit_map, term_with_largest_expval, largest_expval
         )
-        reduced_ham = _create_reduced_hamiltonian(
-            hamiltonian, term_with_largest_expval, largest_expval
-        )
-        assert reduced_ham.terms == expected_reduced_ham.terms
         assert new_qubit_map == expected_new_qubit_map
 
-    def test_reduce_cost_hamiltonian_works_properly_on_subsequent_recursions(self):
-        # (This test is for when the qubit map is not the default qubit map)
+    def test_update_qubit_map_works_properly_on_subsequent_recursions(self):
+        # (This test is for when the qubit map to be updated is not the default qubit map)
         qubit_map = [[0, 1], [1, 1], [1, -1], [2, 1], [1, 1]]
-        term_with_largest_expval = IsingOperator("Z0 Z1", -0.5)
+        term_with_largest_expval = IsingOperator("Z0 Z1")
         largest_expval = -42
 
-        expected_reduced_hamiltonian = (
-            IsingOperator("Z0 Z1", 1.5)
-            + IsingOperator("Z1 Z2", 1.0)
-            + IsingOperator("Z2 Z3", 1.0)
+        # How the expected_new_qubit_map is calculated:
+        # [[0, 1], [1, 1], [1, -1], [2, 1], [1, 1]] -> original qubit map
+        # [[0, 1], [0, -1], [1, -1], [2, 1], [1, 1]] -> replace 1 with negative of 0
+        # [[0, 1], [0, -1], [0, 1], [2, 1], [0, -1]] -> replace things that depends on 1 with negative of 0
+        # [[0, 1], [0, -1], [0, 1], [1, 1], [0, -1]] -> nudge higher qubits down
+        expected_new_qubit_map = [[0, 1], [0, -1], [0, 1], [1, 1], [0, -1]]
+        new_qubit_map = _update_qubit_map(
+            qubit_map, term_with_largest_expval, largest_expval
         )
-
-        hamiltonian = (
-            IsingOperator("Z0 Z1", -0.5)
-            + IsingOperator("Z0 Z2", 2.0)
-            + IsingOperator("Z1 Z2", 0.5)
-            + IsingOperator("Z2 Z3", 1.0)
-            + IsingOperator("Z3 Z4", 1.0)
-        )
-
-        reduced_hamiltonian = _create_reduced_hamiltonian(
-            hamiltonian, term_with_largest_expval, largest_expval
-        )
-        assert reduced_hamiltonian == expected_reduced_hamiltonian
+        assert new_qubit_map == expected_new_qubit_map
 
     @pytest.mark.parametrize(
         "qubit_map, expected_original_solutions",
         [
+            # Identity test w default qubit map
             ([[0, 1], [1, 1]], [(0, 1), (1, 0)]),
             ([[1, 1], [1, 1], [0, -1]], [(1, 1, 1), (0, 0, 0)]),
             (
@@ -244,10 +284,8 @@ class TestRQAOA:
 
         assert set(solutions) == set([(1, 0, 1, 0), (0, 1, 0, 1)])
 
-    @pytest.mark.parametrize(
-        "n_c, expected_n_recursions", [(5, 1), (4, 2), (3, 3), (2, 4)]
-    )
-    def test_RQAOA_does_correct_number_of_recursions(
+    @pytest.mark.parametrize("n_c, expected_n_recursions", [(3, 1), (2, 2), (1, 3)])
+    def test_RQAOA_performs_correct_number_of_recursions(
         self,
         hamiltonian,
         ansatz,
@@ -257,9 +295,6 @@ class TestRQAOA:
         n_c,
         expected_n_recursions,
     ):
-        # Given a 6 qubit hamiltonian
-        n_qubits = 6
-        hamiltonian += IsingOperator("Z3 Z4") + IsingOperator("Z4 Z5")
 
         initial_params = np.array([0.42, 4.2])
 
@@ -288,8 +323,6 @@ class TestRQAOA:
         solutions = recursive_qaoa.__call__(hamiltonian)
         assert wrapped.count == expected_n_recursions
 
+        n_qubits = 4
         for solution in solutions:
             assert len(solution) == n_qubits
-
-
-# TODO: test that ValueError is raised if n_c is not correct value.
