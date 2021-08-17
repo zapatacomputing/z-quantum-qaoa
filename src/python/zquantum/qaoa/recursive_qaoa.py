@@ -125,7 +125,16 @@ class RecursiveQAOA:
             qubit_map = _create_default_qubit_map(n_qubits)
 
         ansatz = copy(self._ansatz)
-        ansatz._cost_hamiltonian = cost_hamiltonian
+
+        if hasattr(ansatz, "_cost_hamiltonian"):
+            ansatz._cost_hamiltonian = cost_hamiltonian
+        else:
+            # X ansatzes (zquantum.qaoa.ansatz.XAnsatz) generate based on number of qubits
+            # instead of cost hamiltonian
+            Warning(
+                "Ansatz does not have a `_cost_hamiltonian` attribute, so `number_of_qubits` will be used to generate circuits."
+            )
+            ansatz.number_of_qubits = n_qubits
 
         estimation_tasks_factory = self._estimation_tasks_factory(
             cost_hamiltonian, ansatz

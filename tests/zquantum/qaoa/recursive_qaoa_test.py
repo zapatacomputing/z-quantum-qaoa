@@ -15,7 +15,7 @@ from zquantum.core.interfaces.cost_function import CostFunction
 from zquantum.core.interfaces.mock_objects import MockOptimizer
 from zquantum.core.interfaces.optimizer import optimization_result
 from zquantum.core.symbolic_simulator import SymbolicSimulator
-from zquantum.qaoa.ansatzes.farhi_ansatz import QAOAFarhiAnsatz
+from zquantum.qaoa.ansatzes import QAOAFarhiAnsatz, XAnsatz
 from zquantum.qaoa.recursive_qaoa import (
     RecursiveQAOA,
     _create_default_qubit_map,
@@ -324,5 +324,32 @@ class TestRQAOA:
         assert wrapped.count == expected_n_recursions
 
         n_qubits = 4
+        for solution in solutions:
+            assert len(solution) == n_qubits
+
+    def test_compatability_with_x_ansatz(
+        self,
+        optimizer,
+        estimation_tasks_factory_generator,
+        cost_function_factory,
+    ):
+        # TODO: maybe calculate expected solutions with pen & paper to
+        # verify that they are correct
+        n_qubits = 2
+        initial_params = np.array([0.42, 4.2])
+        x_ansatz = XAnsatz(1, n_qubits)
+        hamiltonian = IsingOperator("Z0 Z1")
+
+        recursive_qaoa = RecursiveQAOA(
+            1,
+            x_ansatz,
+            initial_params,
+            optimizer,
+            estimation_tasks_factory_generator,
+            cost_function_factory,
+        )
+
+        solutions = recursive_qaoa(hamiltonian)
+
         for solution in solutions:
             assert len(solution) == n_qubits
