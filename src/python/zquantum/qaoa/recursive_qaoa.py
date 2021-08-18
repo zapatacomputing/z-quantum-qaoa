@@ -379,7 +379,7 @@ def _map_reduced_solutions_to_original_solutions(
     for reduced_solution in reduced_solutions:
         original_solution: List[int] = []
         for qubit in qubit_map:
-            this_answer = reduced_solution[np.abs(qubit[0])]
+            this_answer = reduced_solution[qubit[0]]
 
             # If negative, flip the qubit.
             if qubit[1] == -1:
