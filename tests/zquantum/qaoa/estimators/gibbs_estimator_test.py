@@ -1,16 +1,11 @@
-import pytest
-from openfermion import QubitOperator, IsingOperator
-
-from zquantum.core.interfaces.mock_objects import (
-    MockQuantumBackend,
-)
-from zquantum.core.circuits import Circuit, X, H
-from zquantum.qaoa.estimators import GibbsObjectiveEstimator
-
-from zquantum.core.interfaces.estimation import EstimationTask
 import numpy as np
-
+import pytest
+from openfermion import IsingOperator, QubitOperator
+from zquantum.core.circuits import Circuit, H, X
+from zquantum.core.interfaces.estimation import EstimationTask
 from zquantum.core.interfaces.estimator_contract import ESTIMATOR_CONTRACTS
+from zquantum.core.symbolic_simulator import SymbolicSimulator
+from zquantum.qaoa.estimators import GibbsObjectiveEstimator
 
 
 @pytest.mark.parametrize("contract", ESTIMATOR_CONTRACTS)
@@ -20,9 +15,36 @@ def test_estimator_contract(contract):
 
 
 class TestGibbsEstimator:
-    @pytest.fixture(params=[1.0, 0.8, 0.5, 0.2])
+    @pytest.fixture(
+        params=[
+            {
+                "alpha": 0.2,
+                "use_exact_expectation_values": False,
+            },
+            {
+                "alpha": 0.2,
+                "use_exact_expectation_values": True,
+            },
+            {
+                "alpha": 2,
+                "use_exact_expectation_values": False,
+            },
+            {
+                "alpha": 2,
+                "use_exact_expectation_values": True,
+            },
+            {
+                "alpha": 10,
+                "use_exact_expectation_values": False,
+            },
+            {
+                "alpha": 10,
+                "use_exact_expectation_values": True,
+            },
+        ]
+    )
     def estimator(self, request):
-        return GibbsObjectiveEstimator(alpha=request.param)
+        return GibbsObjectiveEstimator(**request.param)
 
     @pytest.fixture()
     def circuit(self):
@@ -38,7 +60,7 @@ class TestGibbsEstimator:
 
     @pytest.fixture()
     def backend(self):
-        return MockQuantumBackend()
+        return SymbolicSimulator()
 
     def test_raises_exception_if_operator_is_not_ising(
         self, estimator, backend, circuit
