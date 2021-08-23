@@ -1,5 +1,5 @@
 from copy import copy, deepcopy
-from typing import Callable, List, Tuple
+from typing import Callable, Dict, List, Tuple
 
 import numpy as np
 from openfermion import IsingOperator, QubitOperator
@@ -94,15 +94,15 @@ class RecursiveQAOA:
     def __call__(
         self,
         cost_hamiltonian: IsingOperator,
-        qubit_map: List[List[int]] = None,
+        qubit_map: Dict[int, List[int]] = None,
     ) -> List[Tuple[int, ...]]:
         """Args:
             cost_hamiltonian: Hamiltonian representing the cost function.
-            qubit_map: A list that maps qubits in reduced Hamiltonian back to original qubits, used for
-                subsequent recursions. (Not for the first recursion.)
+            qubit_map: A dictionary that maps qubits in reduced Hamiltonian back to original qubits, used
+                for subsequent recursions. (Not for the first recursion.)
                 Example:
-                    `qubit_map = [[2, -1], [3, 1]]`
-                        Indice of each inner list is the original qubit indice.
+                    `qubit_map = {0: [2, -1], 1: [3, 1]]}
+                        Keys are the original qubit indice.
                         1st term of inner list is qubit the index of tuple to be mapped onto,
                         2nd term is if it will be mapped onto the same value or opposite of the qubit it
                             is being mapped onto.
@@ -184,7 +184,7 @@ class RecursiveQAOA:
         # Check qubit map has correct amount of qubits
         assert (
             count_qubits(change_operator_type(cost_hamiltonian, QubitOperator)) - 1
-            == max(np.abs(new_qubit_map).tolist())[0] + 1
+            == max([l[0] for l in new_qubit_map.values()]) + 1
         )
 
         if (
@@ -205,11 +205,11 @@ class RecursiveQAOA:
             )
 
 
-def _create_default_qubit_map(n_qubits: int) -> List[List[int]]:
+def _create_default_qubit_map(n_qubits: int) -> Dict[int, List[int]]:
     """Creates a qubit map that maps each qubit to itself."""
-    qubit_map = []
+    qubit_map = {}
     for i in range(n_qubits):
-        qubit_map.append([i, 1])
+        qubit_map[i] = [i, 1]
     return qubit_map
 
 
@@ -256,10 +256,10 @@ def _find_term_with_strongest_correlation(
 
 
 def _update_qubit_map(
-    qubit_map: List[List[int]],
+    qubit_map: Dict[int, List[int]],
     term_with_largest_expval: IsingOperator,
     largest_expval: float,
-) -> List[List[int]]:
+) -> Dict[int, List[int]]:
     """Updates the qubit map by
         1. Substituting one qubit of `term_with_largest_expval` with the other
         2. Substituting all qubits larger than the gotten-rid-of-qubit with the qubit one below it
@@ -362,7 +362,7 @@ def _create_reduced_hamiltonian(
 
 
 def _map_reduced_solutions_to_original_solutions(
-    reduced_solutions: List[Tuple[int]], qubit_map: List[List[int]]
+    reduced_solutions: List[Tuple[int]], qubit_map: Dict[int, List[int]]
 ):
     """Maps the answer of the reduced Hamiltonian back to the original number of qubits.
 
@@ -378,11 +378,11 @@ def _map_reduced_solutions_to_original_solutions(
 
     for reduced_solution in reduced_solutions:
         original_solution: List[int] = []
-        for qubit in qubit_map:
-            this_answer = reduced_solution[qubit[0]]
+        for qubit, sign in qubit_map.values():
+            this_answer = reduced_solution[qubit]
 
             # If negative, flip the qubit.
-            if qubit[1] == -1:
+            if sign == -1:
                 if this_answer == 0:
                     this_answer = 1
                 else:

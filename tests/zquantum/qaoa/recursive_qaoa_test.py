@@ -108,8 +108,19 @@ class TestRQAOA:
     @pytest.mark.parametrize(
         "n_qubits, expected_qubit_map",
         [
-            (2, [[0, 1], [1, 1]]),
-            (7, [[0, 1], [1, 1], [2, 1], [3, 1], [4, 1], [5, 1], [6, 1]]),
+            (2, {0: [0, 1], 1: [1, 1]}),
+            (
+                7,
+                {
+                    0: [0, 1],
+                    1: [1, 1],
+                    2: [2, 1],
+                    3: [3, 1],
+                    4: [4, 1],
+                    5: [5, 1],
+                    6: [6, 1],
+                },
+            ),
         ],
     )
     def test_create_default_qubit_map(self, n_qubits, expected_qubit_map):
@@ -190,17 +201,17 @@ class TestRQAOA:
                 # suppose we want to get rid of qubit 1 and replace it with qubit 0.
                 IsingOperator("Z0 Z1", 5.0),
                 10,
-                [[0, 1], [0, 1], [1, 1], [2, 1]],
+                {0: [0, 1], 1: [0, 1], 2: [1, 1], 3: [2, 1]},
             ),
             (
                 IsingOperator("Z0 Z1", 5.0),
                 -10,
-                [[0, 1], [0, -1], [1, 1], [2, 1]],
+                {0: [0, 1], 1: [0, -1], 2: [1, 1], 3: [2, 1]},
             ),
             (
                 IsingOperator("Z0 Z3", 2),
                 -10,
-                [[0, 1], [1, 1], [2, 1], [0, -1]],
+                {0: [0, 1], 1: [1, 1], 2: [2, 1], 3: [0, -1]},
             ),
         ],
     )
@@ -219,16 +230,22 @@ class TestRQAOA:
 
     def test_update_qubit_map_works_properly_on_subsequent_recursions(self):
         # (This test is for when the qubit map to be updated is not the default qubit map)
-        qubit_map = [[0, 1], [1, 1], [1, -1], [2, 1], [1, 1]]
+        qubit_map = {0: [0, 1], 1: [1, 1], 2: [1, -1], 3: [2, 1], 4: [1, 1]}
         term_with_largest_expval = IsingOperator("Z0 Z1")
         largest_expval = -42
 
         # How the expected_new_qubit_map is calculated:
-        # [[0, 1], [1, 1], [1, -1], [2, 1], [1, 1]] -> original qubit map
-        # [[0, 1], [0, -1], [1, -1], [2, 1], [1, 1]] -> replace 1 with negative of 0
-        # [[0, 1], [0, -1], [0, 1], [2, 1], [0, -1]] -> replace things that depends on 1 with negative of 0
-        # [[0, 1], [0, -1], [0, 1], [1, 1], [0, -1]] -> nudge higher qubits down
-        expected_new_qubit_map = [[0, 1], [0, -1], [0, 1], [1, 1], [0, -1]]
+        # {0: [0, 1], 1: [1, 1], 2: [1, -1], 3: [2, 1], 4: [1, 1]} -> original qubit map
+        # {0: [0, 1], 1: [1, -1], 2: [1, -1], 3: [2, 1], 4: [1, 1]} -> replace 1 with negative of 0
+        # {0: [0, 1], 1: [0, -1], 2: [0, 1], 3: [2, 1], 4: [0, -1]} -> replace things that depends on 1 with negative of 0
+        # {0: [0, 1], 1: [0, -1], 2: [0, 1], 3: [1, 1], 4: [0, -1]} -> nudge higher qubits down
+        expected_new_qubit_map = {
+            0: [0, 1],
+            1: [0, -1],
+            2: [0, 1],
+            3: [1, 1],
+            4: [0, -1],
+        }
         new_qubit_map = _update_qubit_map(
             qubit_map, term_with_largest_expval, largest_expval
         )
@@ -238,10 +255,10 @@ class TestRQAOA:
         "qubit_map, expected_original_solutions",
         [
             # Identity test w default qubit map
-            ([[0, 1], [1, 1]], [(0, 1), (1, 0)]),
-            ([[1, 1], [1, 1], [0, -1]], [(1, 1, 1), (0, 0, 0)]),
+            ({0: [0, 1], 1: [1, 1]}, [(0, 1), (1, 0)]),
+            ({0: [1, 1], 1: [1, 1], 2: [0, -1]}, [(1, 1, 1), (0, 0, 0)]),
             (
-                [[0, 1], [0, -1], [0, 1], [1, 1], [0, -1]],
+                {0: [0, 1], 1: [0, -1], 2: [0, 1], 3: [1, 1], 4: [0, -1]},
                 [(0, 1, 0, 1, 1), (1, 0, 1, 0, 0)],
             ),
         ],
