@@ -1,14 +1,24 @@
+import abc
 from copy import copy, deepcopy
 from typing import Callable, Dict, List, Tuple
 
 import numpy as np
 from openfermion import IsingOperator, QubitOperator
 from openfermion.utils import count_qubits
+from typing_extensions import Protocol
 from zquantum.core.interfaces.ansatz import Ansatz
 from zquantum.core.interfaces.cost_function import CostFunction, EstimationTasksFactory
 from zquantum.core.interfaces.optimizer import Optimizer
 from zquantum.core.openfermion import change_operator_type
 from zquantum.qaoa.problems import solve_problem_by_exhaustive_search
+
+
+class CostFunctionFactory(Protocol):
+    @abc.abstractmethod
+    def __call__(
+        self, estimation_tasks_factory: EstimationTasksFactory
+    ) -> CostFunction:
+        """Creates a cost function from an EstimationTasksFactory object."""
 
 
 class RecursiveQAOA:
@@ -21,9 +31,7 @@ class RecursiveQAOA:
         estimation_tasks_factory: Callable[
             [IsingOperator, Ansatz], EstimationTasksFactory
         ],
-        cost_function_factory: Callable[[EstimationTasksFactory], CostFunction],
-        # TODO: is there a way to specify that cost_function_factory must have a keyword argument `estimation_tasks_factory`?
-        # Create a protocol?
+        cost_function_factory: CostFunctionFactory,
     ) -> None:
         """This is an implementation of recursive QAOA (RQAOA) from https://arxiv.org/abs/1910.08980 page 4.
 
@@ -218,7 +226,7 @@ def _find_term_with_strongest_correlation(
     ansatz: Ansatz,
     optimal_params: np.ndarray,
     estimation_tasks_factory: Callable[[IsingOperator, Ansatz], EstimationTasksFactory],
-    cost_function_factory: Callable[[EstimationTasksFactory], CostFunction],
+    cost_function_factory: CostFunctionFactory,
 ) -> Tuple[IsingOperator, float]:
     """For each term Z_i Z_j, calculate the expectation value <psi(beta, gamma) | Z_i Z_j | psi(beta, gamma)>
     with optimal beta and gamma. The idea is that the term with largest expectation value
