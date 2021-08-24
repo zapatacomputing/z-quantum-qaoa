@@ -20,9 +20,14 @@ class GibbsObjectiveEstimator(EstimateExpectationValues):
     "Quantum Optimization with a Novel Gibbs Objective Function and Ansatz Architecture Search", L. Li, M. Fan, M. Coram, P. Riley, and S. Leichenauer
     """
 
-    def __init__(self, alpha: float) -> None:
+    # def __init__(self, alpha: float) -> None:
+    #     super().__init__()
+    #     self.alpha = alpha
+
+    def __init__(self, alpha: float, costs: Dict[str, float]) -> None:
         super().__init__()
         self.alpha = alpha
+        self.costs = costs
 
     def __call__(
         self, backend: QuantumBackend, estimation_tasks: List[EstimationTask]
@@ -42,17 +47,22 @@ class GibbsObjectiveEstimator(EstimateExpectationValues):
             *[(e.circuit, e.operator, e.number_of_shots) for e in estimation_tasks]
         )
         distributions_list = [
-            backend.get_bitstring_distribution(circuit, n_samples=n_shots)
-            for circuit, n_shots in zip(circuits, shots_per_circuit)
+            # backend.get_bitstring_distribution(circuit, n_samples=n_shots)
+            # for circuit, n_shots in zip(circuits, shots_per_circuit)
+            backend.get_bitstring_distribution(circuit)
+            for circuit in circuits
         ]
 
         return [
             ExpectationValues(
                 np.array(
                     [
-                        _calculate_expectation_value_for_distribution(
-                            distribution, operator, self.alpha
-                        )
+                        # _calculate_expectation_value_for_distribution(
+                        #     distribution, operator, self.alpha
+                        # )
+                        _calculate_expectation_value_for_distribution2(
+                            distribution, self.costs, self.alpha
+                        )                        
                     ]
                 )
             )
@@ -84,3 +94,20 @@ def _calculate_expectation_value_for_distribution(
     final_value = -np.log(cumulative_value)
 
     return final_value
+
+def _calculate_expectation_value_for_distribution2(
+    distribution: BitstringDistribution, costs: Dict[str, float], alpha: float
+) -> float:
+    cumulative_value = 0.0
+    # Get total expectation value (mean of expectation values of all bitstrings weighted by distribution)
+    for bitstring in costs:
+        prob = distribution.distribution_dict[bitstring]
+
+        # For the i-th sampled bitstring, compute exp(-alpha E_i) See equation 2 in the original paper.
+        expectation_value = np.exp(-alpha * costs[bitstring])
+        cumulative_value += prob * expectation_value
+
+    final_value = -np.log(cumulative_value)
+
+    return final_value
+
