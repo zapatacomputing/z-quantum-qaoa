@@ -49,8 +49,6 @@ def get_graph_partition_hamiltonian(
 
     hamiltonian.compress()
 
-    print("here")
-
     return hamiltonian * scale_factor + offset
 
 
