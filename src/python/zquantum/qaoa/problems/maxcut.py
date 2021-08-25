@@ -6,19 +6,20 @@ from ._problem_evaluation import (
     solve_graph_problem_by_exhaustive_search,
     evaluate_solution,
 )
-from qiskit.optimization.applications.ising import max_cut
-from ._qiskit_wrapper import get_hamiltonian_for_problem
 
 
 def get_maxcut_hamiltonian(
-    graph: nx.Graph, scale_factor: int = 1.0, offset: int = 0.0
+    graph: nx.Graph, scale_factor: float = 1.0, offset: float = 0.0
 ) -> QubitOperator:
     """Converts a MAXCUT instance, as described by a weighted graph, to an Ising
-    Hamiltonian. It allows for different convention in the choice of the
-    Hamiltonian.
+    Hamiltonian. It allows for different convention in the choice of the Hamiltonian.
     The returned Hamiltonian is consistent with the definitions from
     "A Quantum Approximate Optimization Algorithm" by E. Farhi, eq. 12
-    (https://arxiv.org/pdf/1411.4028.pdf).
+    (https://arxiv.org/pdf/1411.4028.pdf)
+    and
+    "Performance of the Quantum Approximate Optimization Algorithm on the Maximum Cut Problem" eq. 1
+    (https://arxiv.org/pdf/1811.08419.pdf)
+    .
 
     Args:
         graph: undirected weighted graph defining the problem
@@ -29,9 +30,27 @@ def get_maxcut_hamiltonian(
         operator describing the Hamiltonian
 
     """
-    hamiltonian = get_hamiltonian_for_problem(
-        graph=graph, qiskit_operator_getter=max_cut.get_operator
-    )
+
+    # Relabeling for monotonicity purposes
+    num_nodes = range(len(graph.nodes))
+    mapping = {node: new_label for node, new_label in zip(graph.nodes, num_nodes)}
+    graph = nx.relabel_nodes(graph, mapping=mapping)
+
+    hamiltonian = QubitOperator()
+    shift = 0.0
+
+    for i, j in graph.edges:
+        try:
+            weight = graph.adj[i][j]["weight"]
+        except KeyError:
+            weight = 1
+
+        hamiltonian += weight * QubitOperator(f"Z{i} Z{j}")
+        shift -= weight
+
+    hamiltonian = 0.5 * (hamiltonian + shift)
+    hamiltonian.compress()
+
     return hamiltonian * scale_factor + offset
 
 
