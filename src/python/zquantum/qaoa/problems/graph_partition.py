@@ -1,9 +1,6 @@
-from typing import Dict, List, Tuple
+from typing import List, Tuple
 from openfermion import QubitOperator
 import networkx as nx
-import numpy as np
-from qiskit.optimization.applications.ising import graph_partition
-from ._qiskit_wrapper import get_hamiltonian_for_problem
 from ._problem_evaluation import (
     solve_graph_problem_by_exhaustive_search,
     evaluate_solution,
@@ -11,7 +8,7 @@ from ._problem_evaluation import (
 
 
 def get_graph_partition_hamiltonian(
-    graph: nx.Graph, scale_factor: int = 1.0, offset: int = 0.0
+    graph: nx.Graph, scale_factor: float = 1.0, offset: float = 0.0
 ) -> QubitOperator:
     """Construct a qubit operator with Hamiltonian for the graph partition problem.
 
@@ -32,9 +29,28 @@ def get_graph_partition_hamiltonian(
 
 
     """
-    hamiltonian = get_hamiltonian_for_problem(
-        graph=graph, qiskit_operator_getter=graph_partition.get_operator
-    )
+
+    # Relabeling for monotonicity purposes
+    num_nodes = range(len(graph.nodes))
+    mapping = {node: new_label for node, new_label in zip(graph.nodes, num_nodes)}
+    graph = nx.relabel_nodes(graph, mapping=mapping)
+
+    ham_a = QubitOperator()
+    for i in graph.nodes:
+        ham_a += QubitOperator(f"Z{i}")
+    ham_a = ham_a ** 2
+
+    ham_b = QubitOperator()
+    for i, j in graph.edges:
+        ham_b += 1 - QubitOperator(f"Z{i} Z{j}")
+    ham_b /= 2
+
+    hamiltonian = ham_a + ham_b
+
+    hamiltonian.compress()
+
+    print("here")
+
     return hamiltonian * scale_factor + offset
 
 
