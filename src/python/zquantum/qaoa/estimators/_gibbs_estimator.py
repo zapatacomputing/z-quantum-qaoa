@@ -1,6 +1,6 @@
 import numpy as np
 from openfermion import IsingOperator
-from typing import List
+from typing import List, Dict
 
 from zquantum.core.interfaces.backend import QuantumBackend
 from zquantum.core.measurement import ExpectationValues, Measurements
