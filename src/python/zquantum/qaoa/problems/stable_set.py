@@ -14,6 +14,9 @@ def get_stable_set_hamiltonian(
 
     Based on "Efficient Combinatorial Optimization Using Quantum Annealing" p. 8
     (https://arxiv.org/pdf/1801.08653.pdf)
+    and also mentioned briefly in
+    "Ising formulations of many NP problems" by A. Lucas, page 11 section 4.2
+    (https://arxiv.org/pdf/1302.5843.pdf).
 
     The operator's terms contain Pauli Z matrices applied to qubits. The qubit indices are
     based on graph node indices in the graph definition, not on the node names.
