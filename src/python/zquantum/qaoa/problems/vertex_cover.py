@@ -1,9 +1,6 @@
-from typing import Dict, List, Tuple
+from typing import List, Tuple
 from openfermion import QubitOperator
 import networkx as nx
-import numpy as np
-from qiskit.optimization.applications.ising import vertex_cover
-from ._qiskit_wrapper import get_hamiltonian_for_problem
 from ._problem_evaluation import (
     solve_graph_problem_by_exhaustive_search,
     evaluate_solution,
@@ -11,11 +8,17 @@ from ._problem_evaluation import (
 
 
 def get_vertex_cover_hamiltonian(
-    graph: nx.Graph, scale_factor: int = 1.0, offset: int = 0.0
+    graph: nx.Graph,
+    scale_factor: float = 1.0,
+    offset: float = 0.0,
+    hamiltonian_factor: int = 5,
 ) -> QubitOperator:
     """Construct a qubit operator with Hamiltonian for the vertex cover problem.
 
     From https://arxiv.org/pdf/1302.5843.pdf, see equations 33 and 34
+    and
+    https://quantumcomputing.stackexchange.com/questions/16082/vertex-cover-mappings-from-qubo-to-ising-and-vice-versa
+    for corrective translation shifts
 
     The operator's terms contain Pauli Z matrices applied to qubits. The qubit indices are
     based on graph node indices in the graph definition, not on the node names.
@@ -30,9 +33,26 @@ def get_vertex_cover_hamiltonian(
 
 
     """
-    hamiltonian = get_hamiltonian_for_problem(
-        graph=graph, qiskit_operator_getter=vertex_cover.get_operator
-    )
+
+    # Relabeling for monotonicity purposes
+    num_nodes = range(len(graph.nodes))
+    mapping = {node: new_label for node, new_label in zip(graph.nodes, num_nodes)}
+    graph = nx.relabel_nodes(graph, mapping=mapping)
+
+    ham_a = QubitOperator()
+    for i, j in graph.edges:
+        ham_a += (1 - QubitOperator(f"Z{i}")) * (1 - QubitOperator(f"Z{j}"))
+    ham_a *= hamiltonian_factor / 4
+
+    ham_b = QubitOperator()
+    for i in graph.nodes:
+        ham_b += QubitOperator(f"Z{i}")
+    ham_b /= 2
+
+    hamiltonian = ham_a + ham_b + len(graph.nodes) / 2
+
+    hamiltonian.compress()
+
     return hamiltonian * scale_factor + offset
 
 
