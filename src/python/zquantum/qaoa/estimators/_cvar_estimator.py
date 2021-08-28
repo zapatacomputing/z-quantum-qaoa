@@ -145,7 +145,6 @@ def _calculate_expectation_value_for_wavefunction2(
     ranks: List[str],
     alpha: float
 ) -> float:
-    expectation_values_per_bitstring = {}
     probability_per_bitstring = {}
 
     n_qubits = wavefunction.amplitudes.shape[0].bit_length() - 1
