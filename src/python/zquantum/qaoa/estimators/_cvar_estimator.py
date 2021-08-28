@@ -15,7 +15,11 @@ from zquantum.core.utils import dec2bin
 
 class CvarEstimator(EstimateExpectationValues):
     def __init__(
-        self, alpha: float, use_exact_expectation_values: Optional[bool] = False
+        self, 
+        alpha: float, 
+        costs: Dict[str, float], 
+        ranks: List[str],
+        use_exact_expectation_values: Optional[bool] = True
     ) -> None:
         """An estimator for calculating expectation value using CVaR method.
         The main idea is that for diagonal operators the ground state of the Hamiltonian is a base state.
@@ -33,6 +37,8 @@ class CvarEstimator(EstimateExpectationValues):
         """
         super().__init__()
         self.alpha = alpha
+        self.costs = costs
+        self.ranks = ranks
         self.use_exact_expectation_values = use_exact_expectation_values
 
     def __call__(
@@ -80,13 +86,15 @@ class CvarEstimator(EstimateExpectationValues):
                 ExpectationValues(
                     np.array(
                         [
-                            _calculate_expectation_value_for_wavefunction(
-                                distribution, operator, self.alpha
+                            # _calculate_expectation_value_for_wavefunction(
+                            #     distribution, operator, self.alpha
+                            _calculate_expectation_value_for_wavefunction2(
+                                wavefunction, self.costs, self.ranks, self.alpha
                             )
                         ]
                     )
                 )
-                for distribution, operator in zip(wavefunctions_list, operators)
+                for wavefunction, operator in zip(wavefunctions_list, operators)
             ]
 
 
@@ -131,6 +139,31 @@ def _calculate_expectation_value_for_wavefunction(
         expectation_values_per_bitstring, probability_per_bitstring, alpha
     )
 
+def _calculate_expectation_value_for_wavefunction2(
+    wavefunction: Wavefunction,         
+    costs: Dict[str, float], 
+    ranks: List[str],
+    alpha: float
+) -> float:
+    expectation_values_per_bitstring = {}
+    probability_per_bitstring = {}
+
+    n_qubits = wavefunction.amplitudes.shape[0].bit_length() - 1
+
+    for decimal_bitstring in range(2 ** n_qubits):
+        # `decimal_bitstring` is the bitstring converted to decimal.
+
+        # Convert decimal bitstring into bitstring
+        bitstring = "".join([str(int) for int in dec2bin(decimal_bitstring, n_qubits)])
+
+        # Compute the probability p(x) for each n-bitstring x from the wavefunction,
+        # p(x) = |amplitude of x| ^ 2.
+        probability = np.abs(wavefunction.amplitudes[decimal_bitstring]) ** 2
+        probability_per_bitstring[bitstring] = float(probability)
+
+    return _sum_expectation_values2(
+        costs, ranks, probability_per_bitstring, alpha
+    )
 
 def _sum_expectation_values(
     expectation_values_per_bitstring: Dict[str, float],
@@ -156,6 +189,38 @@ def _sum_expectation_values(
     # When the cumulative probability associated with these bitstrings is higher than alpha,
     # it stops and effectively discards all the remaining values.
     for bitstring, expectation_value in sorted_expectation_values_per_bitstring_list:
+        prob = probability_per_bitstring[bitstring]
+        if cumulative_prob + prob < alpha:
+            cumulative_prob += prob
+            cumulative_value += prob * expectation_value
+        else:
+            cumulative_value += (alpha - cumulative_prob) * expectation_value
+            break
+    final_value = cumulative_value / alpha
+    return final_value
+
+
+def _sum_expectation_values2(
+    costs: Dict[str, float],
+    ranks: List[str],
+    probability_per_bitstring: Dict[str, float],
+    alpha: float,
+) -> float:
+    """Returns the cumulative sum of expectation values until the cumulative probability of bitstrings
+    s_k = p(x_1) + … + p(x_k) >= alpha
+
+    Args:
+        expectation_values_per_bitstring: dictionary of bitstrings and their corresponding expectation values.
+        probability_per_bitstring: dictionary of bitstrings and their corresponding expectation probabilities.
+        alpha: see description in the `__call__()` method.
+    """
+    cumulative_prob = 0.0
+    cumulative_value = 0.0
+    # Sums expectation values for each bitstring, starting from the one with the smallest one.
+    # When the cumulative probability associated with these bitstrings is higher than alpha,
+    # it stops and effectively discards all the remaining values.
+    for bitstring in ranks:
+        expectation_value = costs[bitstring]        
         prob = probability_per_bitstring[bitstring]
         if cumulative_prob + prob < alpha:
             cumulative_prob += prob
