@@ -1,9 +1,6 @@
-from typing import Dict, List, Tuple
+from typing import List, Tuple
 from openfermion import QubitOperator
 import networkx as nx
-import numpy as np
-from qiskit.optimization.applications.ising import stable_set
-from ._qiskit_wrapper import get_hamiltonian_for_problem
 from ._problem_evaluation import (
     solve_graph_problem_by_exhaustive_search,
     evaluate_solution,
@@ -11,13 +8,15 @@ from ._problem_evaluation import (
 
 
 def get_stable_set_hamiltonian(
-    graph: nx.Graph, scale_factor: int = 1.0, offset: int = 0.0
+    graph: nx.Graph, scale_factor: float = 1.0, offset: float = 0.0
 ) -> QubitOperator:
     """Construct a qubit operator with Hamiltonian for the stable set problem.
 
-    H = H_A + H_B
-    H_A = sum\_{(i,j)\in E}{((1+ZiZj)/2)}
-    H_B = sum_{i}{((-1/2) + (((1-degree(i))/2)(Zi))}
+    Based on "Efficient Combinatorial Optimization Using Quantum Annealing" p. 8
+    (https://arxiv.org/pdf/1801.08653.pdf)
+    and also mentioned briefly in
+    "Ising formulations of many NP problems" by A. Lucas, page 11 section 4.2
+    (https://arxiv.org/pdf/1302.5843.pdf).
 
     The operator's terms contain Pauli Z matrices applied to qubits. The qubit indices are
     based on graph node indices in the graph definition, not on the node names.
@@ -26,9 +25,22 @@ def get_stable_set_hamiltonian(
         scale_factor: constant by which all the coefficients in the Hamiltonian will be multiplied
         offset: coefficient of the constant term added to the Hamiltonian to shift its energy levels
     """
-    hamiltonian = get_hamiltonian_for_problem(
-        graph=graph, qiskit_operator_getter=stable_set.get_operator
-    )
+
+    # Relabeling for monotonicity purposes
+    num_nodes = range(len(graph.nodes))
+    mapping = {node: new_label for node, new_label in zip(graph.nodes, num_nodes)}
+    graph = nx.relabel_nodes(graph, mapping=mapping)
+
+    ham_a = QubitOperator()
+    for i, j in graph.edges:
+        ham_a += (1 - QubitOperator(f"Z{i}")) * (1 - QubitOperator(f"Z{j}"))
+
+    ham_b = QubitOperator()
+    for i in graph.nodes:
+        ham_b += QubitOperator(f"Z{i}")
+
+    hamiltonian = ham_a / 2 + ham_b / 2 - len(graph.nodes) / 2
+
     return hamiltonian * scale_factor + offset
 
 

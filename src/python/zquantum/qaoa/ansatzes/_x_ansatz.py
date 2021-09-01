@@ -1,13 +1,13 @@
-from zquantum.core.interfaces.ansatz import Ansatz, ansatz_property
+from itertools import combinations
+from typing import Optional, Union
 
-from zquantum.core.circuits import Circuit
-from zquantum.core.evolution import time_evolution
-from openfermion import QubitOperator, IsingOperator
-from typing import Union, Optional
 import numpy as np
 import sympy
+from openfermion import IsingOperator, QubitOperator
 from overrides import overrides
-from itertools import combinations
+from zquantum.core.circuits import Circuit
+from zquantum.core.evolution import time_evolution
+from zquantum.core.interfaces.ansatz import Ansatz, ansatz_property
 
 
 class XAnsatz(Ansatz):
@@ -18,7 +18,7 @@ class XAnsatz(Ansatz):
     def __init__(
         self,
         number_of_layers: int,
-        number_of_qubits: Union[QubitOperator, IsingOperator],
+        number_of_qubits: int,
     ):
         """This is implementation of the X Ansatz from https://arxiv.org/abs/2105.01114
 
@@ -90,7 +90,7 @@ class XZAnsatz(Ansatz):
         return _create_circuit(self.number_of_layers, self.number_of_qubits, type)
 
 
-def _create_circuit(k_body_depth: int, number_of_qubits: int, type) -> Circuit:
+def _create_circuit(k_body_depth: int, number_of_qubits: int, type: str) -> Circuit:
     """Args:
     type: X, XZ1, or XZ2
     """

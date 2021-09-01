@@ -1,6 +1,3 @@
-import networkx as nx
-
-from openfermion import QubitOperator
 from zquantum.qaoa.problems.maxcut import (
     get_maxcut_hamiltonian,
     evaluate_maxcut_solution,
@@ -8,7 +5,6 @@ from zquantum.qaoa.problems.maxcut import (
 )
 
 
-import networkx as nx
 import pytest
 import copy
 
