@@ -1,15 +1,14 @@
-from zquantum.core.interfaces.ansatz import Ansatz, ansatz_property
+from typing import List, Optional, Union
 
-from zquantum.core.circuits import Circuit, create_layer_of_gates, H
-from zquantum.core.evolution import time_evolution
-from zquantum.core.openfermion import change_operator_type
-
-from openfermion import QubitOperator, IsingOperator
-from openfermion.utils import count_qubits
-from typing import Union, Optional, List
 import numpy as np
 import sympy
+from openfermion import IsingOperator, QubitOperator
+from openfermion.utils import count_qubits
 from overrides import overrides
+from zquantum.core.circuits import Circuit, H, create_layer_of_gates
+from zquantum.core.evolution import time_evolution
+from zquantum.core.interfaces.ansatz import Ansatz, ansatz_property
+from zquantum.core.openfermion import change_operator_type
 
 
 class QAOAFarhiAnsatz(Ansatz):
@@ -69,13 +68,17 @@ class QAOAFarhiAnsatz(Ansatz):
         circuit += create_layer_of_gates(self.number_of_qubits, H)
 
         # Add time evolution layers
+        cost_circuit = time_evolution(
+            change_operator_type(self._cost_hamiltonian, QubitOperator),
+            sympy.Symbol(f"gamma"),
+        )
+        mixer_circuit = time_evolution(self._mixer_hamiltonian, sympy.Symbol(f"beta"))
         for i in range(self.number_of_layers):
-            circuit += time_evolution(
-                change_operator_type(self._cost_hamiltonian, QubitOperator),
-                sympy.Symbol(f"gamma_{i}"),
+            circuit += cost_circuit.bind(
+                {sympy.Symbol(f"gamma"): sympy.Symbol(f"gamma_{i}")}
             )
-            circuit += time_evolution(
-                self._mixer_hamiltonian, sympy.Symbol(f"beta_{i}")
+            circuit += mixer_circuit.bind(
+                {sympy.Symbol(f"beta"): sympy.Symbol(f"beta_{i}")}
             )
 
         return circuit
