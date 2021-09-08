@@ -67,12 +67,12 @@ class WarmStartQAOAAnsatz(Ansatz):
         circuit += create_layer_of_gates(self.number_of_qubits, RY, self._thetas)
 
         # Add time evolution layers
-        cost_unitary = time_evolution(
+        cost_circuit = time_evolution(
             change_operator_type(self._cost_hamiltonian, QubitOperator),
             sympy.Symbol(f"gamma"),
         )
         for i in range(self.number_of_layers):
-            circuit += cost_unitary.bind(
+            circuit += cost_circuit.bind(
                 {sympy.Symbol(f"gamma"): sympy.Symbol(f"gamma_{i}")}
             )
             circuit += create_layer_of_gates(self.number_of_qubits, RY, -self._thetas)

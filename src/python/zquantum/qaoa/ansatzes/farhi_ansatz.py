@@ -68,16 +68,16 @@ class QAOAFarhiAnsatz(Ansatz):
         circuit += create_layer_of_gates(self.number_of_qubits, H)
 
         # Add time evolution layers
-        cost_unitary = time_evolution(
+        cost_circuit = time_evolution(
             change_operator_type(self._cost_hamiltonian, QubitOperator),
             sympy.Symbol(f"gamma"),
         )
-        mixer_unitary = time_evolution(self._mixer_hamiltonian, sympy.Symbol(f"beta"))
+        mixer_circuit = time_evolution(self._mixer_hamiltonian, sympy.Symbol(f"beta"))
         for i in range(self.number_of_layers):
-            circuit += cost_unitary.bind(
+            circuit += cost_circuit.bind(
                 {sympy.Symbol(f"gamma"): sympy.Symbol(f"gamma_{i}")}
             )
-            circuit += mixer_unitary.bind(
+            circuit += mixer_circuit.bind(
                 {sympy.Symbol(f"beta"): sympy.Symbol(f"beta_{i}")}
             )
 
