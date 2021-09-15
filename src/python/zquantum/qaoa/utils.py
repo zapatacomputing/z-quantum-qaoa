@@ -1,5 +1,6 @@
 import numpy as np
 import random
+import json
 
 # For max cut / max k-sat, there are two ways to represent a cut / a variable assignment:
 # e.g. x = [0, 1, 1, 0, 0, 1]
@@ -58,3 +59,12 @@ def sigmoid(a, b, x):
     return a / (1.0 + np.exp(-b*x))
 
 
+class NpEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.integer):
+            return int(obj)
+        if isinstance(obj, np.floating):
+            return float(obj)
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return super(NpEncoder, self).default(obj)

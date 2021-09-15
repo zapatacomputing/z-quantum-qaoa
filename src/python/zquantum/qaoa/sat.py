@@ -1,7 +1,7 @@
 import numpy as np
 import copy
 from functools import reduce
-from .utils import get_x_vec
+from .utils import get_x_vec, NpEncoder
 from openfermion import IsingOperator
 import json
 
@@ -106,6 +106,7 @@ def generate_random_k_sat_instance(
         if not allow_duplicates and any(candidate == clause for clause in clauses):
             continue
 
+        candidate = set([int(x) for x in candidate])
         clauses.append(candidate)
 
         if weight_type == "uniform":
@@ -138,7 +139,7 @@ def save_k_sat_instance(k_sat, filename):
         "weights": k_sat.weights
     }
     with open(filename, 'w') as outfile:
-        json.dump(data, outfile)
+        json.dump(data, outfile, cls=NpEncoder)
 
 def load_k_sat_instance(filename):
     with open(filename, 'r') as infile:
