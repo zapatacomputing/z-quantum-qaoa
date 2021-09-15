@@ -26,7 +26,7 @@ def compute_pogs(dist, threshold, costs_for_cvar, ranks_for_cvar):
             break
     return pogs
 
-def get_binned_dist(dist, num_bins, costs_for_cvar, ranks_for_cvar, max_cost, min_cost):
+def get_binned_distribution(dist, num_bins, costs_for_cvar, ranks_for_cvar, max_cost, min_cost):
     binned_dist = np.zeros((num_bins))
     delta = (max_cost - min_cost) / num_bins
     for bitstring in ranks_for_cvar:
