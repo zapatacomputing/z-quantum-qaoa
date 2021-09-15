@@ -39,7 +39,7 @@ def get_binned_distribution(dist, num_bins, costs_for_cvar, ranks_for_cvar, max_
 def compute_binned_cvar(grid_costs, binned_dist, alpha):
     assert len(grid_costs) == len(binned_dist)
     total_prob = 0.0
-    toal_cost = 0.0
+    total_cost = 0.0
     for cost, prob in zip(grid_costs, binned_dist):
         if total_prob + prob < alpha:
             total_prob += prob
