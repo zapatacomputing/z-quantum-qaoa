@@ -3,6 +3,7 @@ import copy
 from functools import reduce
 from .utils import get_x_vec
 from openfermion import IsingOperator
+import json
 
 class MAXkSAT(object):
     def __init__(self, clauses, weights):
