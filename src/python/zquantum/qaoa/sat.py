@@ -18,8 +18,8 @@ class MAXkSAT(object):
 
         if self.num_clauses > 0:
             self.clause_lens = [len(clause) for clause in clauses]
-            self.max_clause_len = max(self.clause_lens)
-            self.equal_clause_len = all(x==self.max_clause_len for x in self.clause_lens)
+            self.max_clause_length = max(self.clause_lens)
+            self.equal_clause_length = all(x==self.max_clause_length for x in self.clause_lens)
 
     def __str__(self):
         output = ""
@@ -75,12 +75,12 @@ class MAXkSAT(object):
 def generate_random_k_sat_instance(
     num_variables,
     num_clauses,
-    max_clause_len,
-    equal_clause_len=False,
+    max_clause_length,
+    equal_clause_length=False,
     allow_duplicates=False,
     weight_type="uniform"
 ):
-    if equal_clause_len:
+    if equal_clause_length:
         literals = list(range(2*num_variables))
     else:
         literals = list(range(2*num_variables+1))
@@ -90,10 +90,10 @@ def generate_random_k_sat_instance(
 
     while len(clauses) < num_clauses:
 
-        if equal_clause_len:
-            candidate = set(np.random.choice(literals, max_clause_len, replace=False))
+        if equal_clause_length:
+            candidate = set(np.random.choice(literals, max_clause_length, replace=False))
         else:
-            candidate = set(np.random.choice(literals, max_clause_len, replace=True))
+            candidate = set(np.random.choice(literals, max_clause_length, replace=True))
             candidate -= set([2*num_variables])
 
         if len(candidate) == 0:
