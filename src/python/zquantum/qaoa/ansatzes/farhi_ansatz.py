@@ -1,14 +1,14 @@
-from zquantum.core.interfaces.ansatz import Ansatz, ansatz_property
-from zquantum.core.circuit import Circuit, Qubit, create_layer_of_gates
-from zquantum.core.evolution import time_evolution
-from zquantum.core.openfermion import qubitop_to_pyquilpauli, change_operator_type
+from typing import List, Optional, Union
 
-from openfermion import QubitOperator, IsingOperator
-from openfermion.utils import count_qubits
-from typing import Union, Optional, List
 import numpy as np
 import sympy
+from openfermion import IsingOperator, QubitOperator
+from openfermion.utils import count_qubits
 from overrides import overrides
+from zquantum.core.circuits import Circuit, H, create_layer_of_gates
+from zquantum.core.evolution import time_evolution
+from zquantum.core.interfaces.ansatz import Ansatz, ansatz_property
+from zquantum.core.openfermion import change_operator_type
 
 
 class QAOAFarhiAnsatz(Ansatz):
@@ -63,24 +63,22 @@ class QAOAFarhiAnsatz(Ansatz):
                 "This method retuns a parametrizable circuit, params will be ignored."
             )
         circuit = Circuit()
-        qubits = [Qubit(qubit_index) for qubit_index in range(self.number_of_qubits)]
-        circuit.qubits = qubits
 
         # Prepare initial state
-        circuit += create_layer_of_gates(self.number_of_qubits, "H")
+        circuit += create_layer_of_gates(self.number_of_qubits, H)
 
         # Add time evolution layers
-        pyquil_cost_hamiltonian = qubitop_to_pyquilpauli(
-            change_operator_type(self._cost_hamiltonian, QubitOperator)
+        cost_circuit = time_evolution(
+            change_operator_type(self._cost_hamiltonian, QubitOperator),
+            sympy.Symbol(f"gamma"),
         )
-        pyquil_mixer_hamiltonian = qubitop_to_pyquilpauli(self._mixer_hamiltonian)
-
+        mixer_circuit = time_evolution(self._mixer_hamiltonian, sympy.Symbol(f"beta"))
         for i in range(self.number_of_layers):
-            circuit += time_evolution(
-                pyquil_cost_hamiltonian, sympy.Symbol(f"gamma_{i}")
+            circuit += cost_circuit.bind(
+                {sympy.Symbol(f"gamma"): sympy.Symbol(f"gamma_{i}")}
             )
-            circuit += time_evolution(
-                pyquil_mixer_hamiltonian, sympy.Symbol(f"beta_{i}")
+            circuit += mixer_circuit.bind(
+                {sympy.Symbol(f"beta"): sympy.Symbol(f"beta_{i}")}
             )
 
         return circuit

@@ -1,5 +1,7 @@
 # z-quantum-qaoa
 
+[![codecov](https://codecov.io/gh/zapatacomputing/z-quantum-qaoa/branch/master/graph/badge.svg?token=hlUcWp59Bh)](https://codecov.io/gh/zapatacomputing/z-quantum-qaoa)
+
 ## What is it?
 
 `z-quantum-qaoa` is a module with basic implementation of Quantum Approximate Optimization Algorithm (QAOA) to be used with [Orquestra](https://www.zapatacomputing.com/orquestra/) – platform for performing computations on quantum computers developed by [Zapata Computing](https://www.zapatacomputing.com).

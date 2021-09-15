@@ -19,7 +19,7 @@ imports:
   type: git
   parameters:
     repository: "git@github.com:zapatacomputing/z-quantum-qubo.git"
-    branch: "dev"
+    branch: "master"
 - name: z-quantum-optimizers
   type: git
   parameters:
@@ -35,7 +35,6 @@ steps:
 - name: generate-graph
   config:
     runtime:
-      customImage: "zapatacomputing/z-quantum-default:0.0.7"
       language: python3
       imports: [z-quantum-core]
       parameters:
@@ -46,8 +45,6 @@ steps:
     type: int
   - edge_probability: 0.8
     type: float
-  - random_weights: False
-    type: bool
   outputs:
   - name: graph
     type: graph
@@ -56,7 +53,6 @@ steps:
   passed: [generate-graph]
   config:
     runtime:
-      customImage: "zapatacomputing/z-quantum-default:0.0.7"
       language: python3
       imports: [z-quantum-core, z-quantum-qaoa]
       parameters:
@@ -73,7 +69,6 @@ steps:
   passed: [get-maxcut-hamiltonian]
   config:
     runtime:
-      customImage: "zapatacomputing/z-quantum-default:0.0.7"
       language: python3
       imports: [z-quantum-core, z-quantum-qubo]
       parameters:
@@ -90,7 +85,6 @@ steps:
   passed: [ising-hamiltonian-to-qubo]
   config:
     runtime:
-      customImage: "zapatacomputing/z-quantum-default:0.0.7"
       language: python3
       imports: [z-quantum-core, z-quantum-qubo, z-quantum-optimizers]
       parameters:
@@ -99,8 +93,6 @@ steps:
   inputs:
   - qubo: ((ising-hamiltonian-to-qubo.qubo))
     type: qubo
-  - epsilon: 0.5
-    type: float
   - optimizer_specs:
       module_name: zquantum.optimizers.scipy_optimizer
       function_name: ScipyOptimizer
@@ -118,7 +110,6 @@ steps:
   passed: [get-solution-of-qp-relaxation-of-qubo]
   config:
     runtime:
-      customImage: "zapatacomputing/z-quantum-default:0.0.7"
       language: python3
       imports: [z-quantum-core, z-quantum-qaoa]
       parameters:
@@ -183,9 +174,10 @@ steps:
   - cost_function_specs:
       module_name: zquantum.core.cost_function
       function_name: AnsatzBasedCostFunction
-      estimator-specs:
-        module_name: zquantum.core.estimator
-        function_name: ExactEstimator
+      estimation_method_specs:
+        module_name: zquantum.core.estimation
+        function_name: calculate_exact_expectation_values
+
     type: specs
   - qubit_operator: ((get-maxcut-hamiltonian.hamiltonian))
     type: qubit-operator
@@ -202,7 +194,6 @@ steps:
 
 types:
 - qubit-operator
-- grid
 - graph
 - parameters
 - relaxed_solution
