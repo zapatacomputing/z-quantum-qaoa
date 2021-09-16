@@ -2,9 +2,7 @@ import networkx as nx
 import numpy as np
 import random
 from openfermion import IsingOperator
-from utils import (get_x_vec, get_y_vec, get_z_vec,
-                    convert_set_to_binary_string,
-                    convert_binary_string_to_set)
+from .utils import get_x_vec, get_z_vec
 
 def generate_random_graph(topology_specs, weight_specs):
     if topology_specs['type'] == 'gnp':
@@ -132,6 +130,13 @@ def get_top_bisections_of_a_graph(graph, ratio=0.95):
                                 if bisection_size >= threshold]
     return top_bisections_and_sizes, max_bisection_size, min_bisection_size, mean_bisection_size
 
+def get_k_cut_size(edges, k_cut):
+    res = 0.0
+    for edge in edges:
+        u, v, w = edge
+        if k_cut[u] != k_cut[v]:
+            res += w
+    return res
 
 def construct_ising_hamiltonian_for_max_cut(graph):
     n = graph.number_of_nodes()

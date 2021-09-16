@@ -1,8 +1,8 @@
 import numpy as np
 import networkx as nx
 from cvxopt import matrix, solvers
-from utils import generate_random_vectors
-from graph import get_cut_size
+from .utils import generate_random_vectors
+from .graph import get_cut_size
 
 solvers.options['show_progress'] = False
 
