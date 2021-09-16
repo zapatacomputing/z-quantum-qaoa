@@ -21,5 +21,6 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     setup_requires=["setuptools_scm~=6.0"],
-    install_requires=["z-quantum-core"],
+    install_requires=["z-quantum-core",
+                     "cvxopt>=1.2.6"],
 )
