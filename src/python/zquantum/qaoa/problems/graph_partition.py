@@ -5,9 +5,7 @@ from .problem import Problem
 
 class GraphPartitioning(Problem):
     @staticmethod
-    def get_hamiltonian(
-        graph: nx.Graph, scale_factor: float = 1.0, offset: float = 0.0
-    ) -> QubitOperator:
+    def build_hamiltonian(graph: nx.Graph) -> QubitOperator:
         """Construct a qubit operator with Hamiltonian for the graph partition problem.
 
         The returned Hamiltonian is consistent with the definitions from
@@ -25,12 +23,6 @@ class GraphPartitioning(Problem):
         Returns:
             operator describing the Hamiltonian
         """
-
-        # Relabeling for monotonicity purposes
-        num_nodes = range(len(graph.nodes))
-        mapping = {node: new_label for node, new_label in zip(graph.nodes, num_nodes)}
-        graph = nx.relabel_nodes(graph, mapping=mapping)
-
         ham_a = QubitOperator()
         for i in graph.nodes:
             ham_a += QubitOperator(f"Z{i}")
@@ -43,6 +35,4 @@ class GraphPartitioning(Problem):
 
         hamiltonian = ham_a + ham_b
 
-        hamiltonian.compress()
-
-        return hamiltonian * scale_factor + offset
+        return hamiltonian

@@ -5,10 +5,8 @@ from .problem import Problem
 
 
 class VertexCover(Problem):
-    def get_hamiltonian(
+    def build_hamiltonian(
         graph: nx.Graph,
-        scale_factor: float = 1.0,
-        offset: float = 0.0,
         hamiltonian_factor: int = 5,
     ) -> QubitOperator:
         """Construct a qubit operator with Hamiltonian for the vertex cover problem.
@@ -29,12 +27,6 @@ class VertexCover(Problem):
         Returns:
             operator describing the Hamiltonian
         """
-
-        # Relabeling for monotonicity purposes
-        num_nodes = range(len(graph.nodes))
-        mapping = {node: new_label for node, new_label in zip(graph.nodes, num_nodes)}
-        graph = nx.relabel_nodes(graph, mapping=mapping)
-
         ham_a = QubitOperator()
         for i, j in graph.edges:
             ham_a += (1 - QubitOperator(f"Z{i}")) * (1 - QubitOperator(f"Z{j}"))
@@ -47,6 +39,4 @@ class VertexCover(Problem):
 
         hamiltonian = ham_a + ham_b + len(graph.nodes) / 2
 
-        hamiltonian.compress()
-
-        return hamiltonian * scale_factor + offset
+        return hamiltonian

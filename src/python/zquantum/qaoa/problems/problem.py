@@ -11,10 +11,23 @@ from ._problem_evaluation import (
 class Problem(ABC):
     @staticmethod
     @abstractmethod
+    def build_hamiltonian(graph: nx.Graph):
+        raise NotImplementedError
+
+    @classmethod
     def get_hamiltonian(
-        graph: nx.Graph, scale_factor: float = 1.0, offset: float = 0.0, **kwargs
+        cls, graph: nx.Graph, scale_factor: float = 1.0, offset: float = 0.0, **kwargs
     ) -> QubitOperator:
-        pass
+        # Relabeling for monotonicity purposes
+        num_nodes = range(len(graph.nodes))
+        mapping = {node: new_label for node, new_label in zip(graph.nodes, num_nodes)}
+        graph = nx.relabel_nodes(graph, mapping=mapping)
+
+        hamiltonian = cls.build_hamiltonian(graph)
+
+        hamiltonian.compress()
+
+        return hamiltonian * scale_factor + offset
 
     @classmethod
     def evaluate_solution(cls, solution: Tuple[int], graph: nx.Graph) -> float:
