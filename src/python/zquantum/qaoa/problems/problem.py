@@ -12,7 +12,7 @@ class Problem(ABC):
     @staticmethod
     @abstractmethod
     def build_hamiltonian(graph: nx.Graph, kwargs):
-        raise NotImplementedError
+        pass
 
     @classmethod
     def get_hamiltonian(
