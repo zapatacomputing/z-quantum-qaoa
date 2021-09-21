@@ -4,11 +4,7 @@ from .maxcut import (
     solve_maxcut_by_exhaustive_search,
 )
 
-from .graph_partition import (
-    get_graph_partition_hamiltonian,
-    evaluate_graph_partition_solution,
-    solve_graph_partition_by_exhaustive_search,
-)
+from .graph_partition import GraphPartitioning
 
 from .vertex_cover import (
     get_vertex_cover_hamiltonian,
