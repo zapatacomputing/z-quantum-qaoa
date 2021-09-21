@@ -2,11 +2,7 @@ from .maxcut import MaxCut
 
 from .graph_partition import GraphPartitioning
 
-from .vertex_cover import (
-    get_vertex_cover_hamiltonian,
-    evaluate_vertex_cover_solution,
-    solve_vertex_cover_by_exhaustive_search,
-)
+from .vertex_cover import VertexCover
 
 from .stable_set import StableSet
 
