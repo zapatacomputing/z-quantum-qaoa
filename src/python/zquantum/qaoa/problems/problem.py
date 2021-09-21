@@ -3,8 +3,8 @@ import networkx as nx
 from openfermion import QubitOperator
 from typing import Tuple, List
 from ._problem_evaluation import (
-    solve_graph_problem_by_exhaustive_search,
     evaluate_solution,
+    solve_graph_problem_by_exhaustive_search,
 )
 
 
@@ -20,10 +20,11 @@ class Problem(ABC):
     def evaluate_solution(cls, solution: Tuple[int], graph: nx.Graph) -> float:
         return evaluate_solution(solution, graph, cls.get_hamiltonian)
 
-    @staticmethod
+    @classmethod
     def solve_by_exhaustive_search(
+        cls,
         graph: nx.Graph,
     ) -> Tuple[float, List[Tuple[int]]]:
         return solve_graph_problem_by_exhaustive_search(
-            graph, cost_function=evaluate_solution
+            graph, cost_function=cls.evaluate_solution
         )

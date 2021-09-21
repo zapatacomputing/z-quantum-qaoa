@@ -1,8 +1,4 @@
-from .maxcut import (
-    get_maxcut_hamiltonian,
-    evaluate_maxcut_solution,
-    solve_maxcut_by_exhaustive_search,
-)
+from .maxcut import MaxCut
 
 from .graph_partition import GraphPartitioning
 
@@ -12,11 +8,7 @@ from .vertex_cover import (
     solve_vertex_cover_by_exhaustive_search,
 )
 
-from .stable_set import (
-    get_stable_set_hamiltonian,
-    evaluate_stable_set_solution,
-    solve_stable_set_by_exhaustive_search,
-)
+from .stable_set import StableSet
 
 from .generators import get_random_hamiltonians_for_problem
 

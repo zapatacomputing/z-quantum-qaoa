@@ -207,13 +207,13 @@ class TestEvaluateGraphPartitionSolution:
                 _ = GraphPartitioning.evaluate_solution(invalid_solution, graph)
 
 
-# class TestSolveGraphPartitionByExhaustiveSearch:
-#     @pytest.mark.parametrize(
-#         "graph,target_solutions,target_value", [*GRAPH_BEST_SOLUTIONS_COST_LIST]
-#     )
-#     def test_solve_graph_partition_by_exhaustive_search(
-#         self, graph, target_solutions, target_value
-#     ):
-#         value, solutions = solve_graph_partition_by_exhaustive_search(graph)
-#         assert set(solutions) == set(target_solutions)
-#         assert value == target_value
+class TestSolveGraphPartitionByExhaustiveSearch:
+    @pytest.mark.parametrize(
+        "graph,target_solutions,target_value", [*GRAPH_BEST_SOLUTIONS_COST_LIST]
+    )
+    def test_solve_graph_partition_by_exhaustive_search(
+        self, graph, target_solutions, target_value
+    ):
+        value, solutions = GraphPartitioning.solve_by_exhaustive_search(graph)
+        assert set(solutions) == set(target_solutions)
+        assert value == target_value
