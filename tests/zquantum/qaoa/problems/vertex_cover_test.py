@@ -174,11 +174,9 @@ class TestGetVertexCoverHamiltonian:
         expected_constant_term = 0
 
         qubit_operator = VertexCover.get_hamiltonian(graph)
-        for vertex_id1, vertex_id2 in graph.edges:
-            expected_constant_term += 5 / 4
 
-        for vertex in graph.nodes:
-            expected_constant_term += 0.5
+        expected_constant_term += (5 / 4) * len(graph.edges)
+        expected_constant_term += 0.5 * len(graph.nodes)
 
         assert qubit_operator.terms[()] == expected_constant_term
 

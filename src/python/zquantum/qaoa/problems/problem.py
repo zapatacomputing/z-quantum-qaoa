@@ -11,7 +11,7 @@ from ._problem_evaluation import (
 class Problem(ABC):
     @staticmethod
     @abstractmethod
-    def build_hamiltonian(graph: nx.Graph):
+    def build_hamiltonian(graph: nx.Graph, kwargs):
         raise NotImplementedError
 
     @classmethod
@@ -23,7 +23,7 @@ class Problem(ABC):
         mapping = {node: new_label for node, new_label in zip(graph.nodes, num_nodes)}
         graph = nx.relabel_nodes(graph, mapping=mapping)
 
-        hamiltonian = cls.build_hamiltonian(graph)
+        hamiltonian = cls.build_hamiltonian(graph, **kwargs)
 
         hamiltonian.compress()
 
