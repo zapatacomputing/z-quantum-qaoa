@@ -6,9 +6,12 @@ from openfermion import IsingOperator, QubitOperator
 from openfermion.utils import count_qubits
 from overrides import overrides
 from zquantum.core.circuits import Circuit, H, create_layer_of_gates
+from zquantum.core.circuits.symbolic import natural_key_fixed_names_order
 from zquantum.core.evolution import time_evolution
-from zquantum.core.interfaces.ansatz import Ansatz, ansatz_property
+from zquantum.core.interfaces.ansatz import Ansatz, ansatz_property, SymbolsSortKey
 from zquantum.core.openfermion import change_operator_type
+
+_SYMBOL_SORT_KEY = natural_key_fixed_names_order(["gamma", "beta"])
 
 
 class QAOAFarhiAnsatz(Ansatz):
@@ -39,6 +42,10 @@ class QAOAFarhiAnsatz(Ansatz):
         if mixer_hamiltonian is None:
             mixer_hamiltonian = create_all_x_mixer_hamiltonian(self.number_of_qubits)
         self._mixer_hamiltonian = mixer_hamiltonian
+
+    @property
+    def symbols_sort_key(self) -> SymbolsSortKey:
+        return _SYMBOL_SORT_KEY
 
     @property
     def number_of_qubits(self):
