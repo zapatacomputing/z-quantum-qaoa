@@ -5,7 +5,7 @@ from .problem import Problem
 
 
 class StableSet(Problem):
-    def build_hamiltonian(self, graph: nx.Graph) -> QubitOperator:
+    def _build_hamiltonian(self, graph: nx.Graph) -> QubitOperator:
         """Construct a qubit operator with Hamiltonian for the stable set problem.
 
         Based on "Efficient Combinatorial Optimization Using Quantum Annealing" p. 8
@@ -33,6 +33,4 @@ class StableSet(Problem):
         for i in graph.nodes:
             ham_b += QubitOperator(f"Z{i}")
 
-        hamiltonian = ham_a / 2 + ham_b / 2 - len(graph.nodes) / 2
-
-        return hamiltonian
+        return ham_a / 2 + ham_b / 2 - len(graph.nodes) / 2
