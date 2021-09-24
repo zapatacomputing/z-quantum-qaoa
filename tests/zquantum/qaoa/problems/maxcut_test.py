@@ -131,7 +131,7 @@ class TestGetMaxcutHamiltonian:
         ],
     )
     def test_returns_expected_terms(self, graph, terms):
-        qubit_operator = MaxCut.get_hamiltonian(graph)
+        qubit_operator = MaxCut().get_hamiltonian(graph)
         assert qubit_operator.terms == terms
 
     @pytest.mark.parametrize(
@@ -139,14 +139,14 @@ class TestGetMaxcutHamiltonian:
         [*GRAPH_OPERATOR_TERM_SCALING_OFFSET_LIST],
     )
     def test_scaling_and_offset_works(self, graph, terms, scale_factor, offset):
-        qubit_operator = MaxCut.get_hamiltonian(graph, scale_factor, offset)
+        qubit_operator = MaxCut().get_hamiltonian(graph, scale_factor, offset)
         assert qubit_operator.terms == terms
 
 
 class TestEvaluateMaxcutSolution:
     @pytest.mark.parametrize("graph,solution,target_value", [*GRAPH_SOLUTION_COST_LIST])
     def test_evaluate_maxcut_solution(self, graph, solution, target_value):
-        value = MaxCut.evaluate_solution(solution, graph)
+        value = MaxCut().evaluate_solution(solution, graph)
         assert value == target_value
 
     @pytest.mark.parametrize("graph,solution,target_value", [*GRAPH_SOLUTION_COST_LIST])
@@ -164,7 +164,7 @@ class TestEvaluateMaxcutSolution:
         ]
         for invalid_solution in invalid_solutions:
             with pytest.raises(ValueError):
-                _ = MaxCut.evaluate_solution(invalid_solution, graph)
+                _ = MaxCut().evaluate_solution(invalid_solution, graph)
 
 
 class TestSolveMaxcutByExhaustiveSearch:
@@ -174,6 +174,6 @@ class TestSolveMaxcutByExhaustiveSearch:
     def test_solve_maxcut_by_exhaustive_search(
         self, graph, target_solutions, target_value
     ):
-        value, solutions = MaxCut.solve_by_exhaustive_search(graph)
+        value, solutions = MaxCut().solve_by_exhaustive_search(graph)
         assert set(solutions) == set(target_solutions)
         assert value == target_value

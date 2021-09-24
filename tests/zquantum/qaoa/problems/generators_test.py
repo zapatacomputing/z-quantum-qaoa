@@ -15,7 +15,7 @@ class TestGenerateRandomHamiltonians:
                 graph_specs,
                 number_of_instances,
                 number_of_qubits,
-                MaxCut.get_hamiltonian,
+                MaxCut().get_hamiltonian,
             )
 
             # Then
@@ -33,7 +33,7 @@ class TestGenerateRandomHamiltonians:
                 graph_specs,
                 number_of_instances,
                 possible_number_of_qubits,
-                MaxCut.get_hamiltonian,
+                MaxCut().get_hamiltonian,
             )
 
             # Then

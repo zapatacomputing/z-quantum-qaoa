@@ -4,8 +4,7 @@ from .problem import Problem
 
 
 class GraphPartitioning(Problem):
-    @staticmethod
-    def build_hamiltonian(graph: nx.Graph) -> QubitOperator:
+    def build_hamiltonian(self, graph: nx.Graph) -> QubitOperator:
         """Construct a qubit operator with Hamiltonian for the graph partition problem.
 
         The returned Hamiltonian is consistent with the definitions from

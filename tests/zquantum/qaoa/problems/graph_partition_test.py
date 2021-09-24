@@ -160,7 +160,7 @@ class TestGetGraphPartitionHamiltonian:
         ],
     )
     def test_returns_expected_terms(self, graph, terms):
-        qubit_operator = GraphPartitioning.get_hamiltonian(graph)
+        qubit_operator = GraphPartitioning().get_hamiltonian(graph)
         assert qubit_operator.terms == terms
 
     @pytest.mark.parametrize(
@@ -168,12 +168,14 @@ class TestGetGraphPartitionHamiltonian:
         [*GRAPH_OPERATOR_TERM_SCALING_OFFSET_LIST],
     )
     def test_scaling_and_offset_works(self, graph, terms, scale_factor, offset):
-        qubit_operator = GraphPartitioning.get_hamiltonian(graph, scale_factor, offset)
+        qubit_operator = GraphPartitioning().get_hamiltonian(
+            graph, scale_factor, offset
+        )
         assert qubit_operator.terms == terms
 
     @pytest.mark.parametrize("graph", GRAPH_EXAMPLES)
     def test_has_1_5_weight_on_edge_terms(self, graph: nx.Graph):
-        qubit_operator = GraphPartitioning.get_hamiltonian(graph)
+        qubit_operator = GraphPartitioning().get_hamiltonian(graph)
 
         for vertex_id1, vertex_id2 in graph.edges:
             qubit_index1 = graph_node_index(graph, vertex_id1)
@@ -186,7 +188,7 @@ class TestGetGraphPartitionHamiltonian:
 class TestEvaluateGraphPartitionSolution:
     @pytest.mark.parametrize("graph,solution,target_value", [*GRAPH_SOLUTION_COST_LIST])
     def test_evaluate_graph_partition_solution(self, graph, solution, target_value):
-        value = GraphPartitioning.evaluate_solution(solution, graph)
+        value = GraphPartitioning().evaluate_solution(solution, graph)
         assert value == target_value
 
     @pytest.mark.parametrize("graph,solution,target_value", [*GRAPH_SOLUTION_COST_LIST])
@@ -204,7 +206,7 @@ class TestEvaluateGraphPartitionSolution:
         ]
         for invalid_solution in invalid_solutions:
             with pytest.raises(ValueError):
-                _ = GraphPartitioning.evaluate_solution(invalid_solution, graph)
+                _ = GraphPartitioning().evaluate_solution(invalid_solution, graph)
 
 
 class TestSolveGraphPartitionByExhaustiveSearch:
@@ -214,6 +216,6 @@ class TestSolveGraphPartitionByExhaustiveSearch:
     def test_solve_graph_partition_by_exhaustive_search(
         self, graph, target_solutions, target_value
     ):
-        value, solutions = GraphPartitioning.solve_by_exhaustive_search(graph)
+        value, solutions = GraphPartitioning().solve_by_exhaustive_search(graph)
         assert set(solutions) == set(target_solutions)
         assert value == target_value

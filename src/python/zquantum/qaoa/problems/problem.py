@@ -9,35 +9,31 @@ from ._problem_evaluation import (
 
 
 class Problem(ABC):
-    @staticmethod
     @abstractmethod
-    def build_hamiltonian(graph: nx.Graph, kwargs):
-        """Nothing to do here"""
+    def build_hamiltonian(self, graph: nx.Graph):
+        ...
 
-    @classmethod
     def get_hamiltonian(
-        cls, graph: nx.Graph, scale_factor: float = 1.0, offset: float = 0.0, **kwargs
+        self, graph: nx.Graph, scale_factor: float = 1.0, offset: float = 0.0
     ) -> QubitOperator:
         # Relabeling for monotonicity purposes
         num_nodes = range(len(graph.nodes))
         mapping = {node: new_label for node, new_label in zip(graph.nodes, num_nodes)}
         graph = nx.relabel_nodes(graph, mapping=mapping)
 
-        hamiltonian = cls.build_hamiltonian(graph, **kwargs)
+        hamiltonian = self.build_hamiltonian(graph)
 
         hamiltonian.compress()
 
         return hamiltonian * scale_factor + offset
 
-    @classmethod
-    def evaluate_solution(cls, solution: Tuple[int], graph: nx.Graph) -> float:
-        return evaluate_solution(solution, graph, cls.get_hamiltonian)
+    def evaluate_solution(self, solution: Tuple[int], graph: nx.Graph) -> float:
+        return evaluate_solution(solution, graph, self.get_hamiltonian)
 
-    @classmethod
     def solve_by_exhaustive_search(
-        cls,
+        self,
         graph: nx.Graph,
     ) -> Tuple[float, List[Tuple[int]]]:
         return solve_graph_problem_by_exhaustive_search(
-            graph, cost_function=cls.evaluate_solution
+            graph, cost_function=self.evaluate_solution
         )
