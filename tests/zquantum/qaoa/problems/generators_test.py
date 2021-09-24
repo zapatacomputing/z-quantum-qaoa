@@ -1,8 +1,6 @@
-from zquantum.qaoa.problems import (
-    get_random_hamiltonians_for_problem,
-    get_maxcut_hamiltonian,
-)
+from zquantum.qaoa.problems import get_random_hamiltonians_for_problem, MaxCut
 from openfermion.utils import count_qubits
+
 
 class TestGenerateRandomHamiltonians:
     def test_get_random_maxcut_hamiltonians_num_instances(self):
@@ -17,7 +15,7 @@ class TestGenerateRandomHamiltonians:
                 graph_specs,
                 number_of_instances,
                 number_of_qubits,
-                get_maxcut_hamiltonian,
+                MaxCut().get_hamiltonian,
             )
 
             # Then
@@ -35,7 +33,7 @@ class TestGenerateRandomHamiltonians:
                 graph_specs,
                 number_of_instances,
                 possible_number_of_qubits,
-                get_maxcut_hamiltonian,
+                MaxCut().get_hamiltonian,
             )
 
             # Then
