@@ -1,11 +1,7 @@
 import networkx as nx
 import pytest
 import copy
-from zquantum.qaoa.problems.vertex_cover import (
-    get_vertex_cover_hamiltonian,
-    evaluate_vertex_cover_solution,
-    solve_vertex_cover_by_exhaustive_search,
-)
+from zquantum.qaoa.problems import VertexCover
 from ._helpers import make_graph, graph_node_index
 
 
@@ -159,12 +155,12 @@ class TestGetVertexCoverHamiltonian:
         ],
     )
     def test_returns_expected_terms(self, graph, terms):
-        qubit_operator = get_vertex_cover_hamiltonian(graph)
+        qubit_operator = VertexCover().get_hamiltonian(graph)
         assert qubit_operator.terms == terms
 
     @pytest.mark.parametrize("graph", GRAPH_EXAMPLES)
     def test_has_1_25_weight_on_edge_terms(self, graph: nx.Graph):
-        qubit_operator = get_vertex_cover_hamiltonian(graph)
+        qubit_operator = VertexCover().get_hamiltonian(graph)
 
         for vertex_id1, vertex_id2 in graph.edges:
             qubit_index1 = graph_node_index(graph, vertex_id1)
@@ -177,12 +173,10 @@ class TestGetVertexCoverHamiltonian:
     def test_has_correct_constant_term(self, graph: nx.Graph):
         expected_constant_term = 0
 
-        qubit_operator = get_vertex_cover_hamiltonian(graph)
-        for vertex_id1, vertex_id2 in graph.edges:
-            expected_constant_term += 5 / 4
+        qubit_operator = VertexCover().get_hamiltonian(graph)
 
-        for vertex in graph.nodes:
-            expected_constant_term += 0.5
+        expected_constant_term += (5 / 4) * len(graph.edges)
+        expected_constant_term += 0.5 * len(graph.nodes)
 
         assert qubit_operator.terms[()] == expected_constant_term
 
@@ -190,7 +184,7 @@ class TestGetVertexCoverHamiltonian:
 class TestEvaluateVertexCoverSolution:
     @pytest.mark.parametrize("graph,solution,target_value", [*GRAPH_SOLUTION_COST_LIST])
     def test_evaluate_vertex_cover_solution(self, graph, solution, target_value):
-        value = evaluate_vertex_cover_solution(solution, graph)
+        value = VertexCover().evaluate_solution(solution, graph)
         assert value == target_value
 
     @pytest.mark.parametrize("graph,solution,target_value", [*GRAPH_SOLUTION_COST_LIST])
@@ -208,7 +202,7 @@ class TestEvaluateVertexCoverSolution:
         ]
         for invalid_solution in invalid_solutions:
             with pytest.raises(ValueError):
-                _ = evaluate_vertex_cover_solution(invalid_solution, graph)
+                _ = VertexCover().evaluate_solution(invalid_solution, graph)
 
 
 class TestSolveVertexCoverByExhaustiveSearch:
@@ -218,6 +212,6 @@ class TestSolveVertexCoverByExhaustiveSearch:
     def test_solve_vertex_cover_by_exhaustive_search(
         self, graph, target_solutions, target_value
     ):
-        value, solutions = solve_vertex_cover_by_exhaustive_search(graph)
+        value, solutions = VertexCover().solve_by_exhaustive_search(graph)
         assert set(solutions) == set(target_solutions)
         assert value == target_value

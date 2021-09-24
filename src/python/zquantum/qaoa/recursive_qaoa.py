@@ -7,7 +7,8 @@ from openfermion import IsingOperator, QubitOperator
 from openfermion.utils import count_qubits
 from typing_extensions import Protocol
 from zquantum.core.interfaces.ansatz import Ansatz
-from zquantum.core.interfaces.cost_function import CostFunction, EstimationTasksFactory
+from zquantum.core.interfaces.cost_function import CostFunction
+from zquantum.core.interfaces.estimation import EstimationTasksFactory
 from zquantum.core.interfaces.optimizer import Optimizer
 from zquantum.core.openfermion import change_operator_type
 from zquantum.qaoa.problems import solve_problem_by_exhaustive_search
