@@ -4,7 +4,7 @@ from .problem import Problem
 
 
 class MaxCut(Problem):
-    def build_hamiltonian(self, graph: nx.Graph) -> QubitOperator:
+    def _build_hamiltonian(self, graph: nx.Graph) -> QubitOperator:
         """Converts a MAXCUT instance, as described by a weighted graph, to an Ising
         Hamiltonian. It allows for different convention in the choice of the Hamiltonian.
         The returned Hamiltonian is consistent with the definitions from
@@ -39,6 +39,4 @@ class MaxCut(Problem):
             hamiltonian += weight * QubitOperator(f"Z{i} Z{j}")
             shift -= weight
 
-        hamiltonian = 0.5 * (hamiltonian + shift)
-
-        return hamiltonian
+        return 0.5 * (hamiltonian + shift)

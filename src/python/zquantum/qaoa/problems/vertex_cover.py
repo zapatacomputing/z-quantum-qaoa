@@ -8,7 +8,7 @@ class VertexCover(Problem):
     def __init__(self, hamiltonian_factor: int = 5):
         self._hamiltonian_factor = hamiltonian_factor
 
-    def build_hamiltonian(
+    def _build_hamiltonian(
         self,
         graph: nx.Graph,
     ) -> QubitOperator:
@@ -40,6 +40,4 @@ class VertexCover(Problem):
             ham_b += QubitOperator(f"Z{i}")
         ham_b /= 2
 
-        hamiltonian = ham_a + ham_b + len(graph.nodes) / 2
-
-        return hamiltonian
+        return ham_a + ham_b + len(graph.nodes) / 2

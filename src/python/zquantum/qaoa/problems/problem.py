@@ -10,7 +10,7 @@ from ._problem_evaluation import (
 
 class Problem(ABC):
     @abstractmethod
-    def build_hamiltonian(self, graph: nx.Graph) -> QubitOperator:
+    def _build_hamiltonian(self, graph: nx.Graph) -> QubitOperator:
         """
         This abstract method is implemented by the subclasses, and
         its goal is to encode the graph of the problem in the form
@@ -25,7 +25,7 @@ class Problem(ABC):
         mapping = {node: new_label for node, new_label in zip(graph.nodes, num_nodes)}
         graph = nx.relabel_nodes(graph, mapping=mapping)
 
-        hamiltonian = self.build_hamiltonian(graph)
+        hamiltonian = self._build_hamiltonian(graph)
 
         hamiltonian.compress()
 
