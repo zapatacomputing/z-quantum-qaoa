@@ -10,8 +10,12 @@ from ._problem_evaluation import (
 
 class Problem(ABC):
     @abstractmethod
-    def build_hamiltonian(self, graph: nx.Graph):
-        ...
+    def build_hamiltonian(self, graph: nx.Graph) -> QubitOperator:
+        """
+        This abstract method is implemented by the subclasses, and
+        its goal is to encode the graph of the problem in the form
+        of qubit operator.
+        """
 
     def get_hamiltonian(
         self, graph: nx.Graph, scale_factor: float = 1.0, offset: float = 0.0
