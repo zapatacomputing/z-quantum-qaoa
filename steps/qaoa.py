@@ -24,7 +24,7 @@ def get_random_maxcut_hamiltonians(graph_specs, number_of_instances, number_of_q
         graph_specs_dict,
         number_of_instances,
         number_of_qubits,
-        MaxCut.build_hamiltonian,
+        MaxCut().get_hamiltonian,
     )
     save_qubit_operator_set(hamiltonians, "hamiltonians.json")
 
@@ -51,7 +51,7 @@ def create_farhi_qaoa_circuits(
 
 def get_maxcut_hamiltonian(graph, scale_factor=1.0, offset=0.0):
     graph_object = load_graph(graph)
-    hamiltonian = MaxCut.build_hamiltonian(
+    hamiltonian = MaxCut().get_hamiltonian(
         graph_object, scale_factor=scale_factor, offset=offset
     )
     save_qubit_operator(hamiltonian, "hamiltonian.json")
@@ -59,7 +59,7 @@ def get_maxcut_hamiltonian(graph, scale_factor=1.0, offset=0.0):
 
 def get_graph_partition_hamiltonian(graph, scale_factor=1.0, offset=0.0):
     graph_object = load_graph(graph)
-    hamiltonian = GraphPartitioning.get_hamiltonian(
+    hamiltonian = GraphPartitioning().get_hamiltonian(
         graph_object, scale_factor=scale_factor, offset=offset
     )
     save_qubit_operator(hamiltonian, "hamiltonian.json")
