@@ -1,38 +1,38 @@
 import abc
+import warnings
 from copy import copy, deepcopy
 from typing import Callable, Dict, List, Tuple
 
 import numpy as np
 from openfermion import IsingOperator, QubitOperator
 from openfermion.utils import count_qubits
-from typing_extensions import Protocol
+from zquantum.core.history.recorder import recorder as _recorder
 from zquantum.core.interfaces.ansatz import Ansatz
 from zquantum.core.interfaces.cost_function import CostFunction
 from zquantum.core.interfaces.estimation import EstimationTasksFactory
-from zquantum.core.interfaces.optimizer import Optimizer
+from zquantum.core.interfaces.optimizer import NestedOptimizer, Optimizer
 from zquantum.core.openfermion import change_operator_type
+from zquantum.core.typing import RecorderFactory
 from zquantum.qaoa.problems import solve_problem_by_exhaustive_search
 
 
-class CostFunctionFactory(Protocol):
-    @abc.abstractmethod
-    def __call__(
-        self, estimation_tasks_factory: EstimationTasksFactory
-    ) -> CostFunction:
-        """Creates a cost function from an EstimationTasksFactory object."""
+class RecursiveQAOA(NestedOptimizer):
+    @property
+    def inner_optimizer(self) -> Optimizer:
+        return self._inner_optimizer
 
+    @property
+    def recorder(self) -> RecorderFactory:
+        return self._recorder
 
-class RecursiveQAOA:
     def __init__(
         self,
         n_c: int,
+        cost_hamiltonian: IsingOperator,
         ansatz: Ansatz,
-        initial_params: np.ndarray,
-        optimizer: Optimizer,
-        estimation_tasks_factory: Callable[
-            [IsingOperator, Ansatz], EstimationTasksFactory
-        ],
-        cost_function_factory: CostFunctionFactory,
+        inner_optimizer: Optimizer,
+        recorder: RecorderFactory = _recorder,
+        qubit_map: Dict[int, List[int]] = None,
     ) -> None:
         """This is an implementation of recursive QAOA (RQAOA) from https://arxiv.org/abs/1910.08980 page 4.
 
@@ -92,18 +92,29 @@ class RecursiveQAOA:
 
             solutions = recursive_qaoa(cost_hamiltonian)
         """
+        n_qubits = count_qubits(change_operator_type(cost_hamiltonian, QubitOperator))
+
+        if n_c >= n_qubits or n_c <= 0:
+            raise ValueError(
+                "n_c needs to be a value less than number of qubits and greater than 0."
+            )
 
         self._n_c = n_c
         self._ansatz = ansatz
-        self._initial_params = initial_params
-        self._optimizer = optimizer
-        self._estimation_tasks_factory = estimation_tasks_factory
-        self._cost_function_factory = cost_function_factory
+        self._cost_hamiltonian = cost_hamiltonian
+        self._inner_optimizer = inner_optimizer
+        self._recorder = recorder
 
-    def __call__(
+        if qubit_map is None:
+            self._qubit_map = _create_default_qubit_map(n_qubits)
+        else:
+            self._qubit_map = qubit_map
+
+    def _minimize(
         self,
-        cost_hamiltonian: IsingOperator,
-        qubit_map: Dict[int, List[int]] = None,
+        cost_function_factory: Callable[[IsingOperator, Ansatz], CostFunction],
+        initial_params: np.ndarray,
+        keep_history: bool = False,
     ) -> List[Tuple[int, ...]]:
         """Args:
             cost_hamiltonian: Hamiltonian representing the cost function.
@@ -123,55 +134,47 @@ class RecursiveQAOA:
             The solution(s) to recursive QAOA as a list of tuples; each tuple is a tuple of bits.
         """
 
-        n_qubits = count_qubits(change_operator_type(cost_hamiltonian, QubitOperator))
-
-        if self._n_c >= n_qubits or self._n_c <= 0:
-            raise ValueError(
-                "n_c needs to be a value less than number of qubits and greater than 0."
-            )
-
-        if qubit_map is None:
-            qubit_map = _create_default_qubit_map(n_qubits)
-
         ansatz = copy(self._ansatz)
 
         if hasattr(ansatz, "_cost_hamiltonian"):
-            ansatz._cost_hamiltonian = cost_hamiltonian
+            ansatz._cost_hamiltonian = self._cost_hamiltonian
         else:
             # X ansatzes (zquantum.qaoa.ansatz.XAnsatz) generate based on number of qubits
             # instead of cost hamiltonian
-            Warning(
-                "Ansatz does not have a `_cost_hamiltonian` attribute, so `number_of_qubits` will be used to generate circuits."
+            warnings.warn(
+                Warning(
+                    "Ansatz does not have a `_cost_hamiltonian` attribute, so `number_of_qubits` will be used to generate circuits."
+                )
+            )
+            n_qubits = count_qubits(
+                change_operator_type(self._cost_hamiltonian, QubitOperator)
             )
             ansatz.number_of_qubits = n_qubits
 
-        estimation_tasks_factory = self._estimation_tasks_factory(
-            cost_hamiltonian, ansatz
-        )
-        cost_function = self._cost_function_factory(
-            estimation_tasks_factory=estimation_tasks_factory,
+        cost_function = cost_function_factory(
+            self._cost_hamiltonian,
+            ansatz,
         )
 
         # Run & optimize QAOA
-        opt_results = self._optimizer.minimize(cost_function, self._initial_params)
+        opt_results = self.inner_optimizer.minimize(cost_function, initial_params)
 
         (
             term_with_largest_expval,
             largest_expval,
         ) = _find_term_with_strongest_correlation(
-            cost_hamiltonian,
+            self._cost_hamiltonian,
             ansatz,
             opt_results.opt_params,
-            self._estimation_tasks_factory,
-            self._cost_function_factory,
+            cost_function_factory,
         )
 
         new_qubit_map = _update_qubit_map(
-            qubit_map, term_with_largest_expval, largest_expval
+            self._qubit_map, term_with_largest_expval, largest_expval
         )
 
         reduced_cost_hamiltonian = _create_reduced_hamiltonian(
-            cost_hamiltonian,
+            self._cost_hamiltonian,
             term_with_largest_expval,
             largest_expval,
         )
@@ -179,20 +182,25 @@ class RecursiveQAOA:
         # Check new cost hamiltonian has correct amount of qubits
         assert (
             count_qubits(change_operator_type(reduced_cost_hamiltonian, QubitOperator))
-            == count_qubits(change_operator_type(cost_hamiltonian, QubitOperator)) - 1
+            == count_qubits(change_operator_type(self._cost_hamiltonian, QubitOperator))
+            - 1
             # If we have 1 qubit, the reduced cost hamiltonian would be empty and say it has
             # 0 qubits.
             or count_qubits(
                 change_operator_type(reduced_cost_hamiltonian, QubitOperator)
             )
             == 0
-            and count_qubits(change_operator_type(cost_hamiltonian, QubitOperator)) == 2
+            and count_qubits(
+                change_operator_type(self._cost_hamiltonian, QubitOperator)
+            )
+            == 2
             and self._n_c == 1
         )
 
         # Check qubit map has correct amount of qubits
         assert (
-            count_qubits(change_operator_type(cost_hamiltonian, QubitOperator)) - 1
+            count_qubits(change_operator_type(self._cost_hamiltonian, QubitOperator))
+            - 1
             == max([l[0] for l in new_qubit_map.values()]) + 1
         )
 
@@ -202,7 +210,17 @@ class RecursiveQAOA:
         ):
             # If we didn't reach threshold `n_c`, we repeat the the above with the reduced
             # cost hamiltonian.
-            return self.__call__(reduced_cost_hamiltonian, new_qubit_map)
+            next_recursion = RecursiveQAOA(
+                self._n_c,
+                reduced_cost_hamiltonian,
+                self._ansatz,
+                self.inner_optimizer,
+                self.recorder,
+                new_qubit_map,
+            )
+            return next_recursion.minimize(
+                cost_function_factory, initial_params, keep_history
+            )
 
         else:
             best_value, reduced_solutions = solve_problem_by_exhaustive_search(
@@ -226,8 +244,7 @@ def _find_term_with_strongest_correlation(
     hamiltonian: IsingOperator,
     ansatz: Ansatz,
     optimal_params: np.ndarray,
-    estimation_tasks_factory: Callable[[IsingOperator, Ansatz], EstimationTasksFactory],
-    cost_function_factory: CostFunctionFactory,
+    cost_function_factory: Callable[[IsingOperator, Ansatz], CostFunction],
 ) -> Tuple[IsingOperator, float]:
     """For each term Z_i Z_j, calculate the expectation value <psi(beta, gamma) | Z_i Z_j | psi(beta, gamma)>
     with optimal beta and gamma. The idea is that the term with largest expectation value
@@ -251,10 +268,7 @@ def _find_term_with_strongest_correlation(
         if () not in term.terms:
 
             # Calculate expectation value of term
-            estimation_tasks_factory_of_term = estimation_tasks_factory(term, ansatz)
-            cost_function_of_term = cost_function_factory(
-                estimation_tasks_factory=estimation_tasks_factory_of_term
-            )
+            cost_function_of_term = cost_function_factory(term, ansatz)
             expval_of_term = cost_function_of_term(optimal_params)
 
             if np.abs(expval_of_term) > np.abs(largest_expval):
