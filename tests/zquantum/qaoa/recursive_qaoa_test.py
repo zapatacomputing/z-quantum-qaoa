@@ -73,8 +73,8 @@ class TestRQAOA:
         return np.array([-0.34897497, 4.17835486])
 
     @pytest.fixture()
-    def optimizer(self, opt_params):
-        optimizer = MockOptimizer()
+    def inner_optimizer(self, opt_params):
+        inner_optimizer = MockOptimizer()
 
         def custom_minimize(
             cost_function: CostFunction,
@@ -87,15 +87,15 @@ class TestRQAOA:
                 history=[],
             )
 
-        optimizer._minimize = custom_minimize
-        return optimizer
+        inner_optimizer._minimize = custom_minimize
+        return inner_optimizer
 
     @pytest.mark.parametrize("n_c", [-1, 0, 4, 5])
     def test_RQAOA_raises_exception_if_n_c_is_incorrect_value(
         self,
         hamiltonian,
         ansatz,
-        optimizer,
+        inner_optimizer,
         n_c,
     ):
         with pytest.raises(ValueError):
@@ -103,7 +103,7 @@ class TestRQAOA:
                 n_c,
                 hamiltonian,
                 ansatz,
-                optimizer,
+                inner_optimizer,
             )
 
     @pytest.mark.parametrize(
@@ -276,7 +276,7 @@ class TestRQAOA:
     def test_RQAOA_returns_correct_answer(
         self,
         hamiltonian,
-        optimizer,
+        inner_optimizer,
         ansatz,
         cost_function_factory,
     ):
@@ -286,7 +286,7 @@ class TestRQAOA:
             3,
             hamiltonian,
             ansatz,
-            optimizer,
+            inner_optimizer,
         )
 
         solutions = recursive_qaoa.minimize(cost_function_factory, initial_params)
@@ -303,7 +303,7 @@ class TestRQAOA:
         self,
         hamiltonian,
         ansatz,
-        optimizer,
+        inner_optimizer,
         cost_function_factory,
         n_c,
         expected_n_recursions,
@@ -315,7 +315,7 @@ class TestRQAOA:
             n_c,
             ansatz,
             initial_params,
-            optimizer,
+            inner_optimizer,
             cost_function_factory,
         )
 
@@ -341,7 +341,7 @@ class TestRQAOA:
 
     def test_compatability_with_x_ansatz(
         self,
-        optimizer,
+        inner_optimizer,
         cost_function_factory,
     ):
         # TODO: maybe calculate expected solutions with pen & paper to
@@ -355,7 +355,7 @@ class TestRQAOA:
             1,
             hamiltonian,
             x_ansatz,
-            optimizer,
+            inner_optimizer,
         )
 
         solutions = recursive_qaoa.minimize(cost_function_factory, initial_params)
