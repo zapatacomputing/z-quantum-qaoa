@@ -68,7 +68,7 @@ class RecursiveQAOA(NestedOptimizer):
         self._recorder = recorder
 
         # The following variables are for keeping track of data across multiple recursions
-        # and will be reset at the end of the last recursion.
+        # and will be reset to these original values at the end of the last recursion.
         self._qubit_map = _create_default_qubit_map(n_qubits)
         self._original_cost_hamiltonian = cost_hamiltonian
         self._nit = 0
@@ -202,7 +202,7 @@ class RecursiveQAOA(NestedOptimizer):
                 **self._histories,
             )
 
-            # Reset
+            # Reset the following variables to their original values in __init__
             self._cost_hamiltonian = self._original_cost_hamiltonian
             self._qubit_map = _create_default_qubit_map(
                 count_qubits(
