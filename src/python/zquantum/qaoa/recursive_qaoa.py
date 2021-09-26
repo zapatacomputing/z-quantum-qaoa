@@ -4,6 +4,7 @@ from copy import copy, deepcopy
 from typing import Callable, Dict, List, Tuple
 
 import numpy as np
+from collections import defaultdict
 from openfermion import IsingOperator, QubitOperator
 from openfermion.utils import count_qubits
 from zquantum.core.history.recorder import recorder as _recorder
@@ -13,6 +14,7 @@ from zquantum.core.interfaces.optimizer import (
     NestedOptimizer,
     Optimizer,
     optimization_result,
+    extend_histories,
 )
 from zquantum.core.openfermion import change_operator_type
 from zquantum.core.typing import RecorderFactory
@@ -114,7 +116,12 @@ class RecursiveQAOA(NestedOptimizer):
         else:
             self._qubit_map = qubit_map
 
+        # To keep track of data across multiple recursions
         self._original_cost_hamiltonian = cost_hamiltonian
+        self._nit = 0
+        self._nfev = 0
+        self._histories = defaultdict(list)
+        self._histories["history"] = []
 
     def _minimize(
         self,
@@ -164,8 +171,15 @@ class RecursiveQAOA(NestedOptimizer):
             ansatz,
         )
 
+        if keep_history:
+            cost_function = self.recorder(cost_function)
+
         # Run & optimize QAOA
         opt_results = self.inner_optimizer.minimize(cost_function, initial_params)
+        self._nit += opt_results.nit
+        self._nfev += opt_results.nfev
+        if keep_history:
+            self._histories = extend_histories(cost_function, self._histories)
 
         (
             term_with_largest_expval,
@@ -233,6 +247,15 @@ class RecursiveQAOA(NestedOptimizer):
                 reduced_solutions, new_qubit_map
             )
 
+            opt_result = optimization_result(
+                opt_solutions=solutions,
+                opt_value=best_value,
+                opt_params=None,
+                nit=self._nit,
+                nfev=self._nfev,
+                **self._histories,
+            )
+
             # Reset
             self._cost_hamiltonian = self._original_cost_hamiltonian
             self._qubit_map = _create_default_qubit_map(
@@ -240,10 +263,12 @@ class RecursiveQAOA(NestedOptimizer):
                     change_operator_type(self._original_cost_hamiltonian, QubitOperator)
                 )
             )
+            self._nit = 0
+            self._nfev = 0
+            self._histories = defaultdict(list)
+            self._histories["history"] = []
 
-            return optimization_result(
-                opt_solutions=solutions, opt_value=best_value, opt_params=None
-            )
+            return opt_result
 
 
 def _create_default_qubit_map(n_qubits: int) -> Dict[int, List[int]]:

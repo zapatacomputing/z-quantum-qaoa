@@ -84,13 +84,14 @@ class TestRQAOA:
             return optimization_result(
                 opt_value=cost_function(opt_params),
                 opt_params=opt_params,
+                nfev=1,
+                nit=1,
                 history=[],
             )
 
         inner_optimizer._minimize = custom_minimize
         return inner_optimizer
 
-    @pytest.mark.xfail
     @pytest.mark.parametrize("contract", NESTED_OPTIMIZER_CONTRACTS)
     def test_if_satisfies_contracts(
         self, contract, ansatz, cost_function_factory, inner_optimizer, hamiltonian
@@ -104,6 +105,35 @@ class TestRQAOA:
         )
 
         assert contract(recursive_qaoa, cost_function_factory, initial_params)
+
+    def test_does_not_modify_cost_hamiltonian(
+        self, ansatz, cost_function_factory, inner_optimizer, hamiltonian
+    ):
+        initial_params = np.array([0.42, 4.2])
+        recursive_qaoa = RecursiveQAOA(
+            ansatz=ansatz,
+            cost_hamiltonian=hamiltonian,
+            inner_optimizer=inner_optimizer,
+            n_c=2,
+        )
+        opt_result = recursive_qaoa.minimize(cost_function_factory, initial_params)
+        assert recursive_qaoa._cost_hamiltonian == hamiltonian
+        opt_result2 = recursive_qaoa.minimize(cost_function_factory, initial_params)
+        assert recursive_qaoa._cost_hamiltonian == hamiltonian
+
+        assert opt_result == opt_result2
+
+        # Check history is also not modified across different calls
+        opt_result_with_history = recursive_qaoa.minimize(
+            cost_function_factory, initial_params, keep_history=True
+        )
+        opt_result_with_history2 = recursive_qaoa.minimize(
+            cost_function_factory, initial_params, keep_history=True
+        )
+
+        assert len(opt_result_with_history.history) == len(
+            opt_result_with_history2.history
+        )
 
     @pytest.mark.parametrize("n_c", [-1, 0, 4, 5])
     def test_RQAOA_raises_exception_if_n_c_is_incorrect_value(
@@ -353,6 +383,38 @@ class TestRQAOA:
         n_qubits = 4
         for solution in solutions:
             assert len(solution) == n_qubits
+
+    @pytest.mark.parametrize("n_c, expected_n_recursions", [(3, 1), (2, 2), (1, 3)])
+    def test_keeps_history_across_multiple_recursions(
+        self,
+        hamiltonian,
+        ansatz,
+        inner_optimizer,
+        cost_function_factory,
+        n_c,
+        expected_n_recursions,
+    ):
+
+        initial_params = np.array([0.42, 4.2])
+
+        recursive_qaoa = RecursiveQAOA(
+            n_c,
+            hamiltonian,
+            ansatz,
+            inner_optimizer,
+        )
+
+        opt_result = recursive_qaoa.minimize(
+            cost_function_factory, initial_params, keep_history=True
+        )
+
+        # We know that our inner_optimizer does 1 iteration and 1 call to cost function per recursion,
+        # therefore, opt_result.nfev and opt_result.nit and length of opt_result.history should be equal
+        # to expected_n_recursions
+
+        assert opt_result.nit == expected_n_recursions
+        assert opt_result.nfev == expected_n_recursions
+        assert len(opt_result.history) == expected_n_recursions
 
     def test_compatability_with_x_ansatz(
         self,
