@@ -7,7 +7,7 @@ import numpy as np
 from collections import defaultdict
 from openfermion import IsingOperator, QubitOperator
 from openfermion.utils import count_qubits
-from zquantum.core.history.recorder import recorder as _recorder
+from zquantum.core.history.recorder import HistoryEntry, recorder as _recorder
 from zquantum.core.interfaces.ansatz import Ansatz
 from zquantum.core.interfaces.cost_function import CostFunction
 from zquantum.core.interfaces.optimizer import (
@@ -120,7 +120,7 @@ class RecursiveQAOA(NestedOptimizer):
         self._original_cost_hamiltonian = cost_hamiltonian
         self._nit = 0
         self._nfev = 0
-        self._histories = defaultdict(list)
+        self._histories: Dict[str, List[HistoryEntry]] = defaultdict(list)
         self._histories["history"] = []
 
     def _minimize(
