@@ -9,11 +9,15 @@ from openfermion.utils import count_qubits
 from zquantum.core.history.recorder import recorder as _recorder
 from zquantum.core.interfaces.ansatz import Ansatz
 from zquantum.core.interfaces.cost_function import CostFunction
-from zquantum.core.interfaces.estimation import EstimationTasksFactory
-from zquantum.core.interfaces.optimizer import NestedOptimizer, Optimizer
+from zquantum.core.interfaces.optimizer import (
+    NestedOptimizer,
+    Optimizer,
+    optimization_result,
+)
 from zquantum.core.openfermion import change_operator_type
 from zquantum.core.typing import RecorderFactory
 from zquantum.qaoa.problems import solve_problem_by_exhaustive_search
+from scipy.optimize import OptimizeResult
 
 
 class RecursiveQAOA(NestedOptimizer):
@@ -110,12 +114,14 @@ class RecursiveQAOA(NestedOptimizer):
         else:
             self._qubit_map = qubit_map
 
+        self._original_cost_hamiltonian = cost_hamiltonian
+
     def _minimize(
         self,
         cost_function_factory: Callable[[IsingOperator, Ansatz], CostFunction],
         initial_params: np.ndarray,
         keep_history: bool = False,
-    ) -> List[Tuple[int, ...]]:
+    ) -> OptimizeResult:
         """Args:
             cost_hamiltonian: Hamiltonian representing the cost function.
             qubit_map: A dictionary that maps qubits in reduced Hamiltonian back to original qubits, used
@@ -131,7 +137,9 @@ class RecursiveQAOA(NestedOptimizer):
                             qubit 3.
 
         Returns:
-            The solution(s) to recursive QAOA as a list of tuples; each tuple is a tuple of bits.
+            OptimizeResult with:
+                opt_solutions (List[Tuple[int, ...]]): The solution(s) to recursive QAOA as a list of tuples;
+                    each tuple is a tuple of bits.
         """
 
         ansatz = copy(self._ansatz)
@@ -210,25 +218,31 @@ class RecursiveQAOA(NestedOptimizer):
         ):
             # If we didn't reach threshold `n_c`, we repeat the the above with the reduced
             # cost hamiltonian.
-            next_recursion = RecursiveQAOA(
-                self._n_c,
-                reduced_cost_hamiltonian,
-                self._ansatz,
-                self.inner_optimizer,
-                self.recorder,
-                new_qubit_map,
-            )
-            return next_recursion.minimize(
-                cost_function_factory, initial_params, keep_history
-            )
+
+            self._cost_hamiltonian = reduced_cost_hamiltonian
+            self._qubit_map = new_qubit_map
+
+            return self.minimize(cost_function_factory, initial_params, keep_history)
 
         else:
             best_value, reduced_solutions = solve_problem_by_exhaustive_search(
                 change_operator_type(reduced_cost_hamiltonian, QubitOperator)
             )
 
-            return _map_reduced_solutions_to_original_solutions(
+            solutions = _map_reduced_solutions_to_original_solutions(
                 reduced_solutions, new_qubit_map
+            )
+
+            # Reset
+            self._cost_hamiltonian = self._original_cost_hamiltonian
+            self._qubit_map = _create_default_qubit_map(
+                count_qubits(
+                    change_operator_type(self._original_cost_hamiltonian, QubitOperator)
+                )
+            )
+
+            return optimization_result(
+                opt_solutions=solutions, opt_value=best_value, opt_params=None
             )
 
 

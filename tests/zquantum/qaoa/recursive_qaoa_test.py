@@ -1,5 +1,5 @@
 from functools import partial, wraps
-from typing import Callable
+from typing import Callable, List, Tuple
 
 import numpy as np
 import pytest
@@ -89,6 +89,21 @@ class TestRQAOA:
 
         inner_optimizer._minimize = custom_minimize
         return inner_optimizer
+
+    @pytest.mark.xfail
+    @pytest.mark.parametrize("contract", NESTED_OPTIMIZER_CONTRACTS)
+    def test_if_satisfies_contracts(
+        self, contract, ansatz, cost_function_factory, inner_optimizer, hamiltonian
+    ):
+        initial_params = np.array([0.42, 4.2])
+        recursive_qaoa = RecursiveQAOA(
+            ansatz=ansatz,
+            cost_hamiltonian=hamiltonian,
+            inner_optimizer=inner_optimizer,
+            n_c=2,
+        )
+
+        assert contract(recursive_qaoa, cost_function_factory, initial_params)
 
     @pytest.mark.parametrize("n_c", [-1, 0, 4, 5])
     def test_RQAOA_raises_exception_if_n_c_is_incorrect_value(
@@ -289,7 +304,8 @@ class TestRQAOA:
             inner_optimizer,
         )
 
-        solutions = recursive_qaoa.minimize(cost_function_factory, initial_params)
+        opt_result = recursive_qaoa.minimize(cost_function_factory, initial_params)
+        solutions: List[Tuple[int]] = opt_result.opt_solutions
 
         n_qubits = 4
         for solution in solutions:
@@ -297,7 +313,6 @@ class TestRQAOA:
 
         assert set(solutions) == set([(1, 0, 1, 0), (0, 1, 0, 1)])
 
-    @pytest.mark.xfail
     @pytest.mark.parametrize("n_c, expected_n_recursions", [(3, 1), (2, 2), (1, 3)])
     def test_RQAOA_performs_correct_number_of_recursions(
         self,
@@ -313,10 +328,9 @@ class TestRQAOA:
 
         recursive_qaoa = RecursiveQAOA(
             n_c,
+            hamiltonian,
             ansatz,
-            initial_params,
             inner_optimizer,
-            cost_function_factory,
         )
 
         def counted_calls(f):
@@ -330,11 +344,12 @@ class TestRQAOA:
             count_wrapper.count = 0
             return count_wrapper
 
-        wrapped = counted_calls(recursive_qaoa.__call__)
-        recursive_qaoa.__call__ = wrapped
-        solutions = recursive_qaoa.__call__(hamiltonian)
+        wrapped = counted_calls(recursive_qaoa.minimize)
+        recursive_qaoa.minimize = wrapped
+        opt_result = recursive_qaoa.minimize(cost_function_factory, initial_params)
         assert wrapped.count == expected_n_recursions
 
+        solutions: List[Tuple[int]] = opt_result.opt_solutions
         n_qubits = 4
         for solution in solutions:
             assert len(solution) == n_qubits
@@ -358,7 +373,8 @@ class TestRQAOA:
             inner_optimizer,
         )
 
-        solutions = recursive_qaoa.minimize(cost_function_factory, initial_params)
+        opt_result = recursive_qaoa.minimize(cost_function_factory, initial_params)
+        solutions: List[Tuple[int]] = opt_result.opt_solutions
 
         for solution in solutions:
             assert len(solution) == n_qubits
