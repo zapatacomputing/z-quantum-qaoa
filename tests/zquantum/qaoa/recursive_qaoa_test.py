@@ -3,8 +3,7 @@ from typing import Callable, List, Tuple
 
 import numpy as np
 import pytest
-from openfermion import IsingOperator
-from openfermion.ops.operators.symbolic_operator import SymbolicOperator
+from openfermion import IsingOperator, SymbolicOperator
 from zquantum.core.cost_function import (
     create_cost_function,
     substitution_based_estimation_tasks_factory,
@@ -415,28 +414,3 @@ class TestRQAOA:
         assert opt_result.nit == expected_n_recursions
         assert opt_result.nfev == expected_n_recursions
         assert len(opt_result.history) == expected_n_recursions
-
-    def test_compatability_with_x_ansatz(
-        self,
-        inner_optimizer,
-        cost_function_factory,
-    ):
-        # TODO: maybe calculate expected solutions with pen & paper to
-        # verify that they are correct
-        n_qubits = 2
-        initial_params = np.array([0.42, 4.2])
-        x_ansatz = XAnsatz(1, n_qubits)
-        hamiltonian = IsingOperator("Z0 Z1")
-
-        recursive_qaoa = RecursiveQAOA(
-            1,
-            hamiltonian,
-            x_ansatz,
-            inner_optimizer,
-        )
-
-        opt_result = recursive_qaoa.minimize(cost_function_factory, initial_params)
-        solutions: List[Tuple[int]] = opt_result.opt_solutions
-
-        for solution in solutions:
-            assert len(solution) == n_qubits

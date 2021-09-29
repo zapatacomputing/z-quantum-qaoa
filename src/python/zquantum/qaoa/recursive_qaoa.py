@@ -97,20 +97,7 @@ class RecursiveQAOA(NestedOptimizer):
 
         ansatz = copy(self._ansatz)
 
-        if hasattr(ansatz, "_cost_hamiltonian"):
-            ansatz._cost_hamiltonian = self._cost_hamiltonian
-        else:
-            # X ansatzes (zquantum.qaoa.ansatz.XAnsatz) generate based on number of qubits
-            # instead of cost hamiltonian
-            warnings.warn(
-                Warning(
-                    "Ansatz does not have a `_cost_hamiltonian` attribute, so `number_of_qubits` will be used to generate circuits."
-                )
-            )
-            n_qubits = count_qubits(
-                change_operator_type(self._cost_hamiltonian, QubitOperator)
-            )
-            ansatz.number_of_qubits = n_qubits
+        ansatz.cost_hamiltonian = self._cost_hamiltonian
 
         cost_function = cost_function_factory(
             self._cost_hamiltonian,
