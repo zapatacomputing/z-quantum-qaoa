@@ -67,15 +67,6 @@ class RecursiveQAOA(NestedOptimizer):
         self._inner_optimizer = inner_optimizer
         self._recorder = recorder
 
-        # The following variables are for keeping track of data across multiple recursions
-        # and will be reset to these original values at the end of the last recursion.
-        self._qubit_map = _create_default_qubit_map(n_qubits)
-        self._original_cost_hamiltonian = cost_hamiltonian
-        self._nit = 0
-        self._nfev = 0
-        self._histories: Dict[str, List[HistoryEntry]] = defaultdict(list)
-        self._histories["history"] = []
-
     def _minimize(
         self,
         cost_function_factory: Callable[[IsingOperator, Ansatz], CostFunction],
@@ -95,12 +86,47 @@ class RecursiveQAOA(NestedOptimizer):
                     each tuple is a tuple of bits.
         """
 
+        n_qubits = count_qubits(
+            change_operator_type(self._cost_hamiltonian, QubitOperator)
+        )
+        qubit_map = _create_default_qubit_map(n_qubits)
+
+        histories: Dict[str, List[HistoryEntry]] = defaultdict(list)
+        histories["history"] = []
+
+        return self._recurse(
+            cost_function_factory,
+            initial_params,
+            keep_history,
+            cost_hamiltonian=self._cost_hamiltonian,
+            qubit_map=qubit_map,
+            nit=0,
+            nfev=0,
+            histories=histories,
+        )
+
+    def _recurse(
+        self,
+        cost_function_factory,
+        initial_params,
+        keep_history,
+        cost_hamiltonian,
+        qubit_map,
+        nit,
+        nfev,
+        histories,
+    ):
+        """A method that recursively calls itself with each recursion reducing 1 term
+        of the cost hamiltonian
+        """
+
+        # Set up QAOA circuit
         ansatz = copy(self._ansatz)
 
-        ansatz.cost_hamiltonian = self._cost_hamiltonian
+        ansatz.cost_hamiltonian = cost_hamiltonian
 
         cost_function = cost_function_factory(
-            self._cost_hamiltonian,
+            cost_hamiltonian,
             ansatz,
         )
 
@@ -109,27 +135,28 @@ class RecursiveQAOA(NestedOptimizer):
 
         # Run & optimize QAOA
         opt_results = self.inner_optimizer.minimize(cost_function, initial_params)
-        self._nit += opt_results.nit
-        self._nfev += opt_results.nfev
+        nit += opt_results.nit
+        nfev += opt_results.nfev
         if keep_history:
-            self._histories = extend_histories(cost_function, self._histories)
+            histories = extend_histories(cost_function, histories)
 
+        # Reduce the cost hamiltonian
         (
             term_with_largest_expval,
             largest_expval,
         ) = _find_term_with_strongest_correlation(
-            self._cost_hamiltonian,
+            cost_hamiltonian,
             ansatz,
             opt_results.opt_params,
             cost_function_factory,
         )
 
         new_qubit_map = _update_qubit_map(
-            self._qubit_map, term_with_largest_expval, largest_expval
+            qubit_map, term_with_largest_expval, largest_expval
         )
 
         reduced_cost_hamiltonian = _create_reduced_hamiltonian(
-            self._cost_hamiltonian,
+            cost_hamiltonian,
             term_with_largest_expval,
             largest_expval,
         )
@@ -137,25 +164,20 @@ class RecursiveQAOA(NestedOptimizer):
         # Check new cost hamiltonian has correct amount of qubits
         assert (
             count_qubits(change_operator_type(reduced_cost_hamiltonian, QubitOperator))
-            == count_qubits(change_operator_type(self._cost_hamiltonian, QubitOperator))
-            - 1
+            == count_qubits(change_operator_type(cost_hamiltonian, QubitOperator)) - 1
             # If we have 1 qubit, the reduced cost hamiltonian would be empty and say it has
             # 0 qubits.
             or count_qubits(
                 change_operator_type(reduced_cost_hamiltonian, QubitOperator)
             )
             == 0
-            and count_qubits(
-                change_operator_type(self._cost_hamiltonian, QubitOperator)
-            )
-            == 2
+            and count_qubits(change_operator_type(cost_hamiltonian, QubitOperator)) == 2
             and self._n_c == 1
         )
 
         # Check qubit map has correct amount of qubits
         assert (
-            count_qubits(change_operator_type(self._cost_hamiltonian, QubitOperator))
-            - 1
+            count_qubits(change_operator_type(cost_hamiltonian, QubitOperator)) - 1
             == max([l[0] for l in new_qubit_map.values()]) + 1
         )
 
@@ -165,11 +187,16 @@ class RecursiveQAOA(NestedOptimizer):
         ):
             # If we didn't reach threshold `n_c`, we repeat the the above with the reduced
             # cost hamiltonian.
-
-            self._cost_hamiltonian = reduced_cost_hamiltonian
-            self._qubit_map = new_qubit_map
-
-            return self.minimize(cost_function_factory, initial_params, keep_history)
+            return self._recurse(
+                cost_function_factory,
+                initial_params,
+                keep_history,
+                cost_hamiltonian=reduced_cost_hamiltonian,
+                qubit_map=new_qubit_map,
+                nit=nit,
+                nfev=nfev,
+                histories=histories,
+            )
 
         else:
             best_value, reduced_solutions = solve_problem_by_exhaustive_search(
@@ -184,22 +211,10 @@ class RecursiveQAOA(NestedOptimizer):
                 opt_solutions=solutions,
                 opt_value=best_value,
                 opt_params=None,
-                nit=self._nit,
-                nfev=self._nfev,
-                **self._histories,
+                nit=nit,
+                nfev=nfev,
+                **histories,
             )
-
-            # Reset the following variables to their original values in __init__
-            self._cost_hamiltonian = self._original_cost_hamiltonian
-            self._qubit_map = _create_default_qubit_map(
-                count_qubits(
-                    change_operator_type(self._original_cost_hamiltonian, QubitOperator)
-                )
-            )
-            self._nit = 0
-            self._nfev = 0
-            self._histories = defaultdict(list)
-            self._histories["history"] = []
 
             return opt_result
 

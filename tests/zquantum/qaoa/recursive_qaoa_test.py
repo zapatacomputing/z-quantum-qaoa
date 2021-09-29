@@ -373,8 +373,8 @@ class TestRQAOA:
             count_wrapper.count = 0
             return count_wrapper
 
-        wrapped = counted_calls(recursive_qaoa.minimize)
-        recursive_qaoa.minimize = wrapped
+        wrapped = counted_calls(recursive_qaoa._recurse)
+        recursive_qaoa._recurse = wrapped
         opt_result = recursive_qaoa.minimize(cost_function_factory, initial_params)
         assert wrapped.count == expected_n_recursions
 
