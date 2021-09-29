@@ -1,14 +1,14 @@
-from zquantum.core.interfaces.ansatz import Ansatz, ansatz_property
-from zquantum.core.circuits import Circuit, create_layer_of_gates, RY, RZ
-from zquantum.core.evolution import time_evolution
-from zquantum.core.openfermion import change_operator_type
+from typing import Optional, Union
 
-from openfermion import QubitOperator, IsingOperator
-from openfermion.utils import count_qubits
-from typing import Union, Optional
 import numpy as np
 import sympy
+from openfermion import IsingOperator, QubitOperator
+from openfermion.utils import count_qubits
 from overrides import overrides
+from zquantum.core.circuits import RY, RZ, Circuit, create_layer_of_gates
+from zquantum.core.evolution import time_evolution
+from zquantum.core.interfaces.ansatz import Ansatz, ansatz_property
+from zquantum.core.openfermion import change_operator_type
 
 
 class WarmStartQAOAAnsatz(Ansatz):
@@ -67,10 +67,13 @@ class WarmStartQAOAAnsatz(Ansatz):
         circuit += create_layer_of_gates(self.number_of_qubits, RY, self._thetas)
 
         # Add time evolution layers
+        cost_circuit = time_evolution(
+            change_operator_type(self._cost_hamiltonian, QubitOperator),
+            sympy.Symbol(f"gamma"),
+        )
         for i in range(self.number_of_layers):
-            circuit += time_evolution(
-                change_operator_type(self._cost_hamiltonian, QubitOperator),
-                sympy.Symbol(f"gamma_{i}"),
+            circuit += cost_circuit.bind(
+                {sympy.Symbol(f"gamma"): sympy.Symbol(f"gamma_{i}")}
             )
             circuit += create_layer_of_gates(self.number_of_qubits, RY, -self._thetas)
             circuit += create_layer_of_gates(
