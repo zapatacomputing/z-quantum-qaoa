@@ -105,35 +105,6 @@ class TestRQAOA:
 
         assert contract(recursive_qaoa, cost_function_factory, initial_params)
 
-    def test_does_not_modify_cost_hamiltonian(
-        self, ansatz, cost_function_factory, inner_optimizer, hamiltonian
-    ):
-        initial_params = np.array([0.42, 4.2])
-        recursive_qaoa = RecursiveQAOA(
-            ansatz=ansatz,
-            cost_hamiltonian=hamiltonian,
-            inner_optimizer=inner_optimizer,
-            n_c=2,
-        )
-        opt_result = recursive_qaoa.minimize(cost_function_factory, initial_params)
-        assert recursive_qaoa._cost_hamiltonian == hamiltonian
-        opt_result2 = recursive_qaoa.minimize(cost_function_factory, initial_params)
-        assert recursive_qaoa._cost_hamiltonian == hamiltonian
-
-        assert opt_result == opt_result2
-
-        # Check history is also not modified across different calls
-        opt_result_with_history = recursive_qaoa.minimize(
-            cost_function_factory, initial_params, keep_history=True
-        )
-        opt_result_with_history2 = recursive_qaoa.minimize(
-            cost_function_factory, initial_params, keep_history=True
-        )
-
-        assert len(opt_result_with_history.history) == len(
-            opt_result_with_history2.history
-        )
-
     @pytest.mark.parametrize("n_c", [-1, 0, 4, 5])
     def test_RQAOA_raises_exception_if_n_c_is_incorrect_value(
         self,
