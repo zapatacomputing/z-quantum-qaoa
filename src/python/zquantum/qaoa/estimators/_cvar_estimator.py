@@ -1,7 +1,6 @@
 import numpy as np
 from openfermion import IsingOperator
 from typing import Dict, List, Optional
-from pyquil.wavefunction import Wavefunction
 
 from zquantum.core.interfaces.backend import QuantumBackend
 from zquantum.core.measurement import ExpectationValues, Measurements
@@ -11,6 +10,7 @@ from zquantum.core.interfaces.estimation import (
     EstimationTask,
 )
 from zquantum.core.utils import dec2bin
+from zquantum.core.wavefunction import Wavefunction
 
 
 class CvarEstimator(EstimateExpectationValues):
