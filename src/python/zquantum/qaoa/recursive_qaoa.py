@@ -94,7 +94,7 @@ class RecursiveQAOA(NestedOptimizer):
         histories: Dict[str, List[HistoryEntry]] = defaultdict(list)
         histories["history"] = []
 
-        return self._recurse(
+        return self._recursive_minimize(
             cost_function_factory,
             initial_params,
             keep_history,
@@ -105,7 +105,7 @@ class RecursiveQAOA(NestedOptimizer):
             histories=histories,
         )
 
-    def _recurse(
+    def _recursive_minimize(
         self,
         cost_function_factory,
         initial_params,
@@ -187,7 +187,7 @@ class RecursiveQAOA(NestedOptimizer):
         ):
             # If we didn't reach threshold `n_c`, we repeat the the above with the reduced
             # cost hamiltonian.
-            return self._recurse(
+            return self._recursive_minimize(
                 cost_function_factory,
                 initial_params,
                 keep_history,
