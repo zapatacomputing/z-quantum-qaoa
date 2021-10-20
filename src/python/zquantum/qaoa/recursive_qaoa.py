@@ -1,38 +1,43 @@
 import abc
+import warnings
 from copy import copy, deepcopy
 from typing import Callable, Dict, List, Tuple
 
 import numpy as np
+from collections import defaultdict
 from openfermion import IsingOperator, QubitOperator
 from openfermion.utils import count_qubits
-from typing_extensions import Protocol
+from zquantum.core.history.recorder import HistoryEntry, recorder as _recorder
 from zquantum.core.interfaces.ansatz import Ansatz
 from zquantum.core.interfaces.cost_function import CostFunction
-from zquantum.core.interfaces.estimation import EstimationTasksFactory
-from zquantum.core.interfaces.optimizer import Optimizer
+from zquantum.core.interfaces.optimizer import (
+    NestedOptimizer,
+    Optimizer,
+    optimization_result,
+    extend_histories,
+)
 from zquantum.core.openfermion import change_operator_type
+from zquantum.core.typing import RecorderFactory
 from zquantum.qaoa.problems import solve_problem_by_exhaustive_search
+from scipy.optimize import OptimizeResult
 
 
-class CostFunctionFactory(Protocol):
-    @abc.abstractmethod
-    def __call__(
-        self, estimation_tasks_factory: EstimationTasksFactory
-    ) -> CostFunction:
-        """Creates a cost function from an EstimationTasksFactory object."""
+class RecursiveQAOA(NestedOptimizer):
+    @property
+    def inner_optimizer(self) -> Optimizer:
+        return self._inner_optimizer
 
+    @property
+    def recorder(self) -> RecorderFactory:
+        return self._recorder
 
-class RecursiveQAOA:
     def __init__(
         self,
         n_c: int,
+        cost_hamiltonian: IsingOperator,
         ansatz: Ansatz,
-        initial_params: np.ndarray,
-        optimizer: Optimizer,
-        estimation_tasks_factory: Callable[
-            [IsingOperator, Ansatz], EstimationTasksFactory
-        ],
-        cost_function_factory: CostFunctionFactory,
+        inner_optimizer: Optimizer,
+        recorder: RecorderFactory = _recorder,
     ) -> None:
         """This is an implementation of recursive QAOA (RQAOA) from https://arxiv.org/abs/1910.08980 page 4.
 
@@ -43,118 +48,99 @@ class RecursiveQAOA:
         Args:
             n_c: The threshold number of qubits at which recursion stops, as described in the original paper.
                 Cannot be greater than number of qubits.
-            ansatz: an Ansatz object with all params (ex. `n_layers`) initialized
-            initial_params: initial parameters used for optimization
-            optimizer: Optimizer object used for optimizer
-            estimation_tasks_factory_generator: function that generates EstimationTasksFactory objects
-                from operator and ansatz. See example below for clarification.
-            cost_function_factory: function that generates CostFunction objects given EstimationTasksFactory.
-                See example below for clarification.
-
-        Example usage (aka, what the heck are all these factories?):
-
-            from functools import partial
-            from zquantum.core.estimation import (
-                estimate_expectation_values_by_averaging,
-                allocate_shots_uniformly
-            )
-            from zquantum.core.cost_function import (
-                substitution_based_estimation_tasks_factory,
-                create_cost_function,
-            )
-
-            cost_hamiltonian = ...
-            ansatz = ...
-
-            estimation_preprocessors = [partial(allocate_shots_uniformly, number_of_shots=1000)]
-            estimation_tasks_factory_generator = partial(
-                substitution_based_estimation_tasks_factory,
-                estimation_preprocessors=estimation_preprocessors
-            )
-            cost_function_factory = partial(
-                create_cost_function,
-                backend=QuantumBackend,
-                estimation_method=estimate_expectation_values_by_averaging,
-                parameter_preprocessors=None,
-            )
-
-            initial_params = np.array([0.42, 4.2])
-            optimizer = ...
-
-            recursive_qaoa = RecursiveQAOA(
-                3,
-                ansatz,
-                initial_params,
-                optimizer,
-                estimation_tasks_factory_generator,
-                cost_function_factory,
-            )
-
-            solutions = recursive_qaoa(cost_hamiltonian)
-        """
-
-        self._n_c = n_c
-        self._ansatz = ansatz
-        self._initial_params = initial_params
-        self._optimizer = optimizer
-        self._estimation_tasks_factory = estimation_tasks_factory
-        self._cost_function_factory = cost_function_factory
-
-    def __call__(
-        self,
-        cost_hamiltonian: IsingOperator,
-        qubit_map: Dict[int, List[int]] = None,
-    ) -> List[Tuple[int, ...]]:
-        """Args:
             cost_hamiltonian: Hamiltonian representing the cost function.
-            qubit_map: A dictionary that maps qubits in reduced Hamiltonian back to original qubits, used
-                for subsequent recursions. (Not for the first recursion.)
-                Example:
-                    `qubit_map = {0: [2, -1], 1: [3, 1]]}
-                        Keys are the original qubit indice.
-                        1st term of inner list is qubit the index of tuple to be mapped onto,
-                        2nd term is if it will be mapped onto the same value or opposite of the qubit it
-                            is being mapped onto.
-                        In the above qubit_map, the original qubit 0 is now represented by the opposite
-                            value of qubit 2, and the original qubit 1 is now represented by the value of
-                            qubit 3.
+            ansatz: an Ansatz object with all params (ex. `n_layers`) initialized
+            inner_optimizer: optimizer used for optimization of parameters at each recursion of RQAOA.
+            recorder: recorder object which defines how to store the optimization history.
 
-        Returns:
-            The solution(s) to recursive QAOA as a list of tuples; each tuple is a tuple of bits.
         """
-
         n_qubits = count_qubits(change_operator_type(cost_hamiltonian, QubitOperator))
 
-        if self._n_c >= n_qubits or self._n_c <= 0:
+        if n_c >= n_qubits or n_c <= 0:
             raise ValueError(
                 "n_c needs to be a value less than number of qubits and greater than 0."
             )
 
-        if qubit_map is None:
-            qubit_map = _create_default_qubit_map(n_qubits)
+        self._n_c = n_c
+        self._ansatz = ansatz
+        self._cost_hamiltonian = cost_hamiltonian
+        self._inner_optimizer = inner_optimizer
+        self._recorder = recorder
 
+    def _minimize(
+        self,
+        cost_function_factory: Callable[[IsingOperator, Ansatz], CostFunction],
+        initial_params: np.ndarray,
+        keep_history: bool = False,
+    ) -> OptimizeResult:
+        """Args:
+            cost_function_factory: function that generates CostFunction objects given the provided ansatz
+                and cost_hamiltonian.
+            initial_params: initial parameters used for optimization
+            keep_history: flag indicating whether history of cost function
+                evaluations should be recorded.
+
+        Returns:
+            OptimizeResult with the added entry of:
+                opt_solutions (List[Tuple[int, ...]]): The solution(s) to recursive QAOA as a list of tuples;
+                    each tuple is a tuple of bits.
+        """
+
+        n_qubits = count_qubits(
+            change_operator_type(self._cost_hamiltonian, QubitOperator)
+        )
+        qubit_map = _create_default_qubit_map(n_qubits)
+
+        histories: Dict[str, List[HistoryEntry]] = defaultdict(list)
+        histories["history"] = []
+
+        return self._recursive_minimize(
+            cost_function_factory,
+            initial_params,
+            keep_history,
+            cost_hamiltonian=self._cost_hamiltonian,
+            qubit_map=qubit_map,
+            nit=0,
+            nfev=0,
+            histories=histories,
+        )
+
+    def _recursive_minimize(
+        self,
+        cost_function_factory,
+        initial_params,
+        keep_history,
+        cost_hamiltonian,
+        qubit_map,
+        nit,
+        nfev,
+        histories,
+    ):
+        """A method that recursively calls itself with each recursion reducing 1 term
+        of the cost hamiltonian
+        """
+
+        # Set up QAOA circuit
         ansatz = copy(self._ansatz)
 
-        if hasattr(ansatz, "_cost_hamiltonian"):
-            ansatz._cost_hamiltonian = cost_hamiltonian
-        else:
-            # X ansatzes (zquantum.qaoa.ansatz.XAnsatz) generate based on number of qubits
-            # instead of cost hamiltonian
-            Warning(
-                "Ansatz does not have a `_cost_hamiltonian` attribute, so `number_of_qubits` will be used to generate circuits."
-            )
-            ansatz.number_of_qubits = n_qubits
+        ansatz.cost_hamiltonian = cost_hamiltonian
 
-        estimation_tasks_factory = self._estimation_tasks_factory(
-            cost_hamiltonian, ansatz
+        cost_function = cost_function_factory(
+            cost_hamiltonian,
+            ansatz,
         )
-        cost_function = self._cost_function_factory(
-            estimation_tasks_factory=estimation_tasks_factory,
-        )
+
+        if keep_history:
+            cost_function = self.recorder(cost_function)
 
         # Run & optimize QAOA
-        opt_results = self._optimizer.minimize(cost_function, self._initial_params)
+        opt_results = self.inner_optimizer.minimize(cost_function, initial_params)
+        nit += opt_results.nit
+        nfev += opt_results.nfev
+        if keep_history:
+            histories = extend_histories(cost_function, histories)
 
+        # Reduce the cost hamiltonian
         (
             term_with_largest_expval,
             largest_expval,
@@ -162,8 +148,7 @@ class RecursiveQAOA:
             cost_hamiltonian,
             ansatz,
             opt_results.opt_params,
-            self._estimation_tasks_factory,
-            self._cost_function_factory,
+            cost_function_factory,
         )
 
         new_qubit_map = _update_qubit_map(
@@ -202,16 +187,36 @@ class RecursiveQAOA:
         ):
             # If we didn't reach threshold `n_c`, we repeat the the above with the reduced
             # cost hamiltonian.
-            return self.__call__(reduced_cost_hamiltonian, new_qubit_map)
+            return self._recursive_minimize(
+                cost_function_factory,
+                initial_params,
+                keep_history,
+                cost_hamiltonian=reduced_cost_hamiltonian,
+                qubit_map=new_qubit_map,
+                nit=nit,
+                nfev=nfev,
+                histories=histories,
+            )
 
         else:
             best_value, reduced_solutions = solve_problem_by_exhaustive_search(
                 change_operator_type(reduced_cost_hamiltonian, QubitOperator)
             )
 
-            return _map_reduced_solutions_to_original_solutions(
+            solutions = _map_reduced_solutions_to_original_solutions(
                 reduced_solutions, new_qubit_map
             )
+
+            opt_result = optimization_result(
+                opt_solutions=solutions,
+                opt_value=best_value,
+                opt_params=None,
+                nit=nit,
+                nfev=nfev,
+                **histories,
+            )
+
+            return opt_result
 
 
 def _create_default_qubit_map(n_qubits: int) -> Dict[int, List[int]]:
@@ -226,8 +231,7 @@ def _find_term_with_strongest_correlation(
     hamiltonian: IsingOperator,
     ansatz: Ansatz,
     optimal_params: np.ndarray,
-    estimation_tasks_factory: Callable[[IsingOperator, Ansatz], EstimationTasksFactory],
-    cost_function_factory: CostFunctionFactory,
+    cost_function_factory: Callable[[IsingOperator, Ansatz], CostFunction],
 ) -> Tuple[IsingOperator, float]:
     """For each term Z_i Z_j, calculate the expectation value <psi(beta, gamma) | Z_i Z_j | psi(beta, gamma)>
     with optimal beta and gamma. The idea is that the term with largest expectation value
@@ -251,10 +255,7 @@ def _find_term_with_strongest_correlation(
         if () not in term.terms:
 
             # Calculate expectation value of term
-            estimation_tasks_factory_of_term = estimation_tasks_factory(term, ansatz)
-            cost_function_of_term = cost_function_factory(
-                estimation_tasks_factory=estimation_tasks_factory_of_term
-            )
+            cost_function_of_term = cost_function_factory(term, ansatz)
             expval_of_term = cost_function_of_term(optimal_params)
 
             if np.abs(expval_of_term) > np.abs(largest_expval):
@@ -275,13 +276,22 @@ def _update_qubit_map(
     See equation (15) of the original paper.
 
     Args:
-        qubit_map: the qubit map to be updated. a list that maps original qubits to new qubits,
-            see docstring of RecursiveQAOA
+        qubit_map: the qubit map to be updated.
         term_with_largest_expval: term with largest expectation value
         largest_expval: the expectation value of `term_with_largest_expval`
 
-    Returns:
-        Updated qubit map
+    Note:
+        For those interested in how qubit map works: qubit map is a dictionary that maps qubits
+            in reduced Hamiltonian back to original qubits.
+        Example:
+            `qubit_map = {0: [2, -1], 1: [3, 1]]}
+                Keys are the original qubit indice.
+                1st term of inner list is qubit the index of tuple to be mapped onto,
+                2nd term is if it will be mapped onto the same value or opposite of the qubit it
+                    is being mapped onto.
+                In the above qubit_map, the original qubit 0 is now represented by the opposite
+                    value of qubit 2, and the original qubit 1 is now represented by the value of
+                    qubit 3.
 
     """
     assert len(term_with_largest_expval.terms.keys()) == 1
@@ -377,7 +387,8 @@ def _map_reduced_solutions_to_original_solutions(
 
     Args:
         reduced_solutions: list of solutions, each solution is a tuple of ints.
-        qubit_map: list that maps original qubits to new qubits, see docstring of RecursiveQAOA
+        qubit_map: list that maps original qubits to new qubits, see docstring of _update_qubit_map
+            for more details.
 
     Returns:
         list of solutions, each solution is a tuple of ints.

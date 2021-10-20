@@ -1,8 +1,9 @@
 from functools import partial, wraps
+from typing import Callable, List, Tuple
 
 import numpy as np
 import pytest
-from openfermion import IsingOperator
+from openfermion import IsingOperator, SymbolicOperator
 from zquantum.core.cost_function import (
     create_cost_function,
     substitution_based_estimation_tasks_factory,
@@ -11,9 +12,11 @@ from zquantum.core.estimation import (
     allocate_shots_uniformly,
     estimate_expectation_values_by_averaging,
 )
+from zquantum.core.interfaces.ansatz import Ansatz
 from zquantum.core.interfaces.cost_function import CostFunction
 from zquantum.core.interfaces.mock_objects import MockOptimizer
 from zquantum.core.interfaces.optimizer import optimization_result
+from zquantum.core.interfaces.optimizer_test import NESTED_OPTIMIZER_CONTRACTS
 from zquantum.core.symbolic_simulator import SymbolicSimulator
 from zquantum.qaoa.ansatzes import QAOAFarhiAnsatz, XAnsatz
 from zquantum.qaoa.recursive_qaoa import (
@@ -33,7 +36,7 @@ class TestRQAOA:
             IsingOperator("Z0 Z1", 5)
             + IsingOperator("Z0 Z3", 2)
             + IsingOperator("Z1 Z2", 0.5)
-            + IsingOperator("Z2 Z3", 0.5)
+            + IsingOperator("Z2 Z3", 0.6)
         )
 
     @pytest.fixture()
@@ -41,23 +44,27 @@ class TestRQAOA:
         return QAOAFarhiAnsatz(1, hamiltonian)
 
     @pytest.fixture()
-    def estimation_tasks_factory_generator(self):
-        estimation_preprocessors = [
-            partial(allocate_shots_uniformly, number_of_shots=1000)
-        ]
-        return partial(
-            substitution_based_estimation_tasks_factory,
-            estimation_preprocessors=estimation_preprocessors,
-        )
+    def cost_function_factory(self) -> Callable[[IsingOperator, Ansatz], CostFunction]:
+        def _cf_factory(
+            target_operator: SymbolicOperator,
+            ansatz: Ansatz,
+        ):
+            estimation_preprocessors = [
+                partial(allocate_shots_uniformly, number_of_shots=1000)
+            ]
+            estimation_tasks_factory = substitution_based_estimation_tasks_factory(
+                target_operator,
+                ansatz,
+                estimation_preprocessors=estimation_preprocessors,
+            )
+            return create_cost_function(
+                backend=SymbolicSimulator(),
+                estimation_tasks_factory=estimation_tasks_factory,
+                estimation_method=estimate_expectation_values_by_averaging,
+                parameter_preprocessors=None,
+            )
 
-    @pytest.fixture()
-    def cost_function_factory(self):
-        return partial(
-            create_cost_function,
-            backend=SymbolicSimulator(),
-            estimation_method=estimate_expectation_values_by_averaging,
-            parameter_preprocessors=None,
-        )
+        return _cf_factory
 
     @pytest.fixture()
     def opt_params(self):
@@ -65,8 +72,8 @@ class TestRQAOA:
         return np.array([-0.34897497, 4.17835486])
 
     @pytest.fixture()
-    def optimizer(self, opt_params):
-        optimizer = MockOptimizer()
+    def inner_optimizer(self, opt_params):
+        inner_optimizer = MockOptimizer()
 
         def custom_minimize(
             cost_function: CostFunction,
@@ -76,34 +83,43 @@ class TestRQAOA:
             return optimization_result(
                 opt_value=cost_function(opt_params),
                 opt_params=opt_params,
+                nfev=1,
+                nit=1,
                 history=[],
             )
 
-        optimizer._minimize = custom_minimize
-        return optimizer
+        inner_optimizer._minimize = custom_minimize
+        return inner_optimizer
+
+    @pytest.mark.parametrize("contract", NESTED_OPTIMIZER_CONTRACTS)
+    def test_if_satisfies_contracts(
+        self, contract, ansatz, cost_function_factory, inner_optimizer, hamiltonian
+    ):
+        initial_params = np.array([0.42, 4.2])
+        recursive_qaoa = RecursiveQAOA(
+            ansatz=ansatz,
+            cost_hamiltonian=hamiltonian,
+            inner_optimizer=inner_optimizer,
+            n_c=2,
+        )
+
+        assert contract(recursive_qaoa, cost_function_factory, initial_params)
 
     @pytest.mark.parametrize("n_c", [-1, 0, 4, 5])
     def test_RQAOA_raises_exception_if_n_c_is_incorrect_value(
         self,
         hamiltonian,
         ansatz,
-        optimizer,
-        estimation_tasks_factory_generator,
-        cost_function_factory,
+        inner_optimizer,
         n_c,
     ):
-        initial_params = np.array([0.42, 4.2])
-
-        recursive_qaoa = RecursiveQAOA(
-            n_c,
-            ansatz,
-            initial_params,
-            optimizer,
-            estimation_tasks_factory_generator,
-            cost_function_factory,
-        )
         with pytest.raises(ValueError):
-            recursive_qaoa(hamiltonian)
+            recursive_qaoa = RecursiveQAOA(
+                n_c,
+                hamiltonian,
+                ansatz,
+                inner_optimizer,
+            )
 
     @pytest.mark.parametrize(
         "n_qubits, expected_qubit_map",
@@ -132,7 +148,6 @@ class TestRQAOA:
         hamiltonian,
         ansatz,
         opt_params,
-        estimation_tasks_factory_generator,
         cost_function_factory,
     ):
 
@@ -143,7 +158,6 @@ class TestRQAOA:
             hamiltonian,
             ansatz,
             opt_params,
-            estimation_tasks_factory_generator,
             cost_function_factory,
         )
         assert term_with_largest_expval == IsingOperator("Z0 Z1", 5)
@@ -159,7 +173,7 @@ class TestRQAOA:
                 (
                     IsingOperator("Z0 Z2", 2.0)
                     + IsingOperator("Z0 Z1", 0.5)
-                    + IsingOperator("Z1 Z2", 0.5)
+                    + IsingOperator("Z1 Z2", 0.6)
                 ),
             ),
             (
@@ -168,7 +182,7 @@ class TestRQAOA:
                 (
                     IsingOperator("Z0 Z2", 2.0)
                     + IsingOperator("Z0 Z1", -0.5)
-                    + IsingOperator("Z1 Z2", 0.5)
+                    + IsingOperator("Z1 Z2", 0.6)
                 ),
             ),
             (
@@ -177,12 +191,12 @@ class TestRQAOA:
                 (
                     IsingOperator("Z0 Z1", 5)
                     + IsingOperator("Z1 Z2", 0.5)
-                    + IsingOperator("Z2 Z0", -0.5)
+                    + IsingOperator("Z2 Z0", -0.6)
                 ),
             ),
         ],
     )
-    def test_reduce_cost_hamiltonian_and_qubit_map(
+    def test_reduce_cost_hamiltonian(
         self,
         hamiltonian,
         term_with_largest_expval,
@@ -277,23 +291,21 @@ class TestRQAOA:
     def test_RQAOA_returns_correct_answer(
         self,
         hamiltonian,
-        optimizer,
+        inner_optimizer,
         ansatz,
-        estimation_tasks_factory_generator,
         cost_function_factory,
     ):
         initial_params = np.array([0.42, 4.2])
 
         recursive_qaoa = RecursiveQAOA(
             3,
+            hamiltonian,
             ansatz,
-            initial_params,
-            optimizer,
-            estimation_tasks_factory_generator,
-            cost_function_factory,
+            inner_optimizer,
         )
 
-        solutions = recursive_qaoa(hamiltonian)
+        opt_result = recursive_qaoa.minimize(cost_function_factory, initial_params)
+        solutions: List[Tuple[int]] = opt_result.opt_solutions
 
         n_qubits = 4
         for solution in solutions:
@@ -301,14 +313,12 @@ class TestRQAOA:
 
         assert set(solutions) == set([(1, 0, 1, 0), (0, 1, 0, 1)])
 
-    @pytest.mark.xfail
     @pytest.mark.parametrize("n_c, expected_n_recursions", [(3, 1), (2, 2), (1, 3)])
     def test_RQAOA_performs_correct_number_of_recursions(
         self,
         hamiltonian,
         ansatz,
-        optimizer,
-        estimation_tasks_factory_generator,
+        inner_optimizer,
         cost_function_factory,
         n_c,
         expected_n_recursions,
@@ -318,11 +328,9 @@ class TestRQAOA:
 
         recursive_qaoa = RecursiveQAOA(
             n_c,
+            hamiltonian,
             ansatz,
-            initial_params,
-            optimizer,
-            estimation_tasks_factory_generator,
-            cost_function_factory,
+            inner_optimizer,
         )
 
         def counted_calls(f):
@@ -336,38 +344,44 @@ class TestRQAOA:
             count_wrapper.count = 0
             return count_wrapper
 
-        wrapped = counted_calls(recursive_qaoa.__call__)
-        recursive_qaoa.__call__ = wrapped
-        solutions = recursive_qaoa.__call__(hamiltonian)
+        wrapped = counted_calls(recursive_qaoa._recursive_minimize)
+        recursive_qaoa._recursive_minimize = wrapped
+        opt_result = recursive_qaoa.minimize(cost_function_factory, initial_params)
         assert wrapped.count == expected_n_recursions
 
+        solutions: List[Tuple[int]] = opt_result.opt_solutions
         n_qubits = 4
         for solution in solutions:
             assert len(solution) == n_qubits
 
-    def test_compatability_with_x_ansatz(
+    @pytest.mark.parametrize("n_c, expected_n_recursions", [(3, 1), (2, 2), (1, 3)])
+    def test_keeps_history_across_multiple_recursions(
         self,
-        optimizer,
-        estimation_tasks_factory_generator,
+        hamiltonian,
+        ansatz,
+        inner_optimizer,
         cost_function_factory,
+        n_c,
+        expected_n_recursions,
     ):
-        # TODO: maybe calculate expected solutions with pen & paper to
-        # verify that they are correct
-        n_qubits = 2
+
         initial_params = np.array([0.42, 4.2])
-        x_ansatz = XAnsatz(1, n_qubits)
-        hamiltonian = IsingOperator("Z0 Z1")
 
         recursive_qaoa = RecursiveQAOA(
-            1,
-            x_ansatz,
-            initial_params,
-            optimizer,
-            estimation_tasks_factory_generator,
-            cost_function_factory,
+            n_c,
+            hamiltonian,
+            ansatz,
+            inner_optimizer,
         )
 
-        solutions = recursive_qaoa(hamiltonian)
+        opt_result = recursive_qaoa.minimize(
+            cost_function_factory, initial_params, keep_history=True
+        )
 
-        for solution in solutions:
-            assert len(solution) == n_qubits
+        # We know that our inner_optimizer does 1 iteration and 1 call to cost function per recursion,
+        # therefore, opt_result.nfev and opt_result.nit and length of opt_result.history should be equal
+        # to expected_n_recursions
+
+        assert opt_result.nit == expected_n_recursions
+        assert opt_result.nfev == expected_n_recursions
+        assert len(opt_result.history) == expected_n_recursions
