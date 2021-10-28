@@ -1,15 +1,14 @@
+from functools import partial
 from typing import Callable, List, Tuple
+
 import networkx as nx
 import numpy as np
-from openfermion.ops.operators.qubit_operator import QubitOperator
-
-from zquantum.core.utils import dec2bin
-from zquantum.core.measurement import Measurements, expectation_values_to_real
-
 from openfermion import IsingOperator
-from zquantum.core.openfermion import change_operator_type
-from functools import partial
+from openfermion.ops.operators.qubit_operator import QubitOperator
 from openfermion.utils import count_qubits
+from zquantum.core.measurement import Measurements, expectation_values_to_real
+from zquantum.core.openfermion import change_operator_type
+from zquantum.core.utils import dec2bin
 
 
 # This is the only function in this file in the Public API

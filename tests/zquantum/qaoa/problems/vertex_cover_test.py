@@ -1,9 +1,10 @@
+import copy
+
 import networkx as nx
 import pytest
-import copy
 from zquantum.qaoa.problems import VertexCover
-from ._helpers import make_graph, graph_node_index
 
+from ._helpers import graph_node_index, make_graph
 
 MONOTONIC_GRAPH_OPERATOR_TERM_PAIRS = [
     (

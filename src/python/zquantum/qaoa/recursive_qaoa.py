@@ -1,25 +1,26 @@
 import abc
 import warnings
+from collections import defaultdict
 from copy import copy, deepcopy
 from typing import Callable, Dict, List, Tuple
 
 import numpy as np
-from collections import defaultdict
 from openfermion import IsingOperator, QubitOperator
 from openfermion.utils import count_qubits
-from zquantum.core.history.recorder import HistoryEntry, recorder as _recorder
+from scipy.optimize import OptimizeResult
+from zquantum.core.history.recorder import HistoryEntry
+from zquantum.core.history.recorder import recorder as _recorder
 from zquantum.core.interfaces.ansatz import Ansatz
 from zquantum.core.interfaces.cost_function import CostFunction
 from zquantum.core.interfaces.optimizer import (
     NestedOptimizer,
     Optimizer,
-    optimization_result,
     extend_histories,
+    optimization_result,
 )
 from zquantum.core.openfermion import change_operator_type
 from zquantum.core.typing import RecorderFactory
 from zquantum.qaoa.problems import solve_problem_by_exhaustive_search
-from scipy.optimize import OptimizeResult
 
 
 class RecursiveQAOA(NestedOptimizer):

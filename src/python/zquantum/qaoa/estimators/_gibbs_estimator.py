@@ -1,14 +1,14 @@
-import numpy as np
-from openfermion import IsingOperator
 from typing import List
 
-from zquantum.core.interfaces.backend import QuantumBackend
-from zquantum.core.measurement import ExpectationValues, Measurements
+import numpy as np
+from openfermion import IsingOperator
 from zquantum.core.bitstring_distribution import BitstringDistribution
+from zquantum.core.interfaces.backend import QuantumBackend
 from zquantum.core.interfaces.estimation import (
     EstimateExpectationValues,
     EstimationTask,
 )
+from zquantum.core.measurement import ExpectationValues, Measurements
 
 
 class GibbsObjectiveEstimator(EstimateExpectationValues):

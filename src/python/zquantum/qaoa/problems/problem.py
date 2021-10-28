@@ -1,7 +1,9 @@
 from abc import ABC, abstractmethod
+from typing import List, Tuple
+
 import networkx as nx
 from openfermion import QubitOperator
-from typing import Tuple, List
+
 from ._problem_evaluation import (
     evaluate_solution,
     solve_graph_problem_by_exhaustive_search,

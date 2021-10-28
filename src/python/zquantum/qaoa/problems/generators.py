@@ -1,4 +1,5 @@
 from typing import Callable, Dict, List
+
 import networkx as nx
 import numpy as np
 from openfermion import QubitOperator

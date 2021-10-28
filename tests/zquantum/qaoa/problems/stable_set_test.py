@@ -1,6 +1,10 @@
+import copy
+
 import networkx as nx
 import pytest
-import copy
+from zquantum.qaoa.problems import StableSet
+
+from ._helpers import graph_node_index, make_graph
 
 # from zquantum.qaoa.problems.stable_set import (
 #     evaluate_stable_set_solution,
@@ -8,8 +12,6 @@ import copy
 #     solve_stable_set_by_exhaustive_search,
 # )
 
-from zquantum.qaoa.problems import StableSet
-from ._helpers import make_graph, graph_node_index
 
 MONOTONIC_GRAPH_OPERATOR_TERM_PAIRS = [
     (
