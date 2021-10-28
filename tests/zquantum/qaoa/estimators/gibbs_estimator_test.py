@@ -62,14 +62,17 @@ class TestGibbsEstimator:
                 estimation_tasks=estimation_tasks,
             )
 
-    def test_gibbs_estimator_returns_correct_values(self, estimator, backend, operator):
+    def test_gibbs_estimator_returns_correct_values(
+        self, estimator, backend, operator
+    ):
         # Given
         estimation_tasks = [EstimationTask(operator, Circuit([H(0)]), 10000)]
 
         expval_0 = np.exp(1 * -estimator.alpha)  # Expectation value of bitstring 0
         expval_1 = np.exp(-1 * -estimator.alpha)  # Expectation value of bitstring 1
 
-        # Target value is the -log of the mean of the expectation values of the 2 bitstrings
+        # Target value is the -log of the mean of the expectation values of the 2
+        # bitstrings
         target_value = -np.log((expval_1 + expval_0) / 2)
 
         # When

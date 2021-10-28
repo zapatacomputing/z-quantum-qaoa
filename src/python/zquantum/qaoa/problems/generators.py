@@ -17,7 +17,8 @@ def get_random_hamiltonians_for_problem(
 
     Args:
         graph_specs: Specifications of the graph to generate. It should contain at
-            least an entry with key 'type_graph' (Note: 'num_nodes' key will be overwritten)
+            least an entry with key 'type_graph' (Note: 'num_nodes' key will be
+            overwritten)
         number_of_instances: The number of hamiltonians to generate
         possible_number_of_qubits: A list containing the number of
             qubits in the hamiltonian. If it contains more than one value, then a

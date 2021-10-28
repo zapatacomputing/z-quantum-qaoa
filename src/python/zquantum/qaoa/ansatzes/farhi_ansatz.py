@@ -26,16 +26,23 @@ class QAOAFarhiAnsatz(Ansatz):
         cost_hamiltonian: Union[QubitOperator, IsingOperator],
         mixer_hamiltonian: Optional[QubitOperator] = None,
     ):
-        """Ansatz class representing QAOA ansatz as described in "A Quantum Approximate Optimization Algorithm" by E. Farhi and J. Goldstone (https://arxiv.org/abs/1411.4028)
+        """Ansatz class representing Farhi QAOA ansatz
+
+        Original paper:
+            "A Quantum Approximate Optimization Algorithm" by E. Farhi and J. Goldstone
+             (https://arxiv.org/abs/1411.4028)
 
         Args:
-            number_of_layers: number of layers of the ansatz. Also refered to as "p" in the paper.
+            number_of_layers: number of layers of the ansatz. Also refered to as "p"
+                in the paper.
             cost_hamiltonian: Hamiltonian representing the cost function
-            mixer_hamiltonian: Mixer hamiltonian for the QAOA. If not provided, will default to basic operator consisting of single X terms.
+            mixer_hamiltonian: Mixer hamiltonian for the QAOA. If not provided, will
+                default to basic operator consisting of single X terms.
 
         Attributes:
             number_of_qubits: number of qubits required for the ansatz circuit.
-            number_of_params: number of the parameters that need to be set for the ansatz circuit.
+            number_of_params: number of the parameters that need to be set for the
+                ansatz circuit.
         """
         super().__init__(number_of_layers)
         self._cost_hamiltonian = cost_hamiltonian
@@ -77,15 +84,15 @@ class QAOAFarhiAnsatz(Ansatz):
         # Add time evolution layers
         cost_circuit = time_evolution(
             change_operator_type(self._cost_hamiltonian, QubitOperator),
-            sympy.Symbol(f"gamma"),
+            sympy.Symbol("gamma"),
         )
-        mixer_circuit = time_evolution(self._mixer_hamiltonian, sympy.Symbol(f"beta"))
+        mixer_circuit = time_evolution(self._mixer_hamiltonian, sympy.Symbol("beta"))
         for i in range(self.number_of_layers):
             circuit += cost_circuit.bind(
-                {sympy.Symbol(f"gamma"): sympy.Symbol(f"gamma_{i}")}
+                {sympy.Symbol("gamma"): sympy.Symbol(f"gamma_{i}")}
             )
             circuit += mixer_circuit.bind(
-                {sympy.Symbol(f"beta"): sympy.Symbol(f"beta_{i}")}
+                {sympy.Symbol("beta"): sympy.Symbol(f"beta_{i}")}
             )
 
         return circuit
@@ -100,10 +107,11 @@ def create_farhi_qaoa_circuits(
     Args:
         hamiltonians (List[QubitOperator]): List of hamiltonians for constructing the
             circuits
-        number_of_layers (Union[int, List[int]]): The number of layers of the ansatz in the circuit.
-            If an int is passed in, the same number of layers is used for every ansatz circuit, however,
-            if a list of ints is passed in, the number of layers used for the hamiltonian at index i of the hamiltonians
-            list is the integer at index i of the number_of_layers list.
+        number_of_layers (Union[int, List[int]]): The number of layers of the ansatz in
+            the circuit. If an int is passed in, the same number of layers is used for
+            every ansatz circuit, however, if a list of ints is passed in, the number
+            of layers used for the hamiltonian at index i of the hamiltonians list is
+            the integer at index i of the number_of_layers list.
 
     Returns:
         List of zquantum.core.circuit.Circuit

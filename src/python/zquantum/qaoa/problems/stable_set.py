@@ -14,13 +14,16 @@ class StableSet(Problem):
         "Ising formulations of many NP problems" by A. Lucas, page 11 section 4.2
         (https://arxiv.org/pdf/1302.5843.pdf).
 
-        The operator's terms contain Pauli Z matrices applied to qubits. The qubit indices are
-        based on graph node indices in the graph definition, not on the node names.
+        The operator's terms contain Pauli Z matrices applied to qubits. The qubit
+        indices are based on graph node indices in the graph definition, not on the
+        node names.
 
         Args:
             graph: undirected weighted graph defining the problem
-            scale_factor: constant by which all the coefficients in the Hamiltonian will be multiplied
-            offset: coefficient of the constant term added to the Hamiltonian to shift its energy levels
+            scale_factor: constant by which all the coefficients in the Hamiltonian
+                will be multiplied
+            offset: coefficient of the constant term added to the Hamiltonian to shift
+                its energy levels
 
         Returns:
             operator describing the Hamiltonian

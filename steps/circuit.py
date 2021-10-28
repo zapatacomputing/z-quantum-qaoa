@@ -19,7 +19,8 @@ def build_qaoa_ansatz_circuit(
 
     if isinstance(ansatz_specs, str):
         DeprecationWarning(
-            "Loading ansatz_specs as a string will be depreciated in future, please change it to a dictionary."
+            "Loading ansatz_specs as a string will be depreciated in future, please "
+            "change it to a dictionary."
         )
         ansatz_specs = json.loads(ansatz_specs)
 

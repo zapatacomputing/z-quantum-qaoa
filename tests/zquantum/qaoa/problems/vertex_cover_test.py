@@ -106,7 +106,9 @@ GRAPH_SOLUTION_COST_LIST = [
     (make_graph(node_ids=range(2), edges=[(0, 1)]), [0, 1], 1),
     (
         make_graph(
-            node_ids=range(4), edges=[(0, 1, 1), (0, 2, 2), (0, 3, 3)], use_weights=True
+            node_ids=range(4),
+            edges=[(0, 1, 1), (0, 2, 2), (0, 3, 3)],
+            use_weights=True
         ),
         [1, 0, 0, 0],
         3,
@@ -140,10 +142,6 @@ GRAPH_BEST_SOLUTIONS_COST_LIST = [
         2,
     ),
 ]
-
-
-def graph_node_index(graph, node_id):
-    return next(node_i for node_i, node in enumerate(graph.nodes) if node == node_id)
 
 
 class TestGetVertexCoverHamiltonian:

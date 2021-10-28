@@ -23,7 +23,9 @@ class XAnsatz(Ansatz):
         """This is implementation of the X Ansatz from https://arxiv.org/abs/2105.01114
 
         Args:
-            number_of_layers: k-body depth (the maximum number of qubits entangled at one time) as described in the original paper. Cannot be greater than the number of qubits.
+            number_of_layers: k-body depth (the maximum number of qubits entangled at
+                one time) as described in the original paper. Cannot be greater than
+                the number of qubits.
             number_of_qubits: number of qubits required for the ansatz circuit.
         """
 
@@ -58,12 +60,17 @@ class XZAnsatz(Ansatz):
         number_of_qubits: Union[QubitOperator, IsingOperator],
         use_k_body_z_operators: bool = True,
     ):
-        """This is implementation of the XZ Ansatzes from https://arxiv.org/abs/2105.01114 section 4.2
+        """This is implementation of the XZ Ansatzes.
+
+         Original paper: https://arxiv.org/abs/2105.01114 section 4.2
 
         Args:
-            number_of_layers: k-body depth (the maximum number of qubits entangled at one time) as described in https://arxiv.org/abs/2105.01114.  Cannot be greater than the number of qubits.
+            number_of_layers: k-body depth (the maximum number of qubits entangled at
+                one time) as described in the original paper. Cannot be greater than
+                the number of qubits.
             number_of_qubits: number of qubits required for the ansatz circuit.
-            use_k_body_z_operators: from the two types of XZ ansatzes in the original paper
+            use_k_body_z_operators: from the two types of XZ ansatzes in the original
+                paper
         """
 
         super().__init__(number_of_layers)

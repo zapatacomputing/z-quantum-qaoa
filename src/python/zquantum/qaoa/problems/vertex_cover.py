@@ -19,17 +19,20 @@ class VertexCover(Problem):
         https://quantumcomputing.stackexchange.com/questions/16082/vertex-cover-mappings-from-qubo-to-ising-and-vice-versa
         for corrective translation shifts
 
-        The operator's terms contain Pauli Z matrices applied to qubits. The qubit indices are
-        based on graph node indices in the graph definition, not on the node names.
+        The operator's terms contain Pauli Z matrices applied to qubits. The qubit
+        indices are based on graph node indices in the graph definition, not on the
+        node names.
 
         Args:
             graph: undirected weighted graph defining the problem
-            scale_factor: constant by which all the coefficients in the Hamiltonian will be multiplied
-            offset: coefficient of the constant term added to the Hamiltonian to shift its energy levels
+            scale_factor: constant by which all the coefficients in the Hamiltonian
+                will be multiplied
+            offset: coefficient of the constant term added to the Hamiltonian to shift
+                its energy levels
 
         Returns:
             operator describing the Hamiltonian
-        """
+        """  # noqa: E501
         ham_a = QubitOperator()
         for i, j in graph.edges:
             ham_a += (1 - QubitOperator(f"Z{i}")) * (1 - QubitOperator(f"Z{j}"))
