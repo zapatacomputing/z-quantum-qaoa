@@ -15,7 +15,7 @@ from openfermion.utils import count_qubits
 # This is the only function in this file in the Public API
 def solve_problem_by_exhaustive_search(
     hamiltonian: QubitOperator,
-) -> Tuple[float, List[Tuple[int]]]:
+) -> Tuple[float, List[Tuple[int, ...]]]:
     """
     Solves any QAOA cost hamiltonian using exhaustive search.
 
@@ -41,7 +41,7 @@ def solve_problem_by_exhaustive_search(
 def solve_graph_problem_by_exhaustive_search(
     graph: nx.Graph,
     cost_function: Callable[[Tuple[int], nx.Graph], float],
-) -> Tuple[float, List[Tuple[int]]]:
+) -> Tuple[float, List[Tuple[int, ...]]]:
     """
     Solves given graph problem using exhaustive search.
 
@@ -65,9 +65,9 @@ def solve_graph_problem_by_exhaustive_search(
 
 
 def _solve_bitstring_problem_by_exhaustive_search(
-    cost_function: Callable[[Tuple[int]], float],
+    cost_function: Callable[[Tuple[int, ...]], float],
     num_nodes: int,
-) -> Tuple[float, List[Tuple[int]]]:
+) -> Tuple[float, List[Tuple[int, ...]]]:
     """
     Solves given cost function of a graph problem using exhaustive search.
 
@@ -89,7 +89,7 @@ def _solve_bitstring_problem_by_exhaustive_search(
     best_value = np.inf
 
     for i in range(2 ** num_nodes):
-        trial_solution: Tuple[int] = tuple(dec2bin(i, num_nodes))
+        trial_solution: Tuple[int, ...] = tuple(dec2bin(i, num_nodes))
         current_value = cost_function(trial_solution)
         if current_value == best_value:
             solutions_list.append(trial_solution)
