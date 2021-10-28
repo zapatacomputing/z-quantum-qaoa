@@ -1,13 +1,10 @@
 import pytest
-from openfermion import QubitOperator, IsingOperator
-
-from zquantum.core.symbolic_simulator import SymbolicSimulator
-from zquantum.core.circuits import Circuit, X, H
-from zquantum.qaoa.estimators import CvarEstimator
-
+from openfermion import IsingOperator, QubitOperator
+from zquantum.core.circuits import Circuit, H, X
 from zquantum.core.interfaces.estimation import EstimationTask
-
 from zquantum.core.interfaces.estimator_contract import ESTIMATOR_CONTRACTS
+from zquantum.core.symbolic_simulator import SymbolicSimulator
+from zquantum.qaoa.estimators import CvarEstimator
 
 
 @pytest.mark.parametrize("contract", ESTIMATOR_CONTRACTS)

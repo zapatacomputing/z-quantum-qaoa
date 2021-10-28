@@ -114,7 +114,7 @@ class TestRQAOA:
         n_c,
     ):
         with pytest.raises(ValueError):
-            recursive_qaoa = RecursiveQAOA(
+            RecursiveQAOA(
                 n_c,
                 hamiltonian,
                 ansatz,
@@ -243,16 +243,20 @@ class TestRQAOA:
         assert new_qubit_map == expected_new_qubit_map
 
     def test_update_qubit_map_works_properly_on_subsequent_recursions(self):
-        # (This test is for when the qubit map to be updated is not the default qubit map)
+        # (This test is for when the qubit map to be updated is not the default one)
         qubit_map = {0: [0, 1], 1: [1, 1], 2: [1, -1], 3: [2, 1], 4: [1, 1]}
         term_with_largest_expval = IsingOperator("Z0 Z1")
         largest_expval = -42
 
         # How the expected_new_qubit_map is calculated:
-        # {0: [0, 1], 1: [1, 1], 2: [1, -1], 3: [2, 1], 4: [1, 1]} -> original qubit map
-        # {0: [0, 1], 1: [1, -1], 2: [1, -1], 3: [2, 1], 4: [1, 1]} -> replace 1 with negative of 0
-        # {0: [0, 1], 1: [0, -1], 2: [0, 1], 3: [2, 1], 4: [0, -1]} -> replace things that depends on 1 with negative of 0
-        # {0: [0, 1], 1: [0, -1], 2: [0, 1], 3: [1, 1], 4: [0, -1]} -> nudge higher qubits down
+        # {0: [0, 1], 1: [1, 1], 2: [1, -1], 3: [2, 1], 4: [1, 1]} -> original
+        #     qubit map
+        # {0: [0, 1], 1: [1, -1], 2: [1, -1], 3: [2, 1], 4: [1, 1]} -> replace 1 with
+        #     negative of 0
+        # {0: [0, 1], 1: [0, -1], 2: [0, 1], 3: [2, 1], 4: [0, -1]} ->
+        #     replace things that depends on 1 with negative of 0
+        # {0: [0, 1], 1: [0, -1], 2: [0, 1], 3: [1, 1], 4: [0, -1]} -> nudge higher
+        #     qubits down
         expected_new_qubit_map = {
             0: [0, 1],
             1: [0, -1],
@@ -334,7 +338,10 @@ class TestRQAOA:
         )
 
         def counted_calls(f):
-            """A wrapper for counting number of function calls stolen from stackoverflow :p"""
+            """A wrapper for counting number of function calls.
+
+            Borrowed from from stackoverflow.
+            """
 
             @wraps(f)
             def count_wrapper(*args, **kwargs):
@@ -378,9 +385,9 @@ class TestRQAOA:
             cost_function_factory, initial_params, keep_history=True
         )
 
-        # We know that our inner_optimizer does 1 iteration and 1 call to cost function per recursion,
-        # therefore, opt_result.nfev and opt_result.nit and length of opt_result.history should be equal
-        # to expected_n_recursions
+        # We know that our inner_optimizer does 1 iteration and 1 call to cost
+        # function per recursion, therefore, opt_result.nfev and opt_result.nit and
+        # length of opt_result.history should be equal to expected_n_recursions
 
         assert opt_result.nit == expected_n_recursions
         assert opt_result.nfev == expected_n_recursions

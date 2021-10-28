@@ -1,7 +1,9 @@
 from abc import ABC, abstractmethod
+from typing import List, Tuple
+
 import networkx as nx
 from openfermion import QubitOperator
-from typing import Tuple, List
+
 from ._problem_evaluation import (
     evaluate_solution,
     solve_graph_problem_by_exhaustive_search,
@@ -37,7 +39,7 @@ class Problem(ABC):
     def solve_by_exhaustive_search(
         self,
         graph: nx.Graph,
-    ) -> Tuple[float, List[Tuple[int]]]:
+    ) -> Tuple[float, List[Tuple[int, ...]]]:
         return solve_graph_problem_by_exhaustive_search(
             graph, cost_function=self.evaluate_solution
         )

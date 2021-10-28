@@ -1,9 +1,10 @@
+import copy
+
 import networkx as nx
 import pytest
-import copy
 from zquantum.qaoa.problems import VertexCover
-from ._helpers import make_graph, graph_node_index
 
+from ._helpers import graph_node_index, make_graph
 
 MONOTONIC_GRAPH_OPERATOR_TERM_PAIRS = [
     (
@@ -140,10 +141,6 @@ GRAPH_BEST_SOLUTIONS_COST_LIST = [
         2,
     ),
 ]
-
-
-def graph_node_index(graph, node_id):
-    return next(node_i for node_i, node in enumerate(graph.nodes) if node == node_id)
 
 
 class TestGetVertexCoverHamiltonian:

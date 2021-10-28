@@ -1,16 +1,11 @@
-import pytest
-from openfermion import QubitOperator, IsingOperator
-
-from zquantum.core.interfaces.mock_objects import (
-    MockQuantumBackend,
-)
-from zquantum.core.circuits import Circuit, X, H
-from zquantum.qaoa.estimators import GibbsObjectiveEstimator
-
-from zquantum.core.interfaces.estimation import EstimationTask
 import numpy as np
-
+import pytest
+from openfermion import IsingOperator, QubitOperator
+from zquantum.core.circuits import Circuit, H, X
+from zquantum.core.interfaces.estimation import EstimationTask
 from zquantum.core.interfaces.estimator_contract import ESTIMATOR_CONTRACTS
+from zquantum.core.interfaces.mock_objects import MockQuantumBackend
+from zquantum.qaoa.estimators import GibbsObjectiveEstimator
 
 
 @pytest.mark.parametrize("contract", ESTIMATOR_CONTRACTS)
@@ -69,7 +64,8 @@ class TestGibbsEstimator:
         expval_0 = np.exp(1 * -estimator.alpha)  # Expectation value of bitstring 0
         expval_1 = np.exp(-1 * -estimator.alpha)  # Expectation value of bitstring 1
 
-        # Target value is the -log of the mean of the expectation values of the 2 bitstrings
+        # Target value is the -log of the mean of the expectation values of the 2
+        # bitstrings
         target_value = -np.log((expval_1 + expval_0) / 2)
 
         # When

@@ -23,19 +23,25 @@ class WarmStartQAOAAnsatz(Ansatz):
         cost_hamiltonian: Union[QubitOperator, IsingOperator],
         thetas: np.ndarray,
     ):
-        """
-        This is implementation of the warm-start QAOA Ansatz from https://arxiv.org/abs/2009.10095v3 .
-        It has slightly modified mixer Hamiltonian and initial state, which are based on the relaxed
-        (i.e. allowing for continuous values) solution of the problem defined by Ising Hamiltonian.
+        """Implementation of the warm-start QAOA Ansatz.
+
+        Original paper: https://arxiv.org/abs/2009.10095v3 .
+
+        This implementation has slightly modified mixer Hamiltonian and initial state,
+        which are based on the relaxed (i.e. allowing for continuous values) solution
+        of the problem defined by Ising Hamiltonian.
 
         Args:
-            number_of_layers: number of layers of the ansatz. Also refered to as "p" in the paper.
+            number_of_layers: number of layers of the ansatz. Also refered to as "p" in
+               the paper.
             cost_hamiltonian: Hamiltonian representing the cost function
-            thetas: array of floats representing angles based on the solution of relaxed problems.
+            thetas: array of floats representing angles based on the solution of
+               relaxed problems.
 
         Attributes:
             number_of_qubits: number of qubits required for the ansatz circuit.
-            number_of_params: number of the parameters that need to be set for the ansatz circuit.
+            number_of_params: number of the parameters that need to be set for the
+                ansatz circuit.
         """
         super().__init__(number_of_layers)
         self._cost_hamiltonian = cost_hamiltonian
@@ -69,11 +75,11 @@ class WarmStartQAOAAnsatz(Ansatz):
         # Add time evolution layers
         cost_circuit = time_evolution(
             change_operator_type(self._cost_hamiltonian, QubitOperator),
-            sympy.Symbol(f"gamma"),
+            sympy.Symbol("gamma"),
         )
         for i in range(self.number_of_layers):
             circuit += cost_circuit.bind(
-                {sympy.Symbol(f"gamma"): sympy.Symbol(f"gamma_{i}")}
+                {sympy.Symbol("gamma"): sympy.Symbol(f"gamma_{i}")}
             )
             circuit += create_layer_of_gates(self.number_of_qubits, RY, -self._thetas)
             circuit += create_layer_of_gates(

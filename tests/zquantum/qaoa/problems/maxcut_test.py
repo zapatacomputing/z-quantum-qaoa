@@ -1,10 +1,9 @@
-from zquantum.qaoa.problems import MaxCut
-
-import pytest
 import copy
 
-from ._helpers import make_graph
+import pytest
+from zquantum.qaoa.problems import MaxCut
 
+from ._helpers import make_graph
 
 MONOTONIC_GRAPH_OPERATOR_TERM_PAIRS = [
     (
