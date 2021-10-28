@@ -198,6 +198,4 @@ def test_convert_relaxed_solution_to_angles_throws_exception_for_invalid_paramet
     relaxed_solution = np.array([-1, 2, 1])
 
     with pytest.raises(ValueError):
-        convert_relaxed_solution_to_angles(
-            relaxed_solution, epsilon=0.1
-        )
+        convert_relaxed_solution_to_angles(relaxed_solution, epsilon=0.1)

@@ -50,9 +50,7 @@ class WarmStartQAOAAnsatz(Ansatz):
     @property
     def number_of_qubits(self):
         """Returns number of qubits used for the ansatz circuit."""
-        return count_qubits(
-            change_operator_type(self._cost_hamiltonian, QubitOperator)
-        )
+        return count_qubits(change_operator_type(self._cost_hamiltonian, QubitOperator))
 
     @property
     def number_of_params(self) -> int:

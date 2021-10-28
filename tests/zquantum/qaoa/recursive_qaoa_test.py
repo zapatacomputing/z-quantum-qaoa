@@ -340,8 +340,8 @@ class TestRQAOA:
         def counted_calls(f):
             """A wrapper for counting number of function calls.
 
-             Borrowed from from stackoverflow.
-             """
+            Borrowed from from stackoverflow.
+            """
 
             @wraps(f)
             def count_wrapper(*args, **kwargs):

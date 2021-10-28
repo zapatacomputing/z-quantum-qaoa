@@ -14,7 +14,6 @@ from zquantum.core.wavefunction import Wavefunction
 
 
 class CvarEstimator(EstimateExpectationValues):
-
     def __init__(
         self, alpha: float, use_exact_expectation_values: Optional[bool] = False
     ) -> None:

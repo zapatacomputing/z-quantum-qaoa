@@ -62,9 +62,7 @@ class TestGibbsEstimator:
                 estimation_tasks=estimation_tasks,
             )
 
-    def test_gibbs_estimator_returns_correct_values(
-        self, estimator, backend, operator
-    ):
+    def test_gibbs_estimator_returns_correct_values(self, estimator, backend, operator):
         # Given
         estimation_tasks = [EstimationTask(operator, Circuit([H(0)]), 10000)]
 
