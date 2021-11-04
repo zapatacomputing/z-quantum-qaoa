@@ -6,12 +6,6 @@ from zquantum.qaoa.problems import MaxIndependentSet
 
 from ._helpers import graph_node_index, make_graph
 
-# from zquantum.qaoa.problems.stable_set import (
-#     evaluate_stable_set_solution,
-#     get_stable_set_hamiltonian,
-#     solve_stable_set_by_exhaustive_search,
-# )
-
 
 MONOTONIC_GRAPH_OPERATOR_TERM_PAIRS = [
     (
