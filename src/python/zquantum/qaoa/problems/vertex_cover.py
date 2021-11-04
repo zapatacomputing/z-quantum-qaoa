@@ -14,7 +14,8 @@ class VertexCover(Problem):
     ) -> QubitOperator:
         """Construct a qubit operator with Hamiltonian for the vertex cover problem.
 
-        From https://arxiv.org/pdf/1302.5843.pdf, see equations 33 and 34
+        From "Ising formulations of many NP Problems" by A. Lucas, eq. 33 and 34
+		(https://arxiv.org/pdf/1302.5843.pdf)
         and
         https://quantumcomputing.stackexchange.com/questions/16082/vertex-cover-mappings-from-qubo-to-ising-and-vice-versa
         for corrective translation shifts
