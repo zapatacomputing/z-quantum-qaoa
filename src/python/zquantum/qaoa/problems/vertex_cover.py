@@ -25,10 +25,6 @@ class VertexCover(Problem):
 
         Args:
             graph: undirected weighted graph defining the problem
-            scale_factor: constant by which all the coefficients in the Hamiltonian
-                will be multiplied
-            offset: coefficient of the constant term added to the Hamiltonian to shift
-                its energy levels
 
         Returns:
             operator describing the Hamiltonian
