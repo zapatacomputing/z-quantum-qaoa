@@ -4,9 +4,10 @@ from openfermion import QubitOperator
 from .problem import Problem
 
 
-class StableSet(Problem):
+class MaxIndependentSet(Problem):
     def _build_hamiltonian(self, graph: nx.Graph) -> QubitOperator:
-        """Construct a qubit operator with Hamiltonian for the stable set problem.
+        """Construct a qubit operator with Hamiltonian for the maximum independent
+		set problem.
 
         Based on "Efficient Combinatorial Optimization Using Quantum Annealing" p. 8
         (https://arxiv.org/pdf/1801.08653.pdf)
