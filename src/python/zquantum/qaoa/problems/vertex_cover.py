@@ -9,6 +9,11 @@ class VertexCover(Problem):
     
     The solution of a vertex cover problem is the minimal number of colored
     verticies such that all edges connect to a colored vertex.
+    From "Ising formulations of many NP Problems" by A. Lucas, eq. 33 and 34
+    (https://arxiv.org/pdf/1302.5843.pdf)
+    and
+    https://quantumcomputing.stackexchange.com/questions/16082/vertex-cover-mappings-from-qubo-to-ising-and-vice-versa
+    for corrective translation shifts
     
     Attributes:
         _A: Hard constraint with huge penalty ensuring output is a solution.
@@ -23,12 +28,6 @@ class VertexCover(Problem):
         graph: nx.Graph,
     ) -> QubitOperator:
         """Construct a Hamiltonian for the vertex cover problem.
-
-        From "Ising formulations of many NP Problems" by A. Lucas, eq. 33 and 34
-		(https://arxiv.org/pdf/1302.5843.pdf)
-        and
-        https://quantumcomputing.stackexchange.com/questions/16082/vertex-cover-mappings-from-qubo-to-ising-and-vice-versa
-        for corrective translation shifts
 
         The operator's terms contain Pauli Z matrices applied to qubits. The qubit
         indices are based on graph node indices in the graph definition, not on the
