@@ -44,7 +44,7 @@ def get_new_layer_params_using_interp(
         else:
             return params_vector[layer_number - 1]
 
-    if not number_of_new_params == 2:
+    if not number_of_new_params - len(old_params) == 2:
         raise RuntimeError(
             "QAOA circuits must add 2 new parameters with each new layer."
         )
