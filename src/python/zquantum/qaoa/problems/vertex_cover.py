@@ -5,7 +5,8 @@ from .problem import Problem
 
 
 class VertexCover(Problem):
-    """Solves vertex cover problem. 
+    """Solves vertex cover problem on an undirected graph using an ising model
+    formulation.
     
     The solution of a vertex cover problem is the minimal number of colored
     verticies such that all edges connect to a colored vertex.
@@ -16,7 +17,8 @@ class VertexCover(Problem):
     for corrective translation shifts
     
     Attributes:
-        _A: Hard constraint with huge penalty ensuring output is a solution.
+        _A: Cost of having an edge which is not connected to a colored vertex.
+        Should be large (_A = 5) to ensure output is a valid solution.
         _B: Cost of coloring a particular vertex.
     """
     def __init__(self, A: int = 5, B: int = 1):

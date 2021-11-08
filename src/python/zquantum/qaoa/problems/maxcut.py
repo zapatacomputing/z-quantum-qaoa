@@ -5,6 +5,17 @@ from .problem import Problem
 
 
 class MaxCut(Problem):
+    """Solves max cut problem on an undirected weighted graph using an ising model
+    formulation.
+    
+    The solution of a maxcut problem is the set of nodes S that maximizes the
+    wieght of the edges connecting the nodes in S to the rest of the graph.
+    From "A Quantum Approximate Optimization Algorithm" by E. Farhi, eq. 12
+    (https://arxiv.org/pdf/1411.4028.pdf)
+    and
+    "Performance of the Quantum Approximate Optimization Algorithm on the Maximum
+    Cut Problem" eq. 1 (https://arxiv.org/pdf/1811.08419.pdf).    
+    """
     def _build_hamiltonian(self, graph: nx.Graph) -> QubitOperator:
         """Converts a MAXCUT instance, as described by a weighted graph, to an Ising
         Hamiltonian. It allows for different convention in the choice of the
@@ -22,9 +33,6 @@ class MaxCut(Problem):
 
         Args:
             graph: undirected weighted graph defining the problem
-
-        Returns:
-            operator describing the Hamiltonian
         """
         hamiltonian = QubitOperator()
         shift = 0.0
