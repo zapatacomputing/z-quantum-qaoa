@@ -5,36 +5,15 @@ from zquantum.core.interfaces.cost_function import ParameterPreprocessor
 
 
 def get_new_layer_params_using_interp(
-    number_of_new_params: int, old_params: np.ndarray
+    target_size: int, old_params: np.ndarray
 ) -> np.ndarray:
     """The INTERP method for initializing QAOA parameters, from
     https://arxiv.org/abs/1812.01041. See Appendix B.
-    To be used with LayerwiseAnsatzOptimizerWithFactories. Example use case:
-        cost_hamiltonian = ...
-        n_layers = ...
-        ansatz = QAOAFarhiAnsatz(n_layers, cost_hamiltonian)
-        estimation_tasks_factory_generator = partial(
-            substitution_based_estimation_tasks_factory,
-            target_operator=cost_hamiltonian,
-        )
-        cost_function_factory = partial(
-            create_cost_function,
-            backend=...,
-            estimation_method=...,
-        )
-        initial_params = np.array([0.42, 2.2])
-        inner_optimizer = ScipyOptimizer(method="L-BFGS-B")
-        interp_optimizer = LayerwiseAnsatzOptimizerWithFactories(
-            ansatz,
-            inner_optimizer,
-            estimation_tasks_factory_generator,
-            cost_function_factory,
-            min_layer=...,
-            max_layer=...,
-            parameters_initializer=get_new_layer_params_using_interp,
-        )
-        opt_result = interp_optimizer.minimize(initial_params)
-        opt_params = opt_result.opt_params
+    To be used with LayerwiseAnsatzOptimizer as the `parameters_initializer`.
+
+    Args:
+        target_size: number of returned parameters
+        old_params: params that we want to extend
     """
 
     def _get_param(params_vector: List[float], layer_number):
@@ -44,7 +23,7 @@ def get_new_layer_params_using_interp(
         else:
             return params_vector[layer_number - 1]
 
-    if not number_of_new_params - len(old_params) == 2:
+    if not target_size - len(old_params) == 2:
         raise RuntimeError(
             "QAOA circuits must add 2 new parameters with each new layer."
         )
@@ -75,8 +54,8 @@ def get_new_layer_params_using_interp(
             + (p - bef) * _get_param(old_betas, i) / p
         )
 
-        new_params.append(new_gamma_i)
         new_params.append(new_beta_i)
+        new_params.append(new_gamma_i)
 
     assert len(new_params) == (p + 1) * 2
     return np.array(new_params)
