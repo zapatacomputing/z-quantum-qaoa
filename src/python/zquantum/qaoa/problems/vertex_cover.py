@@ -21,14 +21,12 @@ class VertexCover(Problem):
         Should be large (_A = 5) to ensure output is a valid solution.
         _B: Cost of coloring a particular vertex.
     """
+
     def __init__(self, A: int = 5, B: int = 1):
         self._A = A
         self._B = B
 
-    def _build_hamiltonian(
-        self,
-        graph: nx.Graph,
-    ) -> QubitOperator:
+    def _build_hamiltonian(self, graph: nx.Graph,) -> QubitOperator:
         """Construct a Hamiltonian for the vertex cover problem.
 
         The operator's terms contain Pauli Z matrices applied to qubits. The qubit

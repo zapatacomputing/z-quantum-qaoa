@@ -16,6 +16,7 @@ class MaxIndependentSet(Problem):
     "Ising formulations of many NP problems" by A. Lucas, page 11 section 4.2
     (https://arxiv.org/pdf/1302.5843.pdf).
     """
+
     def _build_hamiltonian(self, graph: nx.Graph) -> QubitOperator:
         """Construct a qubit operator with Hamiltonian for the maximum independent
         set problem.

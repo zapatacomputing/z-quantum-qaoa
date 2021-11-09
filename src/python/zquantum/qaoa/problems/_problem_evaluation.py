@@ -38,8 +38,7 @@ def solve_problem_by_exhaustive_search(
 
 
 def solve_graph_problem_by_exhaustive_search(
-    graph: nx.Graph,
-    cost_function: Callable[[Tuple[int], nx.Graph], float],
+    graph: nx.Graph, cost_function: Callable[[Tuple[int], nx.Graph], float],
 ) -> Tuple[float, List[Tuple[int, ...]]]:
     """
     Solves given graph problem using exhaustive search.
@@ -64,8 +63,7 @@ def solve_graph_problem_by_exhaustive_search(
 
 
 def _solve_bitstring_problem_by_exhaustive_search(
-    cost_function: Callable[[Tuple[int, ...]], float],
-    num_nodes: int,
+    cost_function: Callable[[Tuple[int, ...]], float], num_nodes: int,
 ) -> Tuple[float, List[Tuple[int, ...]]]:
     """
     Solves given cost function of a graph problem using exhaustive search.

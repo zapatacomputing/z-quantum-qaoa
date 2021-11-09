@@ -16,6 +16,7 @@ class MaxCut(Problem):
     "Performance of the Quantum Approximate Optimization Algorithm on the Maximum
     Cut Problem" eq. 1 (https://arxiv.org/pdf/1811.08419.pdf).
     """
+
     def _build_hamiltonian(self, graph: nx.Graph) -> QubitOperator:
         """Converts a MAXCUT instance, as described by a weighted graph, to an Ising
         Hamiltonian. It allows for different convention in the choice of the
