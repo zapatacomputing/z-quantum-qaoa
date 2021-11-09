@@ -7,7 +7,7 @@ from .problem import Problem
 class VertexCover(Problem):
     """Solves vertex cover problem on an undirected graph using an ising model
     formulation.
-    
+
     The solution of a vertex cover problem is the minimal number of colored
     verticies such that all edges connect to a colored vertex.
     From "Ising formulations of many NP Problems" by A. Lucas, eq. 33 and 34
@@ -15,7 +15,7 @@ class VertexCover(Problem):
     and
     https://quantumcomputing.stackexchange.com/questions/16082/vertex-cover-mappings-from-qubo-to-ising-and-vice-versa
     for corrective translation shifts
-    
+
     Attributes:
         _A: Cost of having an edge which is not connected to a colored vertex.
         Should be large (_A = 5) to ensure output is a valid solution.

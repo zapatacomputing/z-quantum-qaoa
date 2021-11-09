@@ -7,11 +7,11 @@ from .problem import Problem
 class GraphPartitioning(Problem):
     """Solves the graph partitioning problem for undirected, unweighted graph using
     an ising model formulation.
-    
+
     The solution of a graph partitioning  problem is the set of nodes S that minimizes
     the wieght of the edges between S and the rest of the graph. S must contain half
     the nodes in the graph.
-    
+
     From "Ising formulations of many NP problems" by A. Lucas, page 6
     (https://arxiv.org/pdf/1302.5843.pdf).
     """
