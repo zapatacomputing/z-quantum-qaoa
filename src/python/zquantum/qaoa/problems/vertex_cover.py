@@ -26,7 +26,10 @@ class VertexCover(Problem):
         self._A = A
         self._B = B
 
-    def _build_hamiltonian(self, graph: nx.Graph,) -> QubitOperator:
+    def _build_hamiltonian(
+        self,
+        graph: nx.Graph,
+    ) -> QubitOperator:
         """Construct a Hamiltonian for the vertex cover problem.
 
         The operator's terms contain Pauli Z matrices applied to qubits. The qubit
@@ -35,7 +38,6 @@ class VertexCover(Problem):
 
         Args:
             graph: undirected weighted graph defining the problem
-
         """  # noqa: E501
         ham_a = QubitOperator()
         for i, j in graph.edges:

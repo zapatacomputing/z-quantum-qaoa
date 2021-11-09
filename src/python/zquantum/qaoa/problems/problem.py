@@ -37,7 +37,8 @@ class Problem(ABC):
         return evaluate_solution(solution, graph, self.get_hamiltonian)
 
     def solve_by_exhaustive_search(
-        self, graph: nx.Graph,
+        self,
+        graph: nx.Graph,
     ) -> Tuple[float, List[Tuple[int, ...]]]:
         return solve_graph_problem_by_exhaustive_search(
             graph, cost_function=self.evaluate_solution
