@@ -6,7 +6,6 @@ from zquantum.qaoa.problems import MaxIndependentSet
 
 from ._helpers import graph_node_index, make_graph
 
-
 MONOTONIC_GRAPH_OPERATOR_TERM_PAIRS = [
     (
         make_graph(node_ids=range(2), edges=[(0, 1)]),
