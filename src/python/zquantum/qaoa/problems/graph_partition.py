@@ -9,7 +9,7 @@ class GraphPartitioning(Problem):
     an ising model formulation.
 
     The solution of a graph partitioning  problem is the set of nodes S that minimizes
-    the wieght of the edges between S and the rest of the graph. S must contain half
+    the weight of the edges between S and the rest of the graph. S must contain half
     the nodes in the graph.
 
     From "Ising formulations of many NP problems" by A. Lucas, page 6
