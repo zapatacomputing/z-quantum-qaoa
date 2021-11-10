@@ -12,7 +12,7 @@ class GraphPartitioning(Problem):
     the weight of the edges between S and the rest of the graph. S must contain half
     the nodes in the graph.
 
-    From "Ising formulations of many NP problems" by A. Lucas, page 6
+    From "Ising formulations of many NP problems" by A. Lucas, page 6, eqs 7-9
     (https://arxiv.org/pdf/1302.5843.pdf).
     """
 
