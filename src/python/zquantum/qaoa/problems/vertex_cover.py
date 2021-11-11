@@ -16,10 +16,14 @@ class VertexCover(Problem):
     https://quantumcomputing.stackexchange.com/questions/16082/vertex-cover-mappings-from-qubo-to-ising-and-vice-versa
     for corrective translation shifts
 
-    Attributes:
-        _A: Cost of having an edge which is not connected to a colored vertex.
+    Args:
+        A: Cost of having an edge which is not connected to a colored vertex.
         Should be large (_A = 5) to ensure output is a valid solution.
-        _B: Cost of coloring a particular vertex.
+        B: Cost of coloring a particular vertex.
+
+    Attributes:
+        _A: See argument A above.
+        _B: See argument B above.
     """
 
     def __init__(self, A: int = 5, B: int = 1):
