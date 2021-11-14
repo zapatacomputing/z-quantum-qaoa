@@ -34,10 +34,11 @@ def get_new_layer_params_using_interp(
 
     old_gammas = []
     old_betas = []
+    # Gamma comes before beta of each layer
     for i, param in enumerate(old_params):
-        if i % 2 == 1:
+        if i % 2 == 0:
             old_gammas.append(param)
-        elif i % 2 == 0:
+        else:
             old_betas.append(param)
 
     assert len(old_gammas) == p and len(old_betas) == p
@@ -54,8 +55,8 @@ def get_new_layer_params_using_interp(
             + (p - bef) * _get_param(old_betas, i) / p
         )
 
-        new_params.append(new_beta_i)
         new_params.append(new_gamma_i)
+        new_params.append(new_beta_i)
 
     assert len(new_params) == (p + 1) * 2
     return np.array(new_params)
