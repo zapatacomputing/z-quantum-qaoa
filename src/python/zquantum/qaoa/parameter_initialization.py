@@ -1,7 +1,41 @@
-from typing import List
+from typing import List, Tuple
 
 import numpy as np
 from zquantum.core.interfaces.cost_function import ParameterPreprocessor
+
+
+def _get_param(params_vector: List[float], layer_number):
+    """0 <= layer_number <= p + 1"""
+    if layer_number == 0 or layer_number == len(params_vector) + 1:
+        return 0
+    else:
+        return params_vector[layer_number - 1]
+
+
+def _perform_1_interpolation(
+    old_gammas: List[float], old_betas: List[float], p: int
+) -> Tuple[List[float], List[float]]:
+    """Following eq (B1) in the original paper, p is the length of old params."""
+    assert len(old_gammas) == len(old_betas) == p
+    new_gammas = []
+    new_betas = []
+
+    for i in range(1, p + 2):
+        # See eq (B1) in the original paper.
+        bef = i - 1
+        new_gamma_i = (
+            bef * _get_param(old_gammas, bef) / p
+            + (p - bef) * _get_param(old_gammas, i) / p
+        )
+        new_beta_i = (
+            bef * _get_param(old_betas, bef) / p
+            + (p - bef) * _get_param(old_betas, i) / p
+        )
+
+        new_gammas.append(new_gamma_i)
+        new_betas.append(new_beta_i)
+
+    return (new_gammas, new_betas)
 
 
 def get_new_layer_params_using_interp(
@@ -16,21 +50,14 @@ def get_new_layer_params_using_interp(
         old_params: params that we want to extend
     """
 
-    def _get_param(params_vector: List[float], layer_number):
-        """0 <= layer_number <= p + 1"""
-        if layer_number == 0 or layer_number == len(params_vector) + 1:
-            return 0
-        else:
-            return params_vector[layer_number - 1]
+    if not target_size > len(old_params):
+        raise ValueError("Target size must be larger than old params.")
+    if not len(old_params) % 2 == target_size % 2 == 0:
+        raise ValueError("Size of both old and target parameters must be even.")
 
-    if not target_size - len(old_params) == 2:
-        raise RuntimeError(
-            "QAOA circuits must add 2 new parameters with each new layer."
-        )
-    assert len(old_params) % 2 == 0
     # p is the number of layers of the old circuit
     p = len(old_params) // 2
-    new_params = []
+    number_added_layers = target_size // 2 - p
 
     old_gammas = []
     old_betas = []
@@ -41,24 +68,22 @@ def get_new_layer_params_using_interp(
         else:
             old_betas.append(param)
 
-    assert len(old_gammas) == p and len(old_betas) == p
-
-    for i in range(1, p + 2):
-        # See eq (B1) in the original paper.
-        bef = i - 1
-        new_gamma_i = (
-            bef * _get_param(old_gammas, bef) / p
-            + (p - bef) * _get_param(old_gammas, i) / p
+    for index in range(number_added_layers):
+        new_gammas, new_betas = _perform_1_interpolation(
+            old_gammas, old_betas, p + index
         )
-        new_beta_i = (
-            bef * _get_param(old_betas, bef) / p
-            + (p - bef) * _get_param(old_betas, i) / p
-        )
+        old_gammas = new_gammas
+        old_betas = new_betas
 
-        new_params.append(new_gamma_i)
-        new_params.append(new_beta_i)
+    # Add betas and gammas to new params
+    new_params = []
+    for i in range(target_size):
+        if i % 2 == 0:
+            new_params.append(new_gammas[i // 2])
+        else:
+            new_params.append(new_betas[i // 2])
 
-    assert len(new_params) == (p + 1) * 2
+    assert len(new_params) == target_size
     return np.array(new_params)
 
 
