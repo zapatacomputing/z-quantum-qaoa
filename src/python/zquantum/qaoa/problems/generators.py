@@ -26,13 +26,7 @@ def get_random_hamiltonians_for_problem(
             random value from the list will be picked to generate each instance.
         hamiltonian_generator: a function that will generate a Hamiltonian
             for a given problem based on the input graph.
-        seed: seed for random number generator
-
-    Returns:
-        List of openfermion.QubitOperator object describing the
-        Hamiltonians
-        H = \\sum_{<i,j>} w_{i,j} * scaling * (Z_i Z_j - shifted * I).
-
+        seed: seed for random number generator.
     """
     if seed is not None:
         np.random.seed(seed)
