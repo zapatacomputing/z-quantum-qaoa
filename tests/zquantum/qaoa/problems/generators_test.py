@@ -1,8 +1,12 @@
+import itertools
+
+import pytest
 from openfermion.utils import count_qubits
 from zquantum.qaoa.problems import MaxCut, get_random_hamiltonians_for_problem
+from zquantum.qaoa.problems.generators import get_random_hamiltonian
 
 
-class TestGenerateRandomHamiltonians:
+class TestGenerateRandomHamiltoniansForProblem:
     def test_get_random_maxcut_hamiltonians_num_instances(self):
         # Given
         graph_specs = {"type_graph": "complete"}
@@ -39,3 +43,36 @@ class TestGenerateRandomHamiltonians:
             # Then
             for hamiltonian in hamiltonians:
                 assert count_qubits(hamiltonian) in possible_number_of_qubits
+
+
+class TestGetRandomHamiltonian:
+    @pytest.mark.parametrize("num_qubits", [2, 5, 7])
+    def test_random_hamiltonian_num_qubits(self, num_qubits):
+        # Given
+        if num_qubits >= 5:
+            max_number_of_qubits_per_term = 4
+        else:
+            max_number_of_qubits_per_term = num_qubits
+
+        # When
+        hamiltonian = get_random_hamiltonian(num_qubits, max_number_of_qubits_per_term)
+
+        # Then
+        assert count_qubits(hamiltonian) == num_qubits
+        all_qubits_currently_in_hamiltonian = [
+            term[0] for term in itertools.chain(*hamiltonian.terms.keys())
+        ]
+        for i in range(num_qubits):
+            assert i in all_qubits_currently_in_hamiltonian
+
+    @pytest.mark.parametrize("max_num_terms_per_qubit", [2, 4])
+    def test_random_hamiltonian_max_num_terms_per_qubit(self, max_num_terms_per_qubit):
+        # Given
+        num_qubits = 5
+
+        # When
+        hamiltonian = get_random_hamiltonian(num_qubits, max_num_terms_per_qubit)
+
+        # Then
+        for term in hamiltonian.terms.keys():
+            assert len(term) <= max_num_terms_per_qubit
