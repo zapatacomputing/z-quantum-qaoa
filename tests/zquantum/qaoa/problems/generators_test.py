@@ -2,8 +2,11 @@ import itertools
 
 import pytest
 from openfermion.utils import count_qubits
-from zquantum.qaoa.problems import MaxCut, get_random_hamiltonians_for_problem
-from zquantum.qaoa.problems.generators import get_random_hamiltonian
+from zquantum.qaoa.problems import (
+    MaxCut,
+    get_random_hamiltonian,
+    get_random_hamiltonians_for_problem,
+)
 
 
 class TestGenerateRandomHamiltoniansForProblem:
