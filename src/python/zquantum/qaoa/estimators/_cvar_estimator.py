@@ -114,8 +114,8 @@ def _calculate_expectation_value_for_distribution(
 
     # Map expectation values back to original bitstrings
     expectation_values_dict = {
-        k: expectation_values[i]
-        for i, k in enumerate(distribution.distribution_dict.keys())
+        bitstring: expectation_values[i]
+        for i, bitstring in enumerate(distribution.distribution_dict.keys())
     }
 
     return _sum_expectation_values(
