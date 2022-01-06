@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Sequence, TypeVar, Union, cast
+from typing import Dict, List, Optional, Sequence, TypeVar, cast
 
 import numpy as np
 from openfermion import IsingOperator
