@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, cast, Union, Sequence
 
 import numpy as np
 from openfermion import IsingOperator
@@ -8,7 +8,11 @@ from zquantum.core.interfaces.estimation import (
     EstimateExpectationValues,
     EstimationTask,
 )
-from zquantum.core.measurement import ExpectationValues, Measurements
+from zquantum.core.measurement import (
+    ExpectationValues,
+    Measurements,
+    check_parity_of_vector,
+)
 from zquantum.core.utils import dec2bin
 from zquantum.core.wavefunction import Wavefunction
 
@@ -114,34 +118,45 @@ def _calculate_expectation_value_for_distribution(
 def _calculate_expectation_value_for_wavefunction(
     wavefunction: Wavefunction, operator: IsingOperator, alpha: float
 ) -> float:
-    expectation_values_per_bitstring = {}
-    probability_per_bitstring = {}
-
     n_qubits = wavefunction.amplitudes.shape[0].bit_length() - 1
 
-    for decimal_bitstring in range(2 ** n_qubits):
-        # `decimal_bitstring` is the bitstring converted to decimal.
+    # Calculate expectation values for each bitstring.
+    expectation_values_list = [
+        coefficient
+        * (
+            check_parity_of_vector(
+                np.array(
+                    [
+                        dec2bin(decimal_bitstring, n_qubits)
+                        for decimal_bitstring in range(2 ** n_qubits)
+                    ]
+                ),
+                [cast(int, op[0]) for op in term],
+            )
+            * 2
+            - 1
+        )
+        for term, coefficient in operator.terms.items()
+    ]
+    expectation_values_per_bitstring = np.array(expectation_values_list).sum(axis=0)
+    expectation_values_per_bitstring_dict: Dict[int, float] = {
+        i: v for i, v in enumerate(expectation_values_per_bitstring)
+    }
 
-        # Convert decimal bitstring into bitstring
-        bitstring = "".join([str(int) for int in dec2bin(decimal_bitstring, n_qubits)])
-
-        # Calculate expectation values for each bitstring.
-        expected_value = _calculate_expectation_value_of_bitstring(bitstring, operator)
-        expectation_values_per_bitstring[bitstring] = expected_value
-
-        # Compute the probability p(x) for each n-bitstring x from the wavefunction,
-        # p(x) = |amplitude of x| ^ 2.
-        probability = np.abs(wavefunction.amplitudes[decimal_bitstring]) ** 2
-        probability_per_bitstring[bitstring] = float(probability)
+    # Compute the probability p(x) for each n-bitstring x from the wavefunction,
+    # p(x) = |amplitude of x| ^ 2.
+    probability_per_bitstring = (
+        np.abs(wavefunction.amplitudes) ** 2
+    )  # they're all floats
 
     return _sum_expectation_values(
-        expectation_values_per_bitstring, probability_per_bitstring, alpha
+        expectation_values_per_bitstring_dict, probability_per_bitstring, alpha
     )
 
 
 def _sum_expectation_values(
-    expectation_values_per_bitstring: Dict[str, float],
-    probability_per_bitstring: Dict[str, float],
+    expectation_values_per_bitstring: Union[Dict[int, float], Dict[str, float]],
+    probability_per_bitstring: Union[Dict[int, float], Dict[str, float]],
     alpha: float,
 ) -> float:
     """Compute cumulative sum of expectation values until probability exceeds alpha.
@@ -182,4 +197,4 @@ def _calculate_expectation_value_of_bitstring(
     expected_value = Measurements([bitstring]).get_expectation_values(
         operator, use_bessel_correction=False
     )
-    return np.sum(expected_value.values)
+    return expected_value.values.sum()
