@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, cast, Union, Sequence
+from typing import Dict, List, Optional, cast, Union, Sequence, TypeVar
 
 import numpy as np
 from openfermion import IsingOperator
@@ -15,6 +15,9 @@ from zquantum.core.measurement import (
 )
 from zquantum.core.utils import dec2bin
 from zquantum.core.wavefunction import Wavefunction
+
+
+Bitstring = TypeVar("Bitstring", str, Sequence[int], int)
 
 
 class CvarEstimator(EstimateExpectationValues):
@@ -155,8 +158,8 @@ def _calculate_expectation_value_for_wavefunction(
 
 
 def _sum_expectation_values(
-    expectation_values_per_bitstring: Union[Dict[int, float], Dict[str, float]],
-    probability_per_bitstring: Union[Dict[int, float], Dict[str, float]],
+    expectation_values_per_bitstring: Dict[Bitstring, float],
+    probability_per_bitstring: Dict[Bitstring, float],
     alpha: float,
 ) -> float:
     """Compute cumulative sum of expectation values until probability exceeds alpha.
