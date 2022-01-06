@@ -107,14 +107,29 @@ class CvarEstimator(EstimateExpectationValues):
 def _calculate_expectation_value_for_distribution(
     distribution: BitstringDistribution, operator: IsingOperator, alpha: float
 ) -> float:
+    n_qubits = distribution.get_qubits_number()
+
     # Calculates expectation value per bitstring
-    expectation_values_per_bitstring = {}
-    for bitstring in distribution.distribution_dict:
-        expected_value = _calculate_expectation_value_of_bitstring(bitstring, operator)
-        expectation_values_per_bitstring[bitstring] = expected_value
+    expectation_values_list = [
+        coefficient
+        * (
+            check_parity_of_vector(
+                np.array([*distribution.distribution_dict.keys()]),
+                [cast(int, op[0]) for op in term],
+            )
+            * 2
+            - 1
+        )
+        for term, coefficient in operator.terms.items()
+    ]
+    expectation_values_per_bitstring = np.array(expectation_values_list).sum(axis=0)
+    expectation_values_per_bitstring_dict: Dict[tuple, float] = {
+        tuple(dec2bin(i, n_qubits)): v
+        for i, v in enumerate(expectation_values_per_bitstring)
+    }
 
     return _sum_expectation_values(
-        expectation_values_per_bitstring, distribution.distribution_dict, alpha
+        expectation_values_per_bitstring_dict, distribution.distribution_dict, alpha
     )
 
 
@@ -148,9 +163,7 @@ def _calculate_expectation_value_for_wavefunction(
 
     # Compute the probability p(x) for each n-bitstring x from the wavefunction,
     # p(x) = |amplitude of x| ^ 2.
-    probability_per_bitstring = (
-        np.abs(wavefunction.amplitudes) ** 2
-    )  # they're all floats
+    probability_per_bitstring = np.abs(wavefunction.amplitudes) ** 2
 
     return _sum_expectation_values(
         expectation_values_per_bitstring_dict, probability_per_bitstring, alpha
@@ -191,13 +204,3 @@ def _sum_expectation_values(
             break
     final_value = cumulative_value / alpha
     return final_value
-
-
-def _calculate_expectation_value_of_bitstring(
-    bitstring: str, operator: IsingOperator
-) -> float:
-    """Calculate expectation value for a bitstring based on an operator."""
-    expected_value = Measurements([bitstring]).get_expectation_values(
-        operator, use_bessel_correction=False
-    )
-    return expected_value.values.sum()
