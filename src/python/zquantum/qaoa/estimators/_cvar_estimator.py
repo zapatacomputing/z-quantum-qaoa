@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, cast, Union, Sequence, TypeVar
+from typing import Dict, List, Optional, Sequence, TypeVar, Union, cast
 
 import numpy as np
 from openfermion import IsingOperator
@@ -8,14 +8,9 @@ from zquantum.core.interfaces.estimation import (
     EstimateExpectationValues,
     EstimationTask,
 )
-from zquantum.core.measurement import (
-    ExpectationValues,
-    Measurements,
-    check_parity_of_vector,
-)
+from zquantum.core.measurement import ExpectationValues, check_parity_of_vector
 from zquantum.core.utils import dec2bin
 from zquantum.core.wavefunction import Wavefunction
-
 
 Bitstring = TypeVar("Bitstring", str, Sequence[int], int)
 
