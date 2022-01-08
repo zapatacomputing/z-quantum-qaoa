@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Sequence, TypeVar, cast
+from typing import Dict, List, Optional, Sequence, TypeVar
 
 import numpy as np
 from openfermion import IsingOperator
@@ -185,14 +185,7 @@ def _calculate_expectation_values(
 
     expectation_values_list = [
         coefficient
-        * (
-            check_parity_of_vector(
-                bitstrings,
-                [cast(int, op[0]) for op in term],
-            )
-            * 2
-            - 1
-        )
+        * (check_parity_of_vector(bitstrings, [op[0] for op in term]) * 2 - 1)
         for term, coefficient in operator.terms.items()
     ]
     return np.array(expectation_values_list).sum(axis=0)
