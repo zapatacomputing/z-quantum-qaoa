@@ -123,16 +123,18 @@ def _calculate_expectation_value_for_wavefunction(
 ) -> float:
     n_qubits = wavefunction.amplitudes.shape[0].bit_length() - 1
 
-    # Calculate expectation values for each bitstring.
-    expectation_values = _calculate_expectation_values(
-        np.array([dec2bin(n, n_qubits) for n in range(2 ** n_qubits)]),
-        operator,
-    )
-    expectation_values_dict = {i: v for i, v in enumerate(expectation_values)}
-
     # Compute the probability p(x) for each n-bitstring x from the wavefunction,
     # p(x) = |amplitude of x| ^ 2.
     probability_per_bitstring = np.abs(wavefunction.amplitudes) ** 2
+
+    # Get the bitstrings with non-zero elements in the wavefunction and calculate
+    # their expectation values
+    integer_bitstrings = (probability_per_bitstring > 1e-5).nonzero()[0]
+    bitstrings_array = np.array([dec2bin(n, n_qubits) for n in integer_bitstrings])
+    expectation_values = _calculate_expectation_values(bitstrings_array, operator)
+    expectation_values_dict = {
+        integer_bitstrings[i]: v for i, v in enumerate(expectation_values)
+    }
 
     return _sum_expectation_values(
         expectation_values_dict, probability_per_bitstring, alpha
