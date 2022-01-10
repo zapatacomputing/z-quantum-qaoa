@@ -13,6 +13,7 @@ from zquantum.core.utils import dec2bin
 from zquantum.core.wavefunction import Wavefunction
 
 Bitstring = TypeVar("Bitstring", str, Sequence[int], int)
+PROBABILITY_CUTOFF = 1e-8
 
 
 class CvarEstimator(EstimateExpectationValues):
@@ -129,7 +130,7 @@ def _calculate_expectation_value_for_wavefunction(
 
     # Get the bitstrings with non-zero elements in the wavefunction and calculate
     # their expectation values
-    integer_bitstrings = (probability_per_bitstring > 1e-5).nonzero()[0]
+    integer_bitstrings = (probability_per_bitstring > PROBABILITY_CUTOFF).nonzero()[0]
     bitstrings_array = np.array([dec2bin(n, n_qubits) for n in integer_bitstrings])
     expectation_values = _calculate_expectation_values(bitstrings_array, operator)
     expectation_values_dict = {
