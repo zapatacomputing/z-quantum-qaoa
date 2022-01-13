@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Sequence, TypeVar
 
 import numpy as np
 from openfermion import IsingOperator
@@ -8,9 +8,12 @@ from zquantum.core.interfaces.estimation import (
     EstimateExpectationValues,
     EstimationTask,
 )
-from zquantum.core.measurement import ExpectationValues, Measurements
+from zquantum.core.measurement import ExpectationValues, check_parity_of_vector
 from zquantum.core.utils import dec2bin
 from zquantum.core.wavefunction import Wavefunction
+
+Bitstring = TypeVar("Bitstring", str, Sequence[int], int)
+PROBABILITY_CUTOFF = 1e-8
 
 
 class CvarEstimator(EstimateExpectationValues):
@@ -101,47 +104,47 @@ def _calculate_expectation_value_for_distribution(
     distribution: BitstringDistribution, operator: IsingOperator, alpha: float
 ) -> float:
     # Calculates expectation value per bitstring
-    expectation_values_per_bitstring = {}
-    for bitstring in distribution.distribution_dict:
-        expected_value = _calculate_expectation_value_of_bitstring(bitstring, operator)
-        expectation_values_per_bitstring[bitstring] = expected_value
+    expectation_values = _calculate_expectation_values(
+        np.array([*distribution.distribution_dict.keys()]), operator
+    )
+
+    # Map expectation values back to original bitstrings
+    expectation_values_dict = {
+        bitstring: expectation_values[i]
+        for i, bitstring in enumerate(distribution.distribution_dict.keys())
+    }
 
     return _sum_expectation_values(
-        expectation_values_per_bitstring, distribution.distribution_dict, alpha
+        expectation_values_dict, distribution.distribution_dict, alpha
     )
 
 
 def _calculate_expectation_value_for_wavefunction(
     wavefunction: Wavefunction, operator: IsingOperator, alpha: float
 ) -> float:
-    expectation_values_per_bitstring = {}
-    probability_per_bitstring = {}
-
     n_qubits = wavefunction.amplitudes.shape[0].bit_length() - 1
 
-    for decimal_bitstring in range(2 ** n_qubits):
-        # `decimal_bitstring` is the bitstring converted to decimal.
+    # Compute the probability p(x) for each n-bitstring x from the wavefunction,
+    # p(x) = |amplitude of x| ^ 2.
+    probability_per_bitstring = np.abs(wavefunction.amplitudes) ** 2
 
-        # Convert decimal bitstring into bitstring
-        bitstring = "".join([str(int) for int in dec2bin(decimal_bitstring, n_qubits)])
-
-        # Calculate expectation values for each bitstring.
-        expected_value = _calculate_expectation_value_of_bitstring(bitstring, operator)
-        expectation_values_per_bitstring[bitstring] = expected_value
-
-        # Compute the probability p(x) for each n-bitstring x from the wavefunction,
-        # p(x) = |amplitude of x| ^ 2.
-        probability = np.abs(wavefunction.amplitudes[decimal_bitstring]) ** 2
-        probability_per_bitstring[bitstring] = float(probability)
+    # Get the bitstrings with non-zero elements in the wavefunction and calculate
+    # their expectation values
+    integer_bitstrings = (probability_per_bitstring > PROBABILITY_CUTOFF).nonzero()[0]
+    bitstrings_array = np.array([dec2bin(n, n_qubits) for n in integer_bitstrings])
+    expectation_values = _calculate_expectation_values(bitstrings_array, operator)
+    expectation_values_dict = {
+        integer_bitstrings[i]: v for i, v in enumerate(expectation_values)
+    }
 
     return _sum_expectation_values(
-        expectation_values_per_bitstring, probability_per_bitstring, alpha
+        expectation_values_dict, probability_per_bitstring, alpha
     )
 
 
 def _sum_expectation_values(
-    expectation_values_per_bitstring: Dict[str, float],
-    probability_per_bitstring: Dict[str, float],
+    expectation_values_per_bitstring: Dict[Bitstring, float],
+    probability_per_bitstring: Dict[Bitstring, float],
     alpha: float,
 ) -> float:
     """Compute cumulative sum of expectation values until probability exceeds alpha.
@@ -175,11 +178,17 @@ def _sum_expectation_values(
     return final_value
 
 
-def _calculate_expectation_value_of_bitstring(
-    bitstring: str, operator: IsingOperator
-) -> float:
-    """Calculate expectation value for a bitstring based on an operator."""
-    expected_value = Measurements([bitstring]).get_expectation_values(
-        operator, use_bessel_correction=False
-    )
-    return np.sum(expected_value.values)
+def _calculate_expectation_values(
+    bitstrings: np.ndarray, operator: IsingOperator
+) -> np.ndarray:
+    """Calculates expectation values for each bitstring in the given array"""
+
+    if not isinstance(operator, IsingOperator):
+        raise TypeError("Input operator not openfermion.IsingOperator")
+
+    expectation_values_list = [
+        coefficient
+        * (check_parity_of_vector(bitstrings, [op[0] for op in term]) * 2 - 1)
+        for term, coefficient in operator.terms.items()
+    ]
+    return np.array(expectation_values_list).sum(axis=0)
