@@ -13,10 +13,10 @@ def _get_param(params_vector: List[float], layer_number):
 
 
 def _perform_1_interpolation(
-    old_gammas: List[float], old_betas: List[float], p: int
+    gammas: List[float], betas: List[float], p: int
 ) -> Tuple[List[float], List[float]]:
-    """Following eq (B1) in the original paper, p is the length of old params."""
-    assert len(old_gammas) == len(old_betas) == p
+    """Following eq (B1) in the original paper, p is the length of input params."""
+    assert len(gammas) == len(betas) == p
     new_gammas = []
     new_betas = []
 
@@ -24,12 +24,10 @@ def _perform_1_interpolation(
         # See eq (B1) in the original paper.
         bef = i - 1
         new_gamma_i = (
-            bef * _get_param(old_gammas, bef) / p
-            + (p - bef) * _get_param(old_gammas, i) / p
+            bef * _get_param(gammas, bef) / p + (p - bef) * _get_param(gammas, i) / p
         )
         new_beta_i = (
-            bef * _get_param(old_betas, bef) / p
-            + (p - bef) * _get_param(old_betas, i) / p
+            bef * _get_param(betas, bef) / p + (p - bef) * _get_param(betas, i) / p
         )
 
         new_gammas.append(new_gamma_i)
