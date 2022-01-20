@@ -12,7 +12,7 @@ def _get_param(params_vector: List[float], layer_number):
         return params_vector[layer_number - 1]
 
 
-def _perform_1_interpolation(
+def _perform_one_interpolation(
     gammas: List[float], betas: List[float], p: int
 ) -> Tuple[List[float], List[float]]:
     """Following eq (B1) in the original paper, p is the length of input params."""
@@ -67,7 +67,7 @@ def get_new_layer_params_using_interp(
             old_betas.append(param)
 
     for index in range(number_added_layers):
-        new_gammas, new_betas = _perform_1_interpolation(
+        new_gammas, new_betas = _perform_one_interpolation(
             old_gammas, old_betas, p + index
         )
         old_gammas = new_gammas
