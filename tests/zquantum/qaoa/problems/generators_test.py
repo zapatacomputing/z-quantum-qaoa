@@ -4,8 +4,8 @@ import pytest
 from openfermion.utils import count_qubits
 from zquantum.qaoa.problems import (
     MaxCut,
-    get_random_hamiltonian,
     get_random_hamiltonians_for_problem,
+    get_random_ising_hamiltonian,
 )
 
 
@@ -58,7 +58,9 @@ class TestGetRandomHamiltonian:
             max_number_of_qubits_per_term = num_qubits
 
         # When
-        hamiltonian = get_random_hamiltonian(num_qubits, max_number_of_qubits_per_term)
+        hamiltonian = get_random_ising_hamiltonian(
+            num_qubits, max_number_of_qubits_per_term
+        )
 
         # Then
         assert count_qubits(hamiltonian) == num_qubits
@@ -74,7 +76,7 @@ class TestGetRandomHamiltonian:
         num_qubits = 5
 
         # When
-        hamiltonian = get_random_hamiltonian(num_qubits, max_num_terms_per_qubit)
+        hamiltonian = get_random_ising_hamiltonian(num_qubits, max_num_terms_per_qubit)
 
         # Then
         for term in hamiltonian.terms.keys():

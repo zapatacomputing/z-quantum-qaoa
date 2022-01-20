@@ -43,7 +43,7 @@ def get_random_hamiltonians_for_problem(
     return hamiltonians
 
 
-def get_random_hamiltonian(
+def get_random_ising_hamiltonian(
     number_of_qubits: int, max_number_of_qubits_per_term: int
 ) -> QubitOperator:
     """Generates a random Hamiltonian for a given number of qubits with weights
