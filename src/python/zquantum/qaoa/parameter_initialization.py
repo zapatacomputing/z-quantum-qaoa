@@ -22,13 +22,12 @@ def _perform_one_interpolation(
 
     for i in range(1, p + 2):
         # See eq (B1) in the original paper.
-        bef = i - 1
-        new_gamma_i = (
-            bef * _get_param(gammas, bef) / p + (p - bef) * _get_param(gammas, i) / p
-        )
-        new_beta_i = (
-            bef * _get_param(betas, bef) / p + (p - bef) * _get_param(betas, i) / p
-        )
+        new_gamma_i = (i - 1) * _get_param(gammas, i - 1) / p + (
+            p - (i - 1)
+        ) * _get_param(gammas, i) / p
+        new_beta_i = (i - 1) * _get_param(betas, i - 1) / p + (
+            p - (i - 1)
+        ) * _get_param(betas, i) / p
 
         new_gammas.append(new_gamma_i)
         new_betas.append(new_beta_i)
