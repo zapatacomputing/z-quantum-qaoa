@@ -84,43 +84,64 @@ def get_new_layer_params_using_interp(
     return np.array(new_params)
 
 
-def get_new_layer_params_using_fourier(
-    number_of_new_params: int, old_params: np.ndarray
-) -> np.ndarray:
-    return old_params
-
-
 class Fourier(ParameterPreprocessor):
     """The FOURIER method for initializing QAOA parameters, from
-    https://arxiv.org/abs/1812.01041. See Appendix B.
-    To be used with LayerwiseAnsatzOptimizerWithFactories. Example use case:
+    https://arxiv.org/abs/1812.01041.
+
+    How it works: Fourier uses parameters `u` and `v` to create `gamma` and `beta`, which are used
+    to evaluate QAOA. The optimizer is given `u` and `v` instead of `gamma` and `beta`. Instead of being
+    length `(2 * n_layers)`, `u` and `v` are of length `(2 * q)` where `q` is a hyperparameter. `q` is fixed
+    at the same number when n_layers increases. Once `u` and `v` have been sufficiently optimized for the current layer,
+    they are used to generate the parameters of the next layer, which should provide a good initial parameters for larger
+    layers of QAOA.
+
+    For more detail on how Fourier works, see Appendix B of the original paper.
+
+    The `__call__` method takes `u` and `v` parameters as input and outputs `gamma` and `beta`. The size of the
+    output `gamma` and `beta` are dependent on self.n_layers.
+    The `get_new_layer_params` method increments the `n_layers` property of the `Fourier` object such that the output
+    params of `__call__` matches `target_size`.
+
+    To be used with LayerwiseAnsatzOptimizer. For Fourier to work properly, please do the following:
+    - Your instance of Fourier should be a parameter processor of cost function
+    - The get_new_layer_params method should be the `parameters_initializer` argument
+        of LayerwiseAnsatzOptimizer
+    - The Fourier instance used as the parameter processor and the parameter initializer should be the
+        same, or else the number of layers won't increment properly.
+    - The initial parameters you give to an optimizer will not be of size (2 * n_layers), but of
+        length 2q. q is set depending on the size of initial parameters.
+
+    If that was confusing, here's an example use case:
         cost_hamiltonian = ...
-        n_layers = ...
-        ansatz = QAOAFarhiAnsatz(n_layers, cost_hamiltonian)
-        estimation_tasks_factory_generator = partial(
-            substitution_based_estimation_tasks_factory,
-            target_operator=cost_hamiltonian,
-        )
-        cost_function_factory = partial(
-            create_cost_function,
-            backend=...,
-            estimation_method=...,
-        )
+        initial_n_layers = ...
+        ansatz = QAOAFarhiAnsatz(initial_n_layers, cost_hamiltonian)
+        my_fourier_object = Fourier(n_layers=initial_n_layers)
+
+        def cost_function_factory(ansatz: Ansatz):
+            estimation_tasks_factory = substitution_based_estimation_tasks_factory(
+                cost_hamiltonian,
+                ansatz,
+            )
+            function_with_gradient = create_cost_function(
+                backend,
+                estimation_tasks_factory,
+                calculate_exact_expectation_values,
+                parameter_preprocessors=[my_fourier_object]
+            )
+
         # The number of initial parameters you use dictate the length of Fourier
         # params u and v
-        initial_params = np.array([0.42, 2.2])
+        initial_params = np.array([0.42, 2.2]) # Here, q = 1 because the length of initial_params is 2
         inner_optimizer = ScipyOptimizer(method="L-BFGS-B")
-        fourier_optimizer = LayerwiseAnsatzOptimizerWithFactories(
+        fourier_optimizer = LayerwiseAnsatzOptimizer(
             ansatz,
             inner_optimizer,
-            estimation_tasks_factory_generator,
-            cost_function_factory,
-            min_layer=...,
+            min_layer=initial_n_layers,
             max_layer=...,
-            parameters_initializer=get_new_layer_params_using_fourier,
+            parameters_initializer=my_fourier_object.get_new_layer_params
         )
         opt_result = fourier_optimizer.minimize(
-            initial_params, parameter_initializer=Fourier(n_layers=...)
+            cost_function_factory, initial_params,
         )
         opt_params = opt_result.opt_params
     """
@@ -130,29 +151,43 @@ class Fourier(ParameterPreprocessor):
 
     def __call__(self, parameters: np.ndarray) -> np.ndarray:
         assert self.n_layers > 0
-        assert len(parameters) % 2 == 0
+        if not len(parameters.shape) == 1:
+            raise ValueError("Parameters must be a 1d array.")
+        if not parameters.size % 2 == 0:
+            raise ValueError("Size of parameters must be even.")
 
-        # input parameters are 2q u and v parameters.
-        q = len(parameters) // 2
+        # input parameters are u and v parameters of size 2q.
+        q = parameters.size // 2
         gammas_and_betas = []
 
-        # Calculate gamma of each layer given u and
-        # Calculate beta of each layer given v,
+        u = parameters.reshape(-1, 2).T[0]
+        v = parameters.reshape(-1, 2).T[1]
+
+        # Calculate gamma of each layer given `u` and
+        # Calculate beta of each layer given `v`,
         # see eq (8) of original paper.
         for i in range(self.n_layers):
-            gamma = 0
-            beta = 0
-            for n in range(0, q * 2, 2):
-                k = n / 2
-                gamma += parameters[n] * np.sin(
-                    (k - 0.5) * (i - 0.5) * np.pi / self.n_layers
-                )
-                beta += parameters[n + 1] * np.cos(
-                    (k - 0.5) * (i - 0.5) * np.pi / self.n_layers
-                )
+            gamma = u.dot(
+                np.sin(np.pi / self.n_layers * (np.arange(q) + 0.5) * (i + 0.5))
+            )
+            beta = v.dot(
+                np.cos(np.pi / self.n_layers * (np.arange(q) + 0.5) * (i + 0.5))
+            )
             gammas_and_betas.append(gamma)
             gammas_and_betas.append(beta)
-
-        # output parameters are 2p parameters.
+            
+        # output parameters are of size (2 * n_layers).
         assert len(gammas_and_betas) == self.n_layers * 2
         return np.array(gammas_and_betas)
+
+    def get_new_layer_params(self, target_size: int, params: np.ndarray) -> np.ndarray:
+        # The input `params` are actually of length 2q rather than (2 * n_layers).
+        # Returns the same params as input params because q doesn't change.
+        if not len(params) % 2 == target_size % 2 == 0:
+            raise ValueError("Size of both old and target parameters must be even.")
+        current_length_of_gammas_and_betas = self.n_layers * 2
+        if not current_length_of_gammas_and_betas < target_size:
+            raise ValueError("Target size must be larger than old params.")
+        number_of_new_params = target_size - current_length_of_gammas_and_betas
+        self.n_layers += number_of_new_params // 2
+        return params
