@@ -3,6 +3,7 @@ from openfermion import IsingOperator, QubitOperator
 from zquantum.core.circuits import Circuit, H, X
 from zquantum.core.interfaces.estimation import EstimationTask
 from zquantum.core.interfaces.estimator_contract import ESTIMATOR_CONTRACTS
+from zquantum.core.interfaces.mock_objects import MockQuantumBackend
 from zquantum.core.symbolic_simulator import SymbolicSimulator
 from zquantum.qaoa.estimators import CvarEstimator
 
@@ -108,3 +109,11 @@ class TestCvarEstimator:
 
         # Then
         assert expectation_values[0].values == pytest.approx(target_value, abs=2e-1)
+
+    def test_raises_error_if_uses_exact_expectation_values_without_simulator_backend(
+        self, estimation_tasks
+    ):
+        estimator = CvarEstimator(0.2, use_exact_expectation_values=True)
+        backend = MockQuantumBackend()
+        with pytest.raises(TypeError):
+            estimator(backend, estimation_tasks)
