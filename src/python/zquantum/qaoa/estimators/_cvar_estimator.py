@@ -113,7 +113,7 @@ def _calculate_expectation_value_for_distribution(
     )
 
     # Map expectation values back to original bitstrings
-    expectation_values_dict: Dict[Tuple[int, ...], float] = {
+    expectation_values_dict = {
         bitstring: expectation_values[i]
         for i, bitstring in enumerate(distribution.distribution_dict.keys())
     }
