@@ -3,7 +3,7 @@ from typing import Dict, List, Optional, Sequence, TypeVar
 import numpy as np
 from openfermion import IsingOperator
 from zquantum.core.bitstring_distribution import BitstringDistribution
-from zquantum.core.interfaces.backend import QuantumBackend
+from zquantum.core.interfaces.backend import QuantumBackend, QuantumSimulator
 from zquantum.core.interfaces.estimation import (
     EstimateExpectationValues,
     EstimationTask,
@@ -82,6 +82,10 @@ class CvarEstimator(EstimateExpectationValues):
             ]
 
         else:
+            if not isinstance(backend, QuantumSimulator):
+                raise TypeError(
+                    "Backend must be a simulator to use exact expectation values."
+                )
             wavefunctions_list = [
                 backend.get_wavefunction(circuit) for circuit in circuits
             ]
