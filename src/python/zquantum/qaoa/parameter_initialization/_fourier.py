@@ -63,7 +63,7 @@ class FourierOptimizer(NestedOptimizer):
                 See append_new_random_params for example of an implementation.
         """
 
-        assert 0 <= min_layer <= max_layer
+        assert 0 < min_layer < max_layer
         assert n_layers_per_iteration > 0
         assert q > 0
         assert isinstance(q, int) or q == np.inf
@@ -85,21 +85,23 @@ class FourierOptimizer(NestedOptimizer):
     ) -> OptimizeResult:
         """Main loop across layers.
         NOTE:
-            - The optimal parameters should minimize the value of the cost function for the ansatz with
-                number of layers specified by `max_layer`.
+            - The returned optimal parameters are u and v. If you wish to convert them
+                to gamma and beta, use the `convert_u_v_to_gamma_beta` function.
+            - The returned optimal parameters, when converted to gamma and beta, should
+                minimize the value of the cost function for the ansatz with number of
+                layers specified by `max_layer`.
             - Returned nit is total number of iterations from each call the inner optimizer combined.
 
         Args:
             cost_function_factory: a function that returns a cost function that depends on the provided ansatz.
-            inital_params: initial parameters u and v. Should be of size min_layer if q = infinity else q
+            inital_params: initial parameters u and v. Should be a 1d array of size
+                `q * 2`. Or, if q = infinity, it should be of size `min_layer`.
             keep_history: flag indicating whether history of cost function
                 evaluations should be recorded.
 
         """
-        # TODO: we are returning the optimal parameters as u/v or gamma/beta? u/v kinda useless to user
         self._validate_initial_params(initial_params)
         ansatz = copy.deepcopy(self._ansatz)
-        ansatz.number_of_layers = self._min_layer
 
         nit = 0
         nfev = 0
@@ -109,14 +111,12 @@ class FourierOptimizer(NestedOptimizer):
         for n_layers in range(
             self._min_layer, self._max_layer + 1, self._n_layers_per_iteration
         ):
-            print("Optimizing layer", n_layers)
             # Setup for new layer
-            ansatz.number_of_layers += self._n_layers_per_iteration
-            assert ansatz.number_of_layers == n_layers
+            ansatz.number_of_layers = n_layers
             gamma_beta_cost_function = cost_function_factory(ansatz)
 
             def u_v_cost_function(parameters: np.ndarray) -> float:
-                gamma_beta = _convert_u_v_to_gamma_beta(n_layers, parameters)
+                gamma_beta = convert_u_v_to_gamma_beta(n_layers, parameters)
                 # We're not missing store_artifact argument, it is optional in
                 # `CallableWithArtifacts`.
                 return gamma_beta_cost_function(gamma_beta)  # type: ignore
@@ -125,56 +125,50 @@ class FourierOptimizer(NestedOptimizer):
                 # compatible function signature in assignment.
                 u_v_cost_function = self.recorder(u_v_cost_function)  # type: ignore
 
-            # Setup new initial params
+            # Setup new initial params and start optimization
+            best_value_this_layer = np.inf
             if n_layers == self._min_layer:
-                best_unperturbed_u_v = initial_params
+                opt_unperturbed_u_v = initial_params
             else:
                 # Increment the length of u and v if q = infinity
                 if self._q == np.inf:
-                    best_unperturbed_u_v = self._get_u_v_for_next_layer(
-                        best_unperturbed_u_v
+                    opt_unperturbed_u_v = self._get_u_v_for_next_layer(
+                        opt_unperturbed_u_v
                     )
-                    if best_u_v_so_far:
-                        best_u_v_so_far = self._get_u_v_for_next_layer(best_u_v_so_far)
+                    best_u_v_so_far = self._get_u_v_for_next_layer(best_u_v_so_far)
 
-                # Perturb parameters when increment a layer as demonstrated in figure 10
+                # Perturb u and v from the best u and v so far when incrementing a
+                # layer, as demonstrated in figure 10
                 if self._R > 0:
-
-                    best_value_this_layer = np.inf
-
                     all_r_plus_1_perturbed_params = [
                         _perturb_params_randomly(best_u_v_so_far)
                         for _ in range(self._R)
                     ]
+                    all_r_plus_1_perturbed_params.append(best_u_v_so_far)
 
-                    # If there are best u_v from perturbations in a previous round,
-                    # optimize it. as indicated in the caption of figure 10
-                    # best_u_v_from_perturbations does not exist in the case that this
-                    # is the 2nd n_layer because there wouldn't be best perturbed params
-                    # from the previous layer.
-                    if best_u_v_so_far:
-                        all_r_plus_1_perturbed_params.append(best_u_v_so_far)
-
-                    for perturbed_params in best_u_v_so_far:
+                    # Optimize perturbed u and v. There are `self._R + 1` number of
+                    # perturbed parameters to optimize separtely, as indicated in figure
+                    # 10.
+                    for perturbed_params in all_r_plus_1_perturbed_params:
                         local_results = self.inner_optimizer.minimize(
                             u_v_cost_function, perturbed_params, keep_history=False
                         )
                         nfev += local_results.nfev
                         nit += local_results.nit
                         if local_results.opt_value < best_value_this_layer:
-                            # Best u_v from perturbations is passed onto the next layer.
-                            # along with best unperturbed u_v, as indicated in the
-                            # caption of figure 10.
                             best_value_this_layer = local_results.opt_value
                             best_u_v_so_far = local_results.opt_params
 
-            # Optimize
+            # Optimize unperturbed u and v
             layer_results = self.inner_optimizer.minimize(
-                u_v_cost_function, best_unperturbed_u_v, keep_history=False
+                u_v_cost_function, opt_unperturbed_u_v, keep_history=False
             )
-            best_unperturbed_u_v = layer_results.opt_params
-            if self._R > 0 and local_results.opt_value < best_value_this_layer:
-                best_value_this_layer = local_results.opt_value
+
+            # Best u_v so far is passed onto the next layer, along with optimized
+            # unperturbed u_v, as indicated in the caption of figure 10.
+            opt_unperturbed_u_v = layer_results.opt_params
+            if layer_results.opt_value < best_value_this_layer:
+                best_value_this_layer = layer_results.opt_value
                 best_u_v_so_far = layer_results.opt_params
 
             nfev += layer_results.nfev
@@ -197,27 +191,28 @@ class FourierOptimizer(NestedOptimizer):
     def _validate_initial_params(self, initial_params: np.ndarray):
         is_valid = len(initial_params.shape) == 1
         if self._q == np.inf:
-            is_valid = is_valid and initial_params.size == self._min_layer
+            is_valid = is_valid and initial_params.size == self._min_layer * 2
         else:
-            is_valid = is_valid and initial_params.size == self._q
+            is_valid = is_valid and initial_params.size == self._q * 2
         if not is_valid:
             raise ValueError(
-                "Initial params should be a 1d array of size min_layer if q = infinity else q"
+                "Initial params should be a 1d array of size of q * 2. Or if q = infinity, it should be of size min_layer."
             )
 
     def _get_u_v_for_next_layer(self, u_v: np.ndarray) -> np.ndarray:
-        """Equation B3
-        For when q = infinity
+        """When q = infinity, u_v is extended at the increment of each layer such that
+        the length of u and v is equal to length of gamma and beta. See equation B3
+        of the original paper.
 
         """
         return np.append(u_v, np.zeros(2 * self._n_layers_per_iteration))
 
 
-def _convert_u_v_to_gamma_beta(n_layers, u_v: np.ndarray) -> np.ndarray:
-    """Equation B2
+def convert_u_v_to_gamma_beta(n_layers, u_v: np.ndarray) -> np.ndarray:
+    """See equation B2 of the original paper
     Args:
         n layers is for size of output gamma/beta params.
-        u_v: parameters u and v in a 1d array with `u` before `v`
+        u_v: parameters u and v in a 1d array with `u` ordered before `v`
     Returns:
         parameters gamma and beta in a 1d array of size `2 * n_layers`
     """
@@ -249,4 +244,5 @@ def _convert_u_v_to_gamma_beta(n_layers, u_v: np.ndarray) -> np.ndarray:
 
 def _perturb_params_randomly(u_v: np.ndarray, alpha: float = 0.6) -> np.ndarray:
     """Performs 1 random perturbation. Equation B5"""
-    return u_v + np.random.normal(0, u_v ** 2)
+    stdev = np.sqrt(np.abs(u_v))  # u_v is variance
+    return u_v + alpha * np.random.normal(0, stdev)
