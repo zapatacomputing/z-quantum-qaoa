@@ -46,8 +46,8 @@ class FourierOptimizer(NestedOptimizer):
         inner_optimizer: Optimizer,
         min_layer: int,
         max_layer: int,
-        q: Union[int, np.inf] = np.inf,
-        r: int = 10,
+        q: Union[int, float] = np.inf,
+        R: int = 10,
         n_layers_per_iteration: int = 1,
         recorder: RecorderFactory = _recorder,
     ) -> None:
@@ -66,7 +66,8 @@ class FourierOptimizer(NestedOptimizer):
         assert 0 <= min_layer <= max_layer
         assert n_layers_per_iteration > 0
         assert q > 0
-        assert r >= 0
+        assert isinstance(q, int) or q == np.inf
+        assert R >= 0
         self._ansatz = ansatz
         self._inner_optimizer = inner_optimizer
         self._min_layer = min_layer
@@ -74,7 +75,7 @@ class FourierOptimizer(NestedOptimizer):
         self._n_layers_per_iteration = n_layers_per_iteration
         self._recorder = recorder
         self._q = q
-        self._r = r
+        self._R = R
 
     def _minimize(
         self,
@@ -86,6 +87,7 @@ class FourierOptimizer(NestedOptimizer):
         NOTE:
             - The optimal parameters should minimize the value of the cost function for the ansatz with
                 number of layers specified by `max_layer`.
+            - Returned nit is total number of iterations from each call the inner optimizer combined.
 
         Args:
             cost_function_factory: a function that returns a cost function that depends on the provided ansatz.
@@ -119,26 +121,61 @@ class FourierOptimizer(NestedOptimizer):
                 # `CallableWithArtifacts`.
                 return gamma_beta_cost_function(gamma_beta)  # type: ignore
 
-            # Setup new initial params
-            if n_layers == self._min_layer:
-                initial_u_v_this_iteration = initial_params
-            else:
-                if self._q == np.inf:
-                    initial_u_v_this_iteration = self._get_u_v_for_next_layer(
-                        optimal_u_v
-                    )
-                else:
-                    initial_u_v_this_iteration = optimal_u_v
-
             if keep_history:
                 # compatible function signature in assignment.
                 u_v_cost_function = self.recorder(u_v_cost_function)  # type: ignore
 
+            # Setup new initial params
+            if n_layers == self._min_layer:
+                best_unperturbed_u_v = initial_params
+            else:
+                # Increment the length of u and v if q = infinity
+                if self._q == np.inf:
+                    best_unperturbed_u_v = self._get_u_v_for_next_layer(
+                        best_unperturbed_u_v
+                    )
+                    if best_u_v_so_far:
+                        best_u_v_so_far = self._get_u_v_for_next_layer(best_u_v_so_far)
+
+                # Perturb parameters when increment a layer as demonstrated in figure 10
+                if self._R > 0:
+
+                    best_value_this_layer = np.inf
+
+                    all_r_plus_1_perturbed_params = [
+                        _perturb_params_randomly(best_u_v_so_far)
+                        for _ in range(self._R)
+                    ]
+
+                    # If there are best u_v from perturbations in a previous round,
+                    # optimize it. as indicated in the caption of figure 10
+                    # best_u_v_from_perturbations does not exist in the case that this
+                    # is the 2nd n_layer because there wouldn't be best perturbed params
+                    # from the previous layer.
+                    if best_u_v_so_far:
+                        all_r_plus_1_perturbed_params.append(best_u_v_so_far)
+
+                    for perturbed_params in best_u_v_so_far:
+                        local_results = self.inner_optimizer.minimize(
+                            u_v_cost_function, perturbed_params, keep_history=False
+                        )
+                        nfev += local_results.nfev
+                        nit += local_results.nit
+                        if local_results.opt_value < best_value_this_layer:
+                            # Best u_v from perturbations is passed onto the next layer.
+                            # along with best unperturbed u_v, as indicated in the
+                            # caption of figure 10.
+                            best_value_this_layer = local_results.opt_value
+                            best_u_v_so_far = local_results.opt_params
+
             # Optimize
             layer_results = self.inner_optimizer.minimize(
-                u_v_cost_function, initial_u_v_this_iteration, keep_history=False
+                u_v_cost_function, best_unperturbed_u_v, keep_history=False
             )
-            optimal_u_v: np.ndarray = layer_results.opt_params
+            best_unperturbed_u_v = layer_results.opt_params
+            if self._R > 0 and local_results.opt_value < best_value_this_layer:
+                best_value_this_layer = local_results.opt_value
+                best_u_v_so_far = layer_results.opt_params
 
             nfev += layer_results.nfev
             nit += layer_results.nit
@@ -151,8 +188,11 @@ class FourierOptimizer(NestedOptimizer):
         del layer_results["history"]
         del layer_results["nit"]
         del layer_results["nfev"]
+        del layer_results["opt_params"]
 
-        return OptimizeResult(**layer_results, **histories, nfev=nfev, nit=nit)
+        return OptimizeResult(
+            **layer_results, **histories, nfev=nfev, nit=nit, opt_params=best_u_v_so_far
+        )
 
     def _validate_initial_params(self, initial_params: np.ndarray):
         is_valid = len(initial_params.shape) == 1
@@ -205,3 +245,8 @@ def _convert_u_v_to_gamma_beta(n_layers, u_v: np.ndarray) -> np.ndarray:
     # output parameters are of size (2 * n_layers).
     assert len(gammas_and_betas) == n_layers * 2
     return np.array(gammas_and_betas)
+
+
+def _perturb_params_randomly(u_v: np.ndarray, alpha: float = 0.6) -> np.ndarray:
+    """Performs 1 random perturbation. Equation B5"""
+    return u_v + np.random.normal(0, u_v ** 2)
