@@ -16,21 +16,6 @@ from zquantum.core.interfaces.optimizer import (
 from zquantum.core.typing import RecorderFactory
 
 
-def append_random_params(target_size: int, params: np.ndarray) -> np.ndarray:
-    """
-    Adds new random parameters to the `params` so that the size
-    of the output is `target_size`.
-    New parameters are sampled from a uniform distribution over [-pi, pi].
-
-    Args:
-        target_size: target number of parameters
-        params: params that we want to extend
-    """
-    assert len(params) < target_size
-    new_params = np.random.uniform(-np.pi, np.pi, target_size - len(params))
-    return np.concatenate([params, new_params])
-
-
 class FourierOptimizer(NestedOptimizer):
     @property
     def inner_optimizer(self) -> Optimizer:
@@ -46,12 +31,12 @@ class FourierOptimizer(NestedOptimizer):
         inner_optimizer: Optimizer,
         min_layer: int,
         max_layer: int,
+        n_layers_per_iteration: int = 1,
         q: Union[int, float] = np.inf,
         R: int = 10,
-        n_layers_per_iteration: int = 1,
         recorder: RecorderFactory = _recorder,
     ) -> None:
-        """
+        """TODO: description of fourier from the other branch + example use case?
         Args:
             ansatz: ansatz that will be used for creating the cost function.
             inner_optimizer: optimizer used for optimization of parameters
@@ -59,8 +44,12 @@ class FourierOptimizer(NestedOptimizer):
             min_layer: starting number of layers.
             max_layer: maximum number of layers, at which optimization should stop.
             n_layers_per_iteration: number of layers added for each iteration.
-            parameters_initializer: method for initializing parameters of the added layers.
-                See append_new_random_params for example of an implementation.
+            q: length of each of u and v parameters. Can be any positive integer or
+                infinity. If q = infinity, then q = n_layers and grows unbounded.
+            R: the number of random perturbations we add to the parameters so that we
+                can sometimes escape a local optimum. Can be any integer 0 or above. See
+                paragraph 2 of Appendix B2 in the original paper for more details.
+
         """
 
         assert 0 < min_layer < max_layer
@@ -83,17 +72,22 @@ class FourierOptimizer(NestedOptimizer):
         initial_params: np.ndarray,
         keep_history: bool = False,
     ) -> OptimizeResult:
-        """Main loop across layers.
+        """Finds the parameters that minimize the value of the cost function created
+        using `cost_function_factory`. In each iteration, the number of layers of ansatz
+        are increased, and therefore new cost function is created and the size of gammas
+        and betas increases.
         NOTE:
             - The returned optimal parameters are u and v. If you wish to convert them
                 to gamma and beta, use the `convert_u_v_to_gamma_beta` function.
             - The returned optimal parameters, when converted to gamma and beta, should
                 minimize the value of the cost function for the ansatz with number of
                 layers specified by `max_layer`.
-            - Returned nit is total number of iterations from each call the inner optimizer combined.
+            - The returned `nit` is total number of iterations from each call the inner
+                optimizer combined.
 
         Args:
-            cost_function_factory: a function that returns a cost function that depends on the provided ansatz.
+            cost_function_factory: a function that returns a cost function that depends
+                on the provided ansatz.
             inital_params: initial parameters u and v. Should be a 1d array of size
                 `q * 2`. Or, if q = infinity, it should be of size `min_layer`.
             keep_history: flag indicating whether history of cost function
@@ -117,13 +111,10 @@ class FourierOptimizer(NestedOptimizer):
 
             def u_v_cost_function(parameters: np.ndarray) -> float:
                 gamma_beta = convert_u_v_to_gamma_beta(n_layers, parameters)
-                # We're not missing store_artifact argument, it is optional in
-                # `CallableWithArtifacts`.
-                return gamma_beta_cost_function(gamma_beta)  # type: ignore
+                return gamma_beta_cost_function(gamma_beta)
 
             if keep_history:
-                # compatible function signature in assignment.
-                u_v_cost_function = self.recorder(u_v_cost_function)  # type: ignore
+                u_v_cost_function = self.recorder(u_v_cost_function)
 
             # Setup new initial params and start optimization
             best_value_this_layer = np.inf
@@ -175,9 +166,7 @@ class FourierOptimizer(NestedOptimizer):
             nit += layer_results.nit
 
             if keep_history:
-                # If keep_history then u_v_cost_function will be a recorder and not
-                # just a cost function.
-                histories = extend_histories(u_v_cost_function, histories)  # type: ignore
+                histories = extend_histories(u_v_cost_function, histories)
 
         del layer_results["history"]
         del layer_results["nit"]
@@ -189,15 +178,14 @@ class FourierOptimizer(NestedOptimizer):
         )
 
     def _validate_initial_params(self, initial_params: np.ndarray):
-        is_valid = len(initial_params.shape) == 1
-        if self._q == np.inf:
-            is_valid = is_valid and initial_params.size == self._min_layer * 2
-        else:
-            is_valid = is_valid and initial_params.size == self._q * 2
-        if not is_valid:
+        if len(initial_params.shape) != 1:
+            raise ValueError("Initial params should be a 1d array.")
+        elif self._q == np.inf and initial_params.size != self._min_layer * 2:
             raise ValueError(
-                "Initial params should be a 1d array of size of q * 2. Or if q = infinity, it should be of size min_layer."
+                "When q = infinity, initial params should of size min_layer * 2."
             )
+        elif self._q != np.inf and initial_params.size != self._q * 2:
+            raise ValueError("Initial params should of size q * 2.")
 
     def _get_u_v_for_next_layer(self, u_v: np.ndarray) -> np.ndarray:
         """When q = infinity, u_v is extended at the increment of each layer such that
@@ -209,7 +197,9 @@ class FourierOptimizer(NestedOptimizer):
 
 
 def convert_u_v_to_gamma_beta(n_layers, u_v: np.ndarray) -> np.ndarray:
-    """See equation B2 of the original paper
+    """Performs a "Discrete Sine/Cosine Transform" to convert u and v parameters into
+    gamma and beta. See equation B2 of the original paper for how this is done.
+
     Args:
         n layers is for size of output gamma/beta params.
         u_v: parameters u and v in a 1d array with `u` ordered before `v`
@@ -243,6 +233,11 @@ def convert_u_v_to_gamma_beta(n_layers, u_v: np.ndarray) -> np.ndarray:
 
 
 def _perturb_params_randomly(u_v: np.ndarray, alpha: float = 0.6) -> np.ndarray:
-    """Performs 1 random perturbation. Equation B5"""
+    """Performs 1 random perturbation. See Equation B5.
+
+    Alpha is a free parameter corresponding to the strength of the perturbation. A value
+    of 0.6 is what was found to work best by the authors of the original paper and is
+    what we use in this implementation of Fourier.
+    """
     stdev = np.sqrt(np.abs(u_v))  # u_v is variance
     return u_v + alpha * np.random.normal(0, stdev)
