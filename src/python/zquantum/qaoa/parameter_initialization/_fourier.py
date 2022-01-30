@@ -127,39 +127,23 @@ class FourierOptimizer(NestedOptimizer):
             if keep_history:
                 u_v_cost_function = self.recorder(u_v_cost_function)
 
-            # Setup new initial params and start optimization
+            # Set up new initial params and start optimization
             best_value_this_layer = np.inf
             if n_layers == self._min_layer:
                 opt_unperturbed_u_v = initial_params
             else:
-                # Increment the length of u and v if q = infinity
-                if self._q == np.inf:
-                    opt_unperturbed_u_v = self._get_u_v_for_next_layer(
-                        opt_unperturbed_u_v
-                    )
-                    best_u_v_so_far = self._get_u_v_for_next_layer(best_u_v_so_far)
+                opt_unperturbed_u_v = self._get_u_v_for_next_layer(opt_unperturbed_u_v)
+                best_u_v_so_far = self._get_u_v_for_next_layer(best_u_v_so_far)
 
-                # Perturb u and v from the best u and v so far when incrementing a
-                # layer, as demonstrated in figure 10
                 if self._R > 0:
-                    all_r_plus_1_perturbed_params = [
-                        _perturb_params_randomly(best_u_v_so_far)
-                        for _ in range(self._R)
-                    ]
-                    all_r_plus_1_perturbed_params.append(best_u_v_so_far)
-
-                    # Optimize perturbed u and v. There are `self._R + 1` number of
-                    # perturbed parameters to optimize separtely, as indicated in figure
-                    # 10.
-                    for perturbed_params in all_r_plus_1_perturbed_params:
-                        local_results = self.inner_optimizer.minimize(
-                            u_v_cost_function, perturbed_params, keep_history=False
-                        )
-                        nfev += local_results.nfev
-                        nit += local_results.nit
-                        if local_results.opt_value < best_value_this_layer:
-                            best_value_this_layer = local_results.opt_value
-                            best_u_v_so_far = local_results.opt_params
+                    (
+                        best_u_v_so_far,
+                        best_value_this_layer,
+                        perturbing_nfev,
+                        perturbing_nit,
+                    ) = self._perform_perturbations(best_u_v_so_far, u_v_cost_function)
+                    nfev += perturbing_nfev
+                    nit += perturbing_nit
 
             # Optimize unperturbed u and v
             layer_results = self.inner_optimizer.minimize(
@@ -204,7 +188,40 @@ class FourierOptimizer(NestedOptimizer):
         of the original paper.
 
         """
-        return np.append(u_v, np.zeros(2 * self._n_layers_per_iteration))
+        # Increment the length of u and v if q = infinity
+        if self._q == np.inf:
+            return np.append(u_v, np.zeros(2 * self._n_layers_per_iteration))
+        else:
+            return u_v
+
+    def _perform_perturbations(
+        self, best_u_v_from_previous_layer: np.ndarray, cost_function
+    ):
+        """Perturb u and v from the best u and v so far when incrementing a layer, as
+        demonstrated in figure 10 of the original paper.
+        """
+        best_value = np.inf
+        nfev = 0
+        nit = 0
+        all_r_plus_1_perturbed_params = [
+            _perturb_params_randomly(best_u_v_from_previous_layer)
+            for _ in range(self._R)
+        ]
+        all_r_plus_1_perturbed_params.append(best_u_v_from_previous_layer)
+
+        # Optimize perturbed u and v. There are `self._R + 1` number of perturbed
+        # parameters to optimize separtely, as indicated in figure 10.
+        for perturbed_params in all_r_plus_1_perturbed_params:
+            results = self.inner_optimizer.minimize(
+                cost_function, perturbed_params, keep_history=False
+            )
+            nfev += results.nfev
+            nit += results.nit
+            if results.opt_value < best_value:
+                best_value = results.opt_value
+                best_perturbed_u_v = results.opt_params
+
+        return best_perturbed_u_v, best_value, nfev, nit
 
 
 def convert_u_v_to_gamma_beta(n_layers: int, u_v: np.ndarray) -> np.ndarray:
