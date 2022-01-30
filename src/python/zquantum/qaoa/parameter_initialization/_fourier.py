@@ -36,7 +36,18 @@ class FourierOptimizer(NestedOptimizer):
         R: int = 10,
         recorder: RecorderFactory = _recorder,
     ) -> None:
-        """TODO: description of fourier from the other branch + example use case?
+        """The FOURIER method for initializing QAOA parameters, from
+        https://arxiv.org/abs/1812.01041.
+
+        How it works: Fourier uses parameters `u` and `v` to create `gamma` and `beta`
+        through a "Discrete Sine/Cosine Transform". `gamma` and `beta` are used to
+        evaluate the QAOA circuit. The optimizer is given `u` and `v` instead of`gamma`
+        and `beta`. Once `u` and `v` have been sufficiently optimized for the current
+        layer, they are used to generate the parameters of the next layer, which
+        provides a good initial parameters for larger layers of QAOA.
+
+        For more detail on how Fourier works, see Appendix B2 of the original paper.
+
         Args:
             ansatz: ansatz that will be used for creating the cost function.
             inner_optimizer: optimizer used for optimization of parameters
@@ -44,7 +55,7 @@ class FourierOptimizer(NestedOptimizer):
             min_layer: starting number of layers.
             max_layer: maximum number of layers, at which optimization should stop.
             n_layers_per_iteration: number of layers added for each iteration.
-            q: length of each of u and v parameters. Can be any positive integer or
+            q: length of each of the u and v parameters. Can be any positive integer or
                 infinity. If q = infinity, then q = n_layers and grows unbounded.
             R: the number of random perturbations we add to the parameters so that we
                 can sometimes escape a local optimum. Can be any integer 0 or above. See
@@ -177,7 +188,7 @@ class FourierOptimizer(NestedOptimizer):
             **layer_results, **histories, nfev=nfev, nit=nit, opt_params=best_u_v_so_far
         )
 
-    def _validate_initial_params(self, initial_params: np.ndarray):
+    def _validate_initial_params(self, initial_params: np.ndarray) -> None:
         if len(initial_params.shape) != 1:
             raise ValueError("Initial params should be a 1d array.")
         elif self._q == np.inf and initial_params.size != self._min_layer * 2:
@@ -196,9 +207,11 @@ class FourierOptimizer(NestedOptimizer):
         return np.append(u_v, np.zeros(2 * self._n_layers_per_iteration))
 
 
-def convert_u_v_to_gamma_beta(n_layers, u_v: np.ndarray) -> np.ndarray:
+def convert_u_v_to_gamma_beta(n_layers: int, u_v: np.ndarray) -> np.ndarray:
     """Performs a "Discrete Sine/Cosine Transform" to convert u and v parameters into
-    gamma and beta. See equation B2 of the original paper for how this is done.
+    gamma and beta, as part of the FOURIER method for initializing QAOA parameters from
+    https://arxiv.org/abs/1812.01041. See equation B2 of the original paper for how this
+    is done.
 
     Args:
         n layers is for size of output gamma/beta params.
@@ -233,7 +246,7 @@ def convert_u_v_to_gamma_beta(n_layers, u_v: np.ndarray) -> np.ndarray:
 
 
 def _perturb_params_randomly(u_v: np.ndarray, alpha: float = 0.6) -> np.ndarray:
-    """Performs 1 random perturbation. See Equation B5.
+    """Performs one random perturbation. See Equation B5.
 
     Alpha is a free parameter corresponding to the strength of the perturbation. A value
     of 0.6 is what was found to work best by the authors of the original paper and is
