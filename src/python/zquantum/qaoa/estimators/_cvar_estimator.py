@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Sequence, Tuple, TypeVar, Union
+from typing import Dict, List, Optional, Sequence, Tuple, TypeVar
 
 import numpy as np
 from openfermion import IsingOperator
@@ -12,7 +12,7 @@ from zquantum.core.measurement import ExpectationValues, check_parity_of_vector
 from zquantum.core.utils import dec2bin
 from zquantum.core.wavefunction import Wavefunction
 
-Bitstring = Union[str, Sequence[int], Tuple[int, ...]]
+Bitstring = TypeVar("Bitstring", str, Sequence[int], Tuple[int, ...])
 PROBABILITY_CUTOFF = 1e-8
 
 
@@ -115,7 +115,7 @@ def _calculate_expectation_value_for_distribution(
     )
 
     # Map expectation values back to original bitstrings
-    expectation_values_dict: Dict[Bitstring, float] = {
+    expectation_values_dict = {
         bitstring: float(expectation_values[i])
         for i, bitstring in enumerate(distribution.distribution_dict.keys())
     }
@@ -138,7 +138,7 @@ def _calculate_expectation_value_for_wavefunction(
     integer_bitstrings = (probability_per_bitstring > PROBABILITY_CUTOFF).nonzero()[0]
     bitstrings_array = np.array([dec2bin(n, n_qubits) for n in integer_bitstrings])
     expectation_values = _calculate_expectation_values(bitstrings_array, operator)
-    expectation_values_dict: Dict[Bitstring, float] = {
+    expectation_values_dict = {
         integer_bitstrings[i]: v for i, v in enumerate(expectation_values)
     }
     probability_per_bitstring_dict = {
