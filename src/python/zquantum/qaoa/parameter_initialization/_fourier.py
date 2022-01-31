@@ -56,10 +56,12 @@ class FourierOptimizer(NestedOptimizer):
             max_layer: maximum number of layers, at which optimization should stop.
             n_layers_per_iteration: number of layers added for each iteration.
             q: length of each of the u and v parameters. Can be any positive integer or
-                infinity. If q = infinity, then q = n_layers and grows unbounded.
+                infinity. If q = infinity, then q = n_layers and grows unbounded. The
+                authors of the original paper used q = infinity.
             R: the number of random perturbations we add to the parameters so that we
-                can sometimes escape a local optimum. Can be any integer 0 or above. See
-                paragraph 2 of Appendix B2 in the original paper for more details.
+                can sometimes escape a local optimum. Can be any integer 0 or above. The
+                authors of the original paper used R = 10. See paragraph 2 of Appendix
+                B2 for more details.
 
         """
 
@@ -247,9 +249,8 @@ def convert_u_v_to_gamma_beta(n_layers: int, u_v: np.ndarray) -> np.ndarray:
     u = u_v.reshape(-1, 2).T[0]
     v = u_v.reshape(-1, 2).T[1]
 
-    # Calculate gamma of each layer given `u` and
-    # Calculate beta of each layer given `v`,
-    # see eq (B2) of original paper.
+    # Calculate gamma of each layer given `u` and calculate beta of each layer given `v`
+    # See eq (B2) of original paper.
     gammas_and_betas = []
     for i in range(n_layers):
         gamma = u.dot(np.sin(np.pi / n_layers * (np.arange(q) + 0.5) * (i + 0.5)))
