@@ -2,7 +2,7 @@ from typing import Callable, Dict, List
 
 import networkx as nx
 import numpy as np
-from openfermion import QubitOperator
+from openfermion import IsingOperator, QubitOperator
 from zquantum.core.graph import generate_graph_from_specs
 
 
@@ -45,7 +45,7 @@ def get_random_hamiltonians_for_problem(
 
 def get_random_ising_hamiltonian(
     number_of_qubits: int, number_of_terms: int, max_number_of_qubits_per_term: int
-) -> QubitOperator:
+) -> IsingOperator:
     """Generates a random Hamiltonian for a given number of qubits and terms with
     weights between -1 and 1.
 
@@ -58,7 +58,7 @@ def get_random_ising_hamiltonian(
             hamiltonian. Should be <= number_of_qubits.
     """
     # Initiate hamiltonian with a random coefficient
-    hamiltonian = QubitOperator("", np.random.rand() * 2 - 1)
+    hamiltonian = IsingOperator("", np.random.rand() * 2 - 1)
 
     # Add terms with random qubits
     for _ in range(number_of_terms):
@@ -66,7 +66,7 @@ def get_random_ising_hamiltonian(
         qubits = np.random.choice(
             range(number_of_qubits), num_qubits_in_term, replace=False
         )
-        hamiltonian += QubitOperator(
+        hamiltonian += IsingOperator(
             " ".join([f"Z{q}" for q in qubits]), np.random.rand() * 2 - 1
         )
 

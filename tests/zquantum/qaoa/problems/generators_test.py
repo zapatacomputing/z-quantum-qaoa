@@ -1,7 +1,7 @@
-import itertools
-
 import pytest
+from openfermion import QubitOperator
 from openfermion.utils import count_qubits
+from zquantum.core.openfermion import change_operator_type
 from zquantum.qaoa.problems import (
     MaxCut,
     get_random_hamiltonians_for_problem,
@@ -66,7 +66,9 @@ class TestGetRandomHamiltonian:
         # Then
         # Some qubits may not be included due to randomness, thus the generated number
         # of qubits may be less than `num_qubits`
-        assert count_qubits(hamiltonian) <= num_qubits
+        assert (
+            count_qubits(change_operator_type(hamiltonian, QubitOperator)) <= num_qubits
+        )
         generated_num_terms = len(hamiltonian.terms) - 1
 
         # If two of the randomly generated terms have the same qubits that are operated
