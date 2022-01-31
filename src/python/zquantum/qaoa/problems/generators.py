@@ -60,7 +60,7 @@ def get_random_ising_hamiltonian(
         num_qubits_in_term = np.random.randint(1, max_number_of_qubits_per_term)
         qubits = np.random.choice(
             range(number_of_qubits), num_qubits_in_term, replace=False
-        ).tolist()
+        )
         hamiltonian += QubitOperator(" ".join([f"Z{q}" for q in qubits])) * (
             np.random.rand() * 2 - 1
         )
