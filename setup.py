@@ -1,5 +1,8 @@
-import setuptools
+import site
+import sys
 import warnings
+
+import setuptools
 
 try:
     from subtrees.z_quantum_actions.setup_extras import extras
@@ -10,6 +13,8 @@ except ImportError:
 with open("README.md", "r") as f:
     long_description = f.read()
 
+# Workaound for https://github.com/pypa/pip/issues/7953
+site.ENABLE_USER_SITE = "--user" in sys.argv[1:]
 
 setuptools.setup(
     name="z-quantum-qaoa",
@@ -24,6 +29,7 @@ setuptools.setup(
         include=["zquantum.*"], where="src/python"
     ),
     package_dir={"": "src/python"},
+    include_package_data=True,
     classifiers=[
         "Programming Language :: Python :: 3",
         "Operating System :: OS Independent",
@@ -31,4 +37,7 @@ setuptools.setup(
     setup_requires=["setuptools_scm~=6.0"],
     install_requires=["z-quantum-core"],
     extras_require=extras,
+    # Without this, users of this library would get mypy errors. See also:
+    # https://github.com/python/mypy/issues/7508#issuecomment-531965557
+    zip_safe=False,
 )
