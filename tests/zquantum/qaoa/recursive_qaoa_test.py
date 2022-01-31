@@ -14,6 +14,7 @@ from zquantum.core.estimation import (
 )
 from zquantum.core.interfaces.ansatz import Ansatz
 from zquantum.core.interfaces.cost_function import CostFunction
+from zquantum.core.interfaces.estimation import EstimationTask
 from zquantum.core.interfaces.mock_objects import MockOptimizer
 from zquantum.core.interfaces.optimizer import optimization_result
 from zquantum.core.interfaces.optimizer_test import NESTED_OPTIMIZER_CONTRACTS
@@ -49,9 +50,21 @@ class TestRQAOA:
             target_operator: SymbolicOperator,
             ansatz: Ansatz,
         ):
-            estimation_preprocessors = [
-                partial(allocate_shots_uniformly, number_of_shots=1000)
-            ]
+            # NOTE: Partial would be easier to use, but mypy doesn't work well
+            # with partials, so I decided to go with a closure, but leaving
+            # old code as reference.
+
+            # estimation_preprocessors = [
+            #     partial(allocate_shots_uniformly, number_of_shots=1000)
+            # ]
+            def allocate_shots_uniformly_preprocessor(
+                estimation_tasks: List[EstimationTask],
+            ) -> List[EstimationTask]:
+                return allocate_shots_uniformly(
+                    estimation_tasks=estimation_tasks, number_of_shots=1000
+                )
+
+            estimation_preprocessors = [allocate_shots_uniformly_preprocessor]
             estimation_tasks_factory = substitution_based_estimation_tasks_factory(
                 target_operator,
                 ansatz,
