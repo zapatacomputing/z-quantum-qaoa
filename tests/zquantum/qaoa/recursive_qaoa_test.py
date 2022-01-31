@@ -18,7 +18,7 @@ from zquantum.core.interfaces.mock_objects import MockOptimizer
 from zquantum.core.interfaces.optimizer import optimization_result
 from zquantum.core.interfaces.optimizer_test import NESTED_OPTIMIZER_CONTRACTS
 from zquantum.core.symbolic_simulator import SymbolicSimulator
-from zquantum.qaoa.ansatzes import QAOAFarhiAnsatz, XAnsatz
+from zquantum.qaoa.ansatzes import QAOAFarhiAnsatz
 from zquantum.qaoa.recursive_qaoa import (
     RecursiveQAOA,
     _create_default_qubit_map,
