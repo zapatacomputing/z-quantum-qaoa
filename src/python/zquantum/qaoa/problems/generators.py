@@ -57,17 +57,17 @@ def get_random_ising_hamiltonian(
         max_number_qubits_per_term: The maximum number of qubits for each term in the
             hamiltonian. Should be <= number_of_qubits.
     """
+    # Initiate hamiltonian with a random coefficient
+    hamiltonian = QubitOperator("", np.random.rand() * 2 - 1)
 
-    hamiltonian = QubitOperator()
+    # Add terms with random qubits
     for _ in range(number_of_terms):
         num_qubits_in_term = np.random.randint(1, max_number_of_qubits_per_term + 1)
         qubits = np.random.choice(
             range(number_of_qubits), num_qubits_in_term, replace=False
         )
-        hamiltonian += QubitOperator(" ".join([f"Z{q}" for q in qubits])) * (
-            np.random.rand() * 2 - 1
+        hamiltonian += QubitOperator(
+            " ".join([f"Z{q}" for q in qubits]), np.random.rand() * 2 - 1
         )
 
-    # Add constant term
-    hamiltonian += QubitOperator("") * (np.random.rand() * 2 - 1)
     return hamiltonian
