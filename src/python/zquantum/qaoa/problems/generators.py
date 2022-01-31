@@ -44,7 +44,7 @@ def get_random_hamiltonians_for_problem(
 
 
 def get_random_ising_hamiltonian(
-    number_of_qubits: int, max_number_of_qubits_per_term: int
+    number_of_qubits: int, number_of_terms: int, max_number_of_qubits_per_term: int
 ) -> QubitOperator:
     """Generates a random Hamiltonian for a given number of qubits with weights
     between -1 and 1.
@@ -56,8 +56,7 @@ def get_random_ising_hamiltonian(
     """
 
     hamiltonian = QubitOperator()
-    past_qubits = []
-    while True:
+    for _ in range(number_of_terms):
         num_qubits_in_term = np.random.randint(1, max_number_of_qubits_per_term)
         qubits = np.random.choice(
             range(number_of_qubits), num_qubits_in_term, replace=False
@@ -65,11 +64,6 @@ def get_random_ising_hamiltonian(
         hamiltonian += QubitOperator(" ".join([f"Z{q}" for q in qubits])) * (
             np.random.rand() * 2 - 1
         )
-
-        # Exit when all qubits are in the hamiltonian
-        past_qubits.extend(qubits)
-        if all([i in past_qubits for i in range(number_of_qubits)]):
-            break
 
     # Add constant term
     hamiltonian += QubitOperator("") * (np.random.rand() * 2 - 1)
