@@ -1,5 +1,3 @@
-from turtle import back
-
 import pytest
 from openfermion import IsingOperator, QubitOperator
 from zquantum.core.circuits import Circuit, H, X
