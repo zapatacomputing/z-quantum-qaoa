@@ -110,10 +110,15 @@ class TestCvarEstimator:
         # Then
         assert expectation_values[0].values == pytest.approx(target_value, abs=2e-1)
 
-    def test_raises_error_if_uses_exact_expectation_values_without_simulator_backend(
-        self, estimation_tasks
+    def test_raises_exception_if_uses_exact_expectations_without_simulator(
+        self, circuit
     ):
-        estimator = CvarEstimator(0.2, use_exact_expectation_values=True)
+        # Given
         backend = MockQuantumBackend()
+        estimation_tasks = [EstimationTask(QubitOperator("X0"), circuit, 10)]
+        estimator = CvarEstimator(use_exact_expectation_values=True, alpha=0.5)
         with pytest.raises(TypeError):
-            estimator(backend, estimation_tasks)
+            estimator = estimator(
+                backend=backend,
+                estimation_tasks=estimation_tasks,
+            )

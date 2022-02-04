@@ -260,7 +260,7 @@ def _find_term_with_strongest_correlation(
 
             # Calculate expectation value of term
             cost_function_of_term = cost_function_factory(term, ansatz)
-            expval_of_term = cost_function_of_term(optimal_params)
+            expval_of_term = cost_function_of_term(optimal_params)  # type: ignore
 
             if np.abs(expval_of_term) > np.abs(largest_expval):
                 largest_expval = expval_of_term
