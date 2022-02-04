@@ -165,7 +165,7 @@ class TestGetMaxIndependentSetHamiltonian:
 
     @pytest.mark.parametrize("graph", GRAPH_EXAMPLES)
     def test_has_correct_constant_term(self, graph: nx.Graph):
-        expected_constant_term = 0
+        expected_constant_term = 0.0
 
         qubit_operator = MaxIndependentSet().get_hamiltonian(graph)
         for _ in graph.edges:
