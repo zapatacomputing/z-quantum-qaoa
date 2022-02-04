@@ -48,7 +48,7 @@ class TestGenerateRandomHamiltoniansForProblem:
                 assert count_qubits(hamiltonian) in possible_number_of_qubits
 
 
-class TestGetRandomHamiltonian:
+class TestGetRandomIsingHamiltonian:
     @pytest.mark.parametrize("num_terms", [2, 6])
     @pytest.mark.parametrize("num_qubits", [2, 5, 7])
     def test_num_qubits_and_num_terms_is_correct(self, num_qubits, num_terms):
