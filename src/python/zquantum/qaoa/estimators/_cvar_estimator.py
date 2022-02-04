@@ -62,7 +62,30 @@ class CvarEstimator(EstimateExpectationValues):
             *[(e.circuit, e.operator, e.number_of_shots) for e in estimation_tasks]
         )
 
-        if not self.use_exact_expectation_values:
+        if self.use_exact_expectation_values:
+            if not isinstance(backend, QuantumSimulator):
+                raise TypeError(
+                    "In order to use exact expectation values "
+                    "you need to use QuantumSimulator."
+                )
+
+            wavefunctions_list = [
+                backend.get_wavefunction(circuit) for circuit in circuits
+            ]
+
+            return [
+                ExpectationValues(
+                    np.array(
+                        [
+                            _calculate_expectation_value_for_wavefunction(
+                                distribution, operator, self.alpha
+                            )
+                        ]
+                    )
+                )
+                for distribution, operator in zip(wavefunctions_list, operators)
+            ]
+        else:
             distributions_list = [
                 backend.get_bitstring_distribution(circuit, n_samples=n_shots)
                 for circuit, n_shots in zip(circuits, shots_per_circuit)
@@ -80,30 +103,6 @@ class CvarEstimator(EstimateExpectationValues):
                 )
                 for distribution, operator in zip(distributions_list, operators)
             ]
-
-        else:
-            if issubclass(type(backend), QuantumSimulator):
-                wavefunctions_list = [
-                    backend.get_wavefunction(circuit) for circuit in circuits
-                ]
-
-                return [
-                    ExpectationValues(
-                        np.array(
-                            [
-                                _calculate_expectation_value_for_wavefunction(
-                                    distribution, operator, self.alpha
-                                )
-                            ]
-                        )
-                    )
-                    for distribution, operator in zip(wavefunctions_list, operators)
-                ]
-            else:
-                raise TypeError(
-                    "In order to use exact expectation values "
-                    "you need to use QuantumSimulator."
-                )
 
 
 def _calculate_expectation_value_for_distribution(

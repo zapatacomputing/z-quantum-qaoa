@@ -1,4 +1,4 @@
-from functools import partial, wraps
+from functools import wraps
 from typing import Callable, List, Tuple
 
 import numpy as np
@@ -19,7 +19,7 @@ from zquantum.core.interfaces.mock_objects import MockOptimizer
 from zquantum.core.interfaces.optimizer import optimization_result
 from zquantum.core.interfaces.optimizer_test import NESTED_OPTIMIZER_CONTRACTS
 from zquantum.core.symbolic_simulator import SymbolicSimulator
-from zquantum.qaoa.ansatzes import QAOAFarhiAnsatz, XAnsatz
+from zquantum.qaoa.ansatzes import QAOAFarhiAnsatz
 from zquantum.qaoa.recursive_qaoa import (
     RecursiveQAOA,
     _create_default_qubit_map,
@@ -94,7 +94,7 @@ class TestRQAOA:
             keep_history: bool = False,
         ):
             return optimization_result(
-                opt_value=cost_function(opt_params),
+                opt_value=cost_function(opt_params),  # type: ignore
                 opt_params=opt_params,
                 nfev=1,
                 nit=1,
