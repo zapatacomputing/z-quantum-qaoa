@@ -49,7 +49,7 @@ def get_random_ising_hamiltonian(
     """Generates a random Hamiltonian for a given number of qubits and terms with
     weights between -1 and 1.
 
-    NOTE: Due to randomness, we cannot insure that the returned hamiltonian has an
+    NOTE: Due to randomness, we cannot ensure that the returned hamiltonian has an
         operation on every qubit.
 
     Args:
