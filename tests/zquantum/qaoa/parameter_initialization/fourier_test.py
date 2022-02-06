@@ -7,10 +7,7 @@ from zquantum.core.cost_function import (
     create_cost_function,
     substitution_based_estimation_tasks_factory,
 )
-from zquantum.core.estimation import (
-    allocate_shots_uniformly,
-    estimate_expectation_values_by_averaging,
-)
+from zquantum.core.estimation import calculate_exact_expectation_values
 from zquantum.core.interfaces.ansatz import Ansatz
 from zquantum.core.interfaces.cost_function import CostFunction
 from zquantum.core.interfaces.mock_objects import MockOptimizer
@@ -48,18 +45,14 @@ def cost_function_factory(hamiltonian):
     def _cf_factory(
         ansatz: Ansatz,
     ):
-        estimation_preprocessors = [
-            partial(allocate_shots_uniformly, number_of_shots=1000)
-        ]
         estimation_tasks_factory = substitution_based_estimation_tasks_factory(
             hamiltonian,
             ansatz,
-            estimation_preprocessors=estimation_preprocessors,
         )
         return create_cost_function(
             backend=SymbolicSimulator(),
             estimation_tasks_factory=estimation_tasks_factory,
-            estimation_method=estimate_expectation_values_by_averaging,
+            estimation_method=calculate_exact_expectation_values,
             parameter_preprocessors=None,
         )
 

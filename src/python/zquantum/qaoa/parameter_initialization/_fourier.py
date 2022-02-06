@@ -116,6 +116,7 @@ class FourierOptimizer(NestedOptimizer):
         nfev = 0
         histories: Dict[str, List[HistoryEntry]] = defaultdict(list)
         histories["history"] = []
+        best_u_v_so_far: np.ndarray = np.array([])
 
         for n_layers in range(
             self._min_layer, self._max_layer + 1, self._n_layers_per_iteration
