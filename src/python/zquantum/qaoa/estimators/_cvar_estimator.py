@@ -2,6 +2,7 @@ from typing import Dict, List, Optional, Sequence, Tuple, TypeVar
 
 import numpy as np
 from openfermion import IsingOperator
+from typing_extensions import overload
 from zquantum.core.bitstring_distribution import BitstringDistribution
 from zquantum.core.interfaces.backend import QuantumBackend, QuantumSimulator
 from zquantum.core.interfaces.estimation import (
@@ -12,7 +13,6 @@ from zquantum.core.measurement import ExpectationValues, check_parity_of_vector
 from zquantum.core.utils import dec2bin
 from zquantum.core.wavefunction import Wavefunction
 
-Bitstring = TypeVar("Bitstring", str, Sequence[int], Tuple[int, ...])
 PROBABILITY_CUTOFF = 1e-8
 
 
@@ -140,18 +140,33 @@ def _calculate_expectation_value_for_wavefunction(
     expectation_values_dict = {
         integer_bitstrings[i]: v for i, v in enumerate(expectation_values)
     }
-    probability_per_bitstring_dict = {
-        integer_bitstrings[i]: v for i, v in enumerate(probability_per_bitstring)
-    }
 
     return _sum_expectation_values(
-        expectation_values_dict, probability_per_bitstring_dict, alpha
+        expectation_values_dict, probability_per_bitstring, alpha
     )
 
 
+@overload
 def _sum_expectation_values(
-    expectation_values_per_bitstring: Dict[Bitstring, float],
-    probability_per_bitstring: Dict[Bitstring, float],
+    expectation_values_per_bitstring: Dict[Tuple[int, ...], float],
+    probability_per_bitstring: Dict[Tuple[int, ...], float],
+    alpha: float,
+) -> float:
+    """Variant for calculating expectation values from distribution."""
+
+
+@overload
+def _sum_expectation_values(
+    expectation_values_per_bitstring: Dict[int, float],
+    probability_per_bitstring: np.ndarray,
+    alpha: float,
+) -> float:
+    """Variant for calculating expectation values from wavefunction."""
+
+
+def _sum_expectation_values(
+    expectation_values_per_bitstring,
+    probability_per_bitstring,
     alpha: float,
 ) -> float:
     """Compute cumulative sum of expectation values until probability exceeds alpha.
