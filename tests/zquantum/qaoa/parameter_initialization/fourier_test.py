@@ -216,9 +216,9 @@ class TestPerturbations:
 
         np.testing.assert_allclose(average_diff, 0.0, atol=1e-02)
 
-    def test_variance_of_added_perturbations_is_correct(self):
+    @pytest.mark.parametrize("alpha", [0.2, 0.6, 1])
+    def test_variance_of_added_perturbations_is_correct(self, alpha):
         num_repetitions = 1000
-        alpha = 1
         params = np.arange(-2, 8)
 
         sample = [
@@ -229,7 +229,7 @@ class TestPerturbations:
 
         # According to https://arxiv.org/abs/1812.01041 (pg 17 last paragraph), the
         # variance of the perturbations is given by the input params.
-        np.testing.assert_allclose(avg_variance, np.abs(params), rtol=1e-01)
+        np.testing.assert_allclose(avg_variance, np.abs(params), rtol=3e-01 / alpha)
 
     def test_does_not_mutate_parameters(self):
         params = np.ones(4)
