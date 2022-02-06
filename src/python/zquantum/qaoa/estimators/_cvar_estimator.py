@@ -13,7 +13,6 @@ from zquantum.core.measurement import ExpectationValues, check_parity_of_vector
 from zquantum.core.utils import dec2bin
 from zquantum.core.wavefunction import Wavefunction
 
-Bitstring = TypeVar("Bitstring", str, Sequence[int], Tuple[int, ...])
 PROBABILITY_CUTOFF = 1e-8
 
 
@@ -141,12 +140,9 @@ def _calculate_expectation_value_for_wavefunction(
     expectation_values_dict = {
         integer_bitstrings[i]: v for i, v in enumerate(expectation_values)
     }
-    probability_per_bitstring_dict = {
-        integer_bitstrings[i]: v for i, v in enumerate(probability_per_bitstring)
-    }
 
     return _sum_expectation_values(
-        expectation_values_dict, probability_per_bitstring_dict, alpha
+        expectation_values_dict, probability_per_bitstring, alpha
     )
 
 
