@@ -74,10 +74,6 @@ def inner_optimizer():
     ):
         result = MockOptimizer()._minimize(cost_function, initial_params, keep_history)
 
-        # Add `nit` entry because contract requires it.
-        # This is a temporary solution, it should be changed in MockOptimizer.
-        result.nit = 1
-
         # Call the gradient function to make sure it works properly.
         if hasattr(cost_function, "gradient"):
             result.gradient_history = cost_function.gradient(initial_params)
