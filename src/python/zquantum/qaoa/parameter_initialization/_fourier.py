@@ -165,6 +165,7 @@ class FourierOptimizer(NestedOptimizer):
                 histories = extend_histories(cost_function, histories)
 
         del layer_results["history"]
+        del layer_results["gradient_history"]
         del layer_results["nit"]
         del layer_results["nfev"]
         del layer_results["opt_params"]

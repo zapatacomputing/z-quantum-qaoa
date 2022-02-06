@@ -67,15 +67,21 @@ def cost_function_factory(hamiltonian):
 def inner_optimizer():
     inner_optimizer = MockOptimizer()
 
-    # Add `nit` entry because contract requires it.
-    # This is a temporary solution, it should be changed in MockOptimizer.
     def custom_minimize(
         cost_function: CostFunction,
         initial_params: np.ndarray,
         keep_history: bool = False,
     ):
         result = MockOptimizer()._minimize(cost_function, initial_params, keep_history)
+
+        # Add `nit` entry because contract requires it.
+        # This is a temporary solution, it should be changed in MockOptimizer.
         result.nit = 1
+
+        # Call the gradient function to make sure it works properly.
+        if hasattr(cost_function, "gradient"):
+            result.gradient_history = cost_function.gradient(initial_params)
+
         return result
 
     inner_optimizer._minimize = custom_minimize
