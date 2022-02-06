@@ -1,13 +1,16 @@
 import copy
+import warnings
 from collections import defaultdict
 from typing import Callable, Dict, List, Union
 
 import numpy as np
 from scipy.optimize import OptimizeResult
+from zquantum.core.gradients import finite_differences_gradient
 from zquantum.core.history.recorder import HistoryEntry
 from zquantum.core.history.recorder import recorder as _recorder
 from zquantum.core.interfaces.ansatz import Ansatz
 from zquantum.core.interfaces.cost_function import CostFunction
+from zquantum.core.interfaces.functions import FunctionWithGradient
 from zquantum.core.interfaces.optimizer import (
     NestedOptimizer,
     Optimizer,
@@ -108,7 +111,6 @@ class FourierOptimizer(NestedOptimizer):
 
         """
         self._validate_initial_params(initial_params)
-        ansatz = copy.deepcopy(self._ansatz)
 
         nit = 0
         nfev = 0
@@ -119,15 +121,12 @@ class FourierOptimizer(NestedOptimizer):
             self._min_layer, self._max_layer + 1, self._n_layers_per_iteration
         ):
             # Setup for new layer
-            ansatz.number_of_layers = n_layers
-            gamma_beta_cost_function = cost_function_factory(ansatz)
-
-            def u_v_cost_function(parameters: np.ndarray) -> float:
-                gamma_beta = convert_u_v_to_gamma_beta(n_layers, parameters)
-                return gamma_beta_cost_function(gamma_beta)
+            cost_function = self._create_u_v_cost_function(
+                cost_function_factory, n_layers
+            )
 
             if keep_history:
-                u_v_cost_function = self.recorder(u_v_cost_function)
+                cost_function = self.recorder(cost_function)
 
             # Set up new initial params and start optimization
             best_value_this_layer = np.inf
@@ -143,13 +142,13 @@ class FourierOptimizer(NestedOptimizer):
                         best_value_this_layer,
                         perturbing_nfev,
                         perturbing_nit,
-                    ) = self._perform_perturbations(best_u_v_so_far, u_v_cost_function)
+                    ) = self._perform_perturbations(best_u_v_so_far, cost_function)
                     nfev += perturbing_nfev
                     nit += perturbing_nit
 
             # Optimize unperturbed u and v
             layer_results = self.inner_optimizer.minimize(
-                u_v_cost_function, opt_unperturbed_u_v, keep_history=False
+                cost_function, opt_unperturbed_u_v, keep_history=False
             )
 
             # Best u_v so far is passed onto the next layer, along with optimized
@@ -163,7 +162,7 @@ class FourierOptimizer(NestedOptimizer):
             nit += layer_results.nit
 
             if keep_history:
-                histories = extend_histories(u_v_cost_function, histories)
+                histories = extend_histories(cost_function, histories)
 
         del layer_results["history"]
         del layer_results["nit"]
@@ -183,6 +182,38 @@ class FourierOptimizer(NestedOptimizer):
             )
         elif self._q != np.inf and initial_params.size != self._q * 2:
             raise ValueError("Initial params should of size q * 2.")
+
+    def _create_u_v_cost_function(
+        self, cost_function_factory: Callable[[Ansatz], CostFunction], n_layers: int
+    ) -> CostFunction:
+        ansatz = copy.deepcopy(self._ansatz)
+        ansatz.number_of_layers = n_layers
+
+        gamma_beta_cost_function = cost_function_factory(ansatz)
+
+        def u_v_cost_function(parameters: np.ndarray) -> float:
+            gamma_beta = convert_u_v_to_gamma_beta(n_layers, parameters)
+            return gamma_beta_cost_function(gamma_beta)
+
+        # Add gradient to `u_v_cost_function` if `gamma_beta_cost_function` has gradient
+        if hasattr(gamma_beta_cost_function, "gradient"):
+
+            def gradient_function(parameters: np.ndarray) -> np.ndarray:
+                gradient_function = finite_differences_gradient(u_v_cost_function)
+                warnings.warn(
+                    "FourierOptimizer currently supports only finite differences "
+                    "gradient and will overwrite whatever gradient method you provide. "
+                    "If you wish to use it with other types of gradients, please "
+                    "contact Orquestra support. If you provided a finite differences "
+                    "gradient, please ignore this message."
+                )
+                return gradient_function(parameters)
+
+            u_v_cost_function = FunctionWithGradient(
+                u_v_cost_function, gradient_function
+            )
+
+        return u_v_cost_function
 
     def _get_u_v_for_next_layer(self, u_v: np.ndarray) -> np.ndarray:
         """When q = infinity, u_v is extended at the increment of each layer such that
