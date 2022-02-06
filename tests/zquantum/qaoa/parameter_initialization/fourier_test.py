@@ -104,7 +104,7 @@ class TestFouier:
 
     @pytest.mark.parametrize("n_layers", [1, 2, 3])
     def test_fourier_returns_correct_param_size(self, n_layers):
-        q = np.random.randint(5)
+        q = np.random.randint(1, 5)
         u_v_params = np.random.uniform(-np.pi, np.pi, q * 2)
         gamma_beta_params = convert_u_v_to_gamma_beta(n_layers, u_v_params)
         assert gamma_beta_params.size == n_layers * 2
@@ -135,3 +135,52 @@ class TestFouier:
         # When/Then
         with pytest.raises(ValueError):
             convert_u_v_to_gamma_beta(n_layers, params)
+
+    @pytest.mark.parametrize("n_layers_per_iter", [1, 3])
+    def test_get_new_layer_params_returns_same_params_when_q_is_constant(
+        self, n_layers_per_iter, ansatz, inner_optimizer
+    ):
+        # Given
+        q = np.random.randint(1, 5)
+        optimizer = FourierOptimizer(
+            ansatz=ansatz,
+            inner_optimizer=inner_optimizer,
+            min_layer=1,
+            max_layer=2,
+            n_layers_per_iteration=n_layers_per_iter,
+            q=q,
+            R=0,
+        )
+        # It doesn't really matter what q is because it's fixed independent of the
+        # target gammas/betas size
+        u_v_params = np.random.uniform(-np.pi, np.pi, q * 2)
+
+        # When
+        new_params = optimizer._get_u_v_for_next_layer(u_v_params)
+
+        # Then
+        assert np.allclose(u_v_params, new_params)
+
+    @pytest.mark.parametrize("n_layers_per_iter", [1, 3])
+    def test_get_new_layer_params_returns_correct_params_when_q_is_infinity(
+        self, n_layers_per_iter, ansatz, inner_optimizer
+    ):
+        # Given
+        min_layer = 1
+        optimizer = FourierOptimizer(
+            ansatz=ansatz,
+            inner_optimizer=inner_optimizer,
+            min_layer=min_layer,
+            max_layer=2,
+            n_layers_per_iteration=n_layers_per_iter,
+            q=np.inf,
+            R=0,
+        )
+        u_v_params = np.random.uniform(-np.pi, np.pi, min_layer * 2)
+        expected_new_params = np.append(u_v_params, np.zeros(n_layers_per_iter * 2))
+
+        # When
+        new_params = optimizer._get_u_v_for_next_layer(u_v_params)
+
+        # Then
+        assert np.allclose(expected_new_params, new_params)
