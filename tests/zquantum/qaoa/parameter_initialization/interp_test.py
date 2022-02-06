@@ -1,9 +1,6 @@
 import numpy as np
 import pytest
-from zquantum.qaoa.parameter_initialization import (
-    Fourier,
-    get_new_layer_params_using_interp,
-)
+from zquantum.qaoa.parameter_initialization import get_new_layer_params_using_interp
 
 
 class TestInterp:
@@ -60,73 +57,3 @@ class TestInterp:
 
         # Then
         assert np.allclose(output, expected_output)
-
-
-class TestFourier:
-    @pytest.mark.parametrize("n_layers", [1, 2, 3])
-    def test_fourier_returns_correct_param_size(self, n_layers):
-        my_fourier_object = Fourier(n_layers=n_layers)
-        q = np.random.randint(5)
-        u_v_params = np.random.uniform(-np.pi, np.pi, q * 2)
-        assert my_fourier_object(u_v_params).size == n_layers * 2
-
-    def test_fourier_returns_correct_values(self):
-        my_fourier = Fourier(2)
-        gammas_and_betas = my_fourier(np.array([1, -0.75, 2, -1.25]))
-
-        # See equation 8 of https://arxiv.org/abs/1812.01041 for how the expected params
-        # are calculated
-        expected_gammas_and_betas = np.array(
-            [
-                np.sin(np.pi / 8) + 2 * np.sin(3 * np.pi / 8),
-                -0.75 * np.cos(np.pi / 8) - 1.25 * np.cos(3 * np.pi / 8),
-                np.sin(3 * np.pi / 8) + 2 * np.sin(9 * np.pi / 8),
-                -0.75 * np.cos(3 * np.pi / 8) - 1.25 * np.cos(9 * np.pi / 8),
-            ]
-        )
-        assert np.allclose(gammas_and_betas, expected_gammas_and_betas)
-
-    @pytest.mark.parametrize("params", [[[0, 1], [1, 0]], [1, 2, 3]])
-    def test_fourier_raises_exception_when_param_size_is_wrong(self, params):
-        # Given
-        params = np.array(params)
-        my_fourier = Fourier(n_layers=1)
-
-        # When/Then
-        with pytest.raises(ValueError):
-            my_fourier(params)
-
-    @pytest.mark.parametrize("target_size", [6, 10])
-    def test_get_new_layer_params_increments_n_layers_and_returns_correct_params(
-        self, target_size
-    ):
-        # Given
-        my_fourier = Fourier(2)
-        # It doesn't really matter what q is because it's fixed independent of the
-        # target gammas/betas size
-        q = np.random.randint(5)
-        u_v_params = np.random.uniform(-np.pi, np.pi, q * 2)
-
-        # When
-        new_params = my_fourier.get_new_layer_params(target_size, u_v_params)
-
-        # Then
-        assert my_fourier.n_layers == target_size // 2
-        assert np.allclose(u_v_params, new_params)
-
-    @pytest.mark.parametrize(
-        # n_params here represents number of gammas and betas
-        "n_params, target_n_params",
-        [(4, 2), (3, 2), (4, 0), (2, 3)],
-    )
-    def test_get_new_layer_params_raises_exception_when_param_sizes_are_wrong(
-        self, n_params, target_n_params
-    ):
-        # Given
-        q = 1
-        u_v_params = np.random.uniform(-np.pi, np.pi, q * 2)
-        parameter_initializer = Fourier(n_layers=n_params // 2).get_new_layer_params
-
-        # When/Then
-        with pytest.raises(ValueError):
-            parameter_initializer(target_n_params, u_v_params)

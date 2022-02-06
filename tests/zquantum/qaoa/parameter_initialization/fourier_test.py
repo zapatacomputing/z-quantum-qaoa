@@ -17,7 +17,10 @@ from zquantum.core.interfaces.mock_objects import MockOptimizer
 from zquantum.core.interfaces.optimizer_test import NESTED_OPTIMIZER_CONTRACTS
 from zquantum.core.symbolic_simulator import SymbolicSimulator
 from zquantum.qaoa.ansatzes import QAOAFarhiAnsatz
-from zquantum.qaoa.parameter_initialization import FourierOptimizer
+from zquantum.qaoa.parameter_initialization import (
+    FourierOptimizer,
+    convert_u_v_to_gamma_beta,
+)
 
 
 @pytest.fixture
@@ -98,3 +101,37 @@ class TestFouier:
         )
 
         assert contract(optimizer, cost_function_factory, initial_params)
+
+    @pytest.mark.parametrize("n_layers", [1, 2, 3])
+    def test_fourier_returns_correct_param_size(self, n_layers):
+        q = np.random.randint(5)
+        u_v_params = np.random.uniform(-np.pi, np.pi, q * 2)
+        gamma_beta_params = convert_u_v_to_gamma_beta(n_layers, u_v_params)
+        assert gamma_beta_params.size == n_layers * 2
+
+    def test_fourier_returns_correct_values(self):
+        u_and_v = np.array([1, -0.75, 2, -1.25])
+        n_layers = 2
+        gammas_and_betas = convert_u_v_to_gamma_beta(n_layers, u_and_v)
+
+        # See equation 8 of https://arxiv.org/abs/1812.01041 for how the expected params
+        # are calculated
+        expected_gammas_and_betas = np.array(
+            [
+                np.sin(np.pi / 8) + 2 * np.sin(3 * np.pi / 8),
+                -0.75 * np.cos(np.pi / 8) - 1.25 * np.cos(3 * np.pi / 8),
+                np.sin(3 * np.pi / 8) + 2 * np.sin(9 * np.pi / 8),
+                -0.75 * np.cos(3 * np.pi / 8) - 1.25 * np.cos(9 * np.pi / 8),
+            ]
+        )
+        assert np.allclose(gammas_and_betas, expected_gammas_and_betas)
+
+    @pytest.mark.parametrize("params", [[[0, 1], [1, 0]], [1, 2, 3]])
+    def test_fourier_raises_exception_when_param_size_is_wrong(self, params):
+        # Given
+        params = np.array(params)
+        n_layers = 1
+
+        # When/Then
+        with pytest.raises(ValueError):
+            convert_u_v_to_gamma_beta(n_layers, params)
