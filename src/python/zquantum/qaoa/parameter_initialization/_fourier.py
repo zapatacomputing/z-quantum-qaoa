@@ -138,12 +138,19 @@ class FourierOptimizer(NestedOptimizer):
                 best_u_v_so_far = self._get_u_v_for_next_layer(best_u_v_so_far)
 
                 if self._R > 0:
+                    all_r_plus_1_perturbed_params = [
+                        _perturb_params_randomly(best_u_v_so_far)
+                        for _ in range(self._R)
+                    ]
+                    all_r_plus_1_perturbed_params.append(best_u_v_so_far)
                     (
                         best_u_v_so_far,
                         best_value_this_layer,
                         perturbing_nfev,
                         perturbing_nit,
-                    ) = self._perform_perturbations(best_u_v_so_far, cost_function)
+                    ) = self._find_best_params_from_list(
+                        all_r_plus_1_perturbed_params, cost_function
+                    )
                     nfev += perturbing_nfev
                     nit += perturbing_nit
 
@@ -229,24 +236,17 @@ class FourierOptimizer(NestedOptimizer):
         else:
             return u_v
 
-    def _perform_perturbations(
-        self, best_u_v_from_previous_layer: np.ndarray, cost_function
-    ):
+    def _find_best_params_from_list(self, params_list: List[np.ndarray], cost_function):
         """Perturb u and v from the best u and v so far when incrementing a layer, as
         demonstrated in figure 10 of the original paper.
         """
         best_value = np.inf
         nfev = 0
         nit = 0
-        all_r_plus_1_perturbed_params = [
-            _perturb_params_randomly(best_u_v_from_previous_layer)
-            for _ in range(self._R)
-        ]
-        all_r_plus_1_perturbed_params.append(best_u_v_from_previous_layer)
 
         # Optimize perturbed u and v. There are `self._R + 1` number of perturbed
         # parameters to optimize separtely, as indicated in figure 10.
-        for perturbed_params in all_r_plus_1_perturbed_params:
+        for perturbed_params in params_list:
             results = self.inner_optimizer.minimize(
                 cost_function, perturbed_params, keep_history=False
             )
@@ -297,11 +297,14 @@ def convert_u_v_to_gamma_beta(n_layers: int, u_v: np.ndarray) -> np.ndarray:
 
 
 def _perturb_params_randomly(u_v: np.ndarray, alpha: float = 0.6) -> np.ndarray:
-    """Performs one random perturbation. See Equation B5.
+    """Performs one random perturbation.
+
+    The perturbations are sampled from normal distributions with mean of 0 and variance
+    given by `u` and `v`. See Equation B5 or last paragraph of pg. 17
 
     Alpha is a free parameter corresponding to the strength of the perturbation. A value
     of 0.6 is what was found to work best by the authors of the original paper and is
     what we use in this implementation of Fourier.
     """
-    stdev = np.sqrt(np.abs(u_v))  # u_v is variance
+    stdev = np.sqrt(np.abs(u_v))
     return u_v + alpha * np.random.normal(0, stdev)

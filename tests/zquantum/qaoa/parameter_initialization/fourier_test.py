@@ -1,5 +1,3 @@
-from functools import partial
-
 import numpy as np
 import pytest
 from openfermion import IsingOperator
@@ -10,7 +8,7 @@ from zquantum.core.cost_function import (
 from zquantum.core.estimation import calculate_exact_expectation_values
 from zquantum.core.interfaces.ansatz import Ansatz
 from zquantum.core.interfaces.cost_function import CostFunction
-from zquantum.core.interfaces.mock_objects import MockOptimizer
+from zquantum.core.interfaces.mock_objects import MockOptimizer, mock_cost_function
 from zquantum.core.interfaces.optimizer_test import NESTED_OPTIMIZER_CONTRACTS
 from zquantum.core.symbolic_simulator import SymbolicSimulator
 from zquantum.qaoa.ansatzes import QAOAFarhiAnsatz
@@ -18,6 +16,7 @@ from zquantum.qaoa.parameter_initialization import (
     FourierOptimizer,
     convert_u_v_to_gamma_beta,
 )
+from zquantum.qaoa.parameter_initialization._fourier import _perturb_params_randomly
 
 
 @pytest.fixture
@@ -177,3 +176,64 @@ class TestFouier:
 
         # Then
         assert np.allclose(expected_new_params, new_params)
+
+
+class TestPerturbations:
+    def test_finds_best_params_from_list(self, ansatz, inner_optimizer):
+        params_list = [np.array([i]) for i in range(2, 10)]
+        expected_best_params = np.array([2])
+
+        optimizer = FourierOptimizer(
+            ansatz=ansatz,
+            inner_optimizer=inner_optimizer,
+            min_layer=1,
+            max_layer=2,
+            R=0,
+        )
+        best_params, best_value, nfev, nit = optimizer._find_best_params_from_list(
+            params_list, mock_cost_function
+        )
+
+        np.testing.assert_array_equal(best_params, expected_best_params)
+        assert best_value == mock_cost_function(expected_best_params)
+
+        # Mock inner optimizer returns `nfev = 1` and `nit = 1` for each cost function's
+        # optimization run. This makes sure that `_find_best_params_from_list`
+        # increments nit/nfev properly
+        assert nfev == nit == len(params_list)
+
+    def test_mean_of_added_perturbations_is_correct(self):
+        num_params = 10
+        num_repetitions = 1000
+        params = np.ones(num_params)
+
+        average_diff = sum(
+            [
+                (params - _perturb_params_randomly(params)).sum()
+                for _ in range(num_repetitions)
+            ]
+        ) / (num_repetitions * num_params)
+
+        np.testing.assert_allclose(average_diff, 0.0, atol=1e-02)
+
+    def test_variance_of_added_perturbations_is_correct(self):
+        num_repetitions = 1000
+        alpha = 1
+        params = np.arange(-2, 8)
+
+        sample = [
+            (params - _perturb_params_randomly(params, alpha))
+            for _ in range(num_repetitions)
+        ]
+        avg_variance = np.var(sample, axis=0) / alpha
+
+        # According to https://arxiv.org/abs/1812.01041 (pg 17 last paragraph), the
+        # variance of the perturbations is given by the input params.
+        np.testing.assert_allclose(avg_variance, np.abs(params), rtol=1e-01)
+
+    def test_does_not_mutate_parameters(self):
+        params = np.ones(4)
+
+        _perturb_params_randomly(params)
+
+        np.testing.assert_array_equal(params, np.ones(4))
