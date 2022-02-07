@@ -68,7 +68,7 @@ class FourierOptimizer(NestedOptimizer):
 
         """
 
-        assert 0 < min_layer < max_layer
+        assert 0 < min_layer <= max_layer
         assert n_layers_per_iteration > 0
         assert q > 0
         assert isinstance(q, int) or q == np.inf
