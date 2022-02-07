@@ -196,6 +196,32 @@ class TestFouier:
         # Then
         assert np.allclose(expected_new_params, new_params)
 
+    def test_records_correct_nit_nfev_and_history_length(
+        self, ansatz, inner_optimizer, cost_function_factory
+    ):
+        min_layer = 1
+        max_layer = 2
+        optimizer = FourierOptimizer(
+            ansatz=ansatz,
+            inner_optimizer=inner_optimizer,
+            min_layer=min_layer,
+            max_layer=max_layer,
+            R=0,
+        )
+
+        expected_nit = max_layer - min_layer + 1
+        # 1 iteration of the inner optimizer each layer. Mock inner optimizer returns
+        # `nfev = 1` and `nit = 1` for each optimization run.
+
+        initial_params = np.ones(2)
+        opt_result = optimizer.minimize(
+            cost_function_factory, initial_params, keep_history=True
+        )
+
+        assert (
+            opt_result.nit == opt_result.nfev == len(opt_result.history) == expected_nit
+        )
+
 
 class TestPerturbations:
     def test_finds_best_params_from_list(self, ansatz, inner_optimizer):
@@ -271,8 +297,8 @@ class TestPerturbations:
             R=n_perturbations,
         )
 
-        expected_iterations = 1 + (n_perturbations + 2) * (max_layer - min_layer)
-        # expected_iterations = n iters on first layer (1) + n iters from perturbations
+        expected_nit = 1 + (n_perturbations + 2) * (max_layer - min_layer)
+        # expected_nit = n iters on first layer (1) + n iters from perturbations
         # + n iters from 2 params propaged forwards from previous layer. The latter two
         # happen on all layers besides the first layer
 
@@ -281,11 +307,8 @@ class TestPerturbations:
             cost_function_factory, initial_params, keep_history=True
         )
 
-        # Mock inner optimizer returns `nfev = 1` and `nit = 1` for each cost function's
-        # optimization run.
+        # Mock inner optimizer returns `nfev = 1` and `nit = 1` for each optimization
+        # run.
         assert (
-            opt_result.nit
-            == opt_result.nfev
-            == len(opt_result.history)
-            == expected_iterations
+            opt_result.nit == opt_result.nfev == len(opt_result.history) == expected_nit
         )
