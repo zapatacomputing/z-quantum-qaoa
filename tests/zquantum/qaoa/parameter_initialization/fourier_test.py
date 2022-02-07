@@ -256,3 +256,36 @@ class TestPerturbations:
         _perturb_params_randomly(params)
 
         np.testing.assert_array_equal(params, np.ones(4))
+
+    def test_final_opt_result_records_data_from_perturbations(
+        self, ansatz, inner_optimizer, cost_function_factory
+    ):
+        n_perturbations = 2
+        min_layer = 1
+        max_layer = 2
+        optimizer = FourierOptimizer(
+            ansatz=ansatz,
+            inner_optimizer=inner_optimizer,
+            min_layer=1,
+            max_layer=2,
+            R=n_perturbations,
+        )
+
+        expected_iterations = 1 + (n_perturbations + 2) * (max_layer - min_layer)
+        # expected_iterations = n iters on first layer (1) + n iters from perturbations
+        # + n iters from 2 params propaged forwards from previous layer. The latter two
+        # happen on all layers besides the first layer
+
+        initial_params = np.ones(2)
+        opt_result = optimizer.minimize(
+            cost_function_factory, initial_params, keep_history=True
+        )
+
+        # Mock inner optimizer returns `nfev = 1` and `nit = 1` for each cost function's
+        # optimization run.
+        assert (
+            opt_result.nit
+            == opt_result.nfev
+            == len(opt_result.history)
+            == expected_iterations
+        )
