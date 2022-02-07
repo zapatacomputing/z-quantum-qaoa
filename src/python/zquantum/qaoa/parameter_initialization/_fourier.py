@@ -138,18 +138,23 @@ class FourierOptimizer(NestedOptimizer):
                 best_u_v_so_far = self._get_u_v_for_next_layer(best_u_v_so_far)
 
                 if self._R > 0:
-                    all_r_plus_1_perturbed_params = [
+                    perturbed_params = [
                         _perturb_params_randomly(best_u_v_so_far)
                         for _ in range(self._R)
                     ]
-                    all_r_plus_1_perturbed_params.append(best_u_v_so_far)
+                    perturbed_params.append(best_u_v_so_far)
+                    # `perturbed_params` is of size `self._R + 1` and includes
+                    # the best params from the previous layer, and `self._R` perturbed
+                    # params. These perturbed params are the result of adding random
+                    # perturbations from the best params of prev layer. See figure 10
+
                     (
                         best_u_v_so_far,
                         best_value_this_layer,
                         perturbing_nfev,
                         perturbing_nit,
                     ) = self._find_best_params_from_list(
-                        all_r_plus_1_perturbed_params, cost_function
+                        perturbed_params, cost_function
                     )
                     nfev += perturbing_nfev
                     nit += perturbing_nit
@@ -237,9 +242,6 @@ class FourierOptimizer(NestedOptimizer):
             return u_v
 
     def _find_best_params_from_list(self, params_list: List[np.ndarray], cost_function):
-        """Perturb u and v from the best u and v so far when incrementing a layer, as
-        demonstrated in figure 10 of the original paper.
-        """
         best_value = np.inf
         nfev = 0
         nit = 0
