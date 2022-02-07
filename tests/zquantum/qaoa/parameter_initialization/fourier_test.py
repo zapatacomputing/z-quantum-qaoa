@@ -94,6 +94,25 @@ class TestFouier:
 
         assert contract(optimizer, cost_function_factory, initial_params)
 
+    @pytest.mark.parametrize(
+        ["initial_params", "q"],
+        [([[1, 2], [3, 4]], 2), ([1, 2], 2), ([1, 2, 3, 4], np.inf)],
+    )
+    def test_raises_exception_when_initial_param_size_is_wrong(
+        self, ansatz, inner_optimizer, cost_function_factory, initial_params, q
+    ):
+        initial_params = np.array(initial_params)
+        optimizer = FourierOptimizer(
+            ansatz=ansatz,
+            inner_optimizer=inner_optimizer,
+            min_layer=1,
+            max_layer=2,
+            q=q,
+            R=0,
+        )
+        with pytest.raises(ValueError):
+            optimizer.minimize(cost_function_factory, initial_params)
+
     @pytest.mark.parametrize("n_layers", [1, 2, 3])
     def test_fourier_returns_correct_param_size(self, n_layers):
         q = np.random.randint(1, 5)
