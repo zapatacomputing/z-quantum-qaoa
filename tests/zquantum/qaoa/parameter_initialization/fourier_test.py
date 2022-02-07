@@ -88,7 +88,7 @@ class TestFouier:
             ansatz=ansatz,
             inner_optimizer=inner_optimizer,
             min_layer=1,
-            max_layer=2,
+            max_layer=1,
             R=0,
         )
 
@@ -106,7 +106,7 @@ class TestFouier:
             ansatz=ansatz,
             inner_optimizer=inner_optimizer,
             min_layer=1,
-            max_layer=2,
+            max_layer=1,
             q=q,
             R=0,
         )
@@ -157,7 +157,7 @@ class TestFouier:
             ansatz=ansatz,
             inner_optimizer=inner_optimizer,
             min_layer=1,
-            max_layer=2,
+            max_layer=1,
             n_layers_per_iteration=n_layers_per_iter,
             q=q,
             R=0,
@@ -182,7 +182,7 @@ class TestFouier:
             ansatz=ansatz,
             inner_optimizer=inner_optimizer,
             min_layer=min_layer,
-            max_layer=2,
+            max_layer=1,
             n_layers_per_iteration=n_layers_per_iter,
             q=np.inf,
             R=0,
@@ -206,7 +206,7 @@ class TestPerturbations:
             ansatz=ansatz,
             inner_optimizer=inner_optimizer,
             min_layer=1,
-            max_layer=2,
+            max_layer=1,
             R=0,
         )
         best_params, best_value, nfev, nit = optimizer._find_best_params_from_list(
@@ -266,8 +266,8 @@ class TestPerturbations:
         optimizer = FourierOptimizer(
             ansatz=ansatz,
             inner_optimizer=inner_optimizer,
-            min_layer=1,
-            max_layer=2,
+            min_layer=min_layer,
+            max_layer=max_layer,
             R=n_perturbations,
         )
 
