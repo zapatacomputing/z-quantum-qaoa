@@ -10,7 +10,10 @@ from zquantum.core.history.recorder import HistoryEntry
 from zquantum.core.history.recorder import recorder as _recorder
 from zquantum.core.interfaces.ansatz import Ansatz
 from zquantum.core.interfaces.cost_function import CostFunction
-from zquantum.core.interfaces.functions import FunctionWithGradient
+from zquantum.core.interfaces.functions import (
+    CallableWithGradient,
+    FunctionWithGradient,
+)
 from zquantum.core.interfaces.optimizer import (
     NestedOptimizer,
     Optimizer,
@@ -207,7 +210,7 @@ class FourierOptimizer(NestedOptimizer):
 
         def u_v_cost_function(parameters: np.ndarray) -> float:
             gamma_beta = convert_u_v_to_gamma_beta(n_layers, parameters)
-            return gamma_beta_cost_function(gamma_beta)
+            return gamma_beta_cost_function(gamma_beta)  # type: ignore
 
         # Add gradient to `u_v_cost_function` if `gamma_beta_cost_function` has gradient
         if hasattr(gamma_beta_cost_function, "gradient"):
@@ -223,11 +226,9 @@ class FourierOptimizer(NestedOptimizer):
                 )
                 return gradient_function(parameters)
 
-            u_v_cost_function = FunctionWithGradient(
-                u_v_cost_function, gradient_function
-            )
-
-        return u_v_cost_function
+            return FunctionWithGradient(u_v_cost_function, gradient_function)
+        else:
+            return u_v_cost_function
 
     def _get_u_v_for_next_layer(self, u_v: np.ndarray) -> np.ndarray:
         """When q = infinity, u_v is extended at the increment of each layer such that
