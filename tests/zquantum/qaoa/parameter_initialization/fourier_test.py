@@ -2,12 +2,13 @@ import numpy as np
 import pytest
 from openfermion import IsingOperator
 from zquantum.core.cost_function import (
+    CostFunction,
     create_cost_function,
     substitution_based_estimation_tasks_factory,
 )
 from zquantum.core.estimation import calculate_exact_expectation_values
 from zquantum.core.interfaces.ansatz import Ansatz
-from zquantum.core.interfaces.cost_function import CostFunction
+from zquantum.core.interfaces.functions import CallableWithGradient
 from zquantum.core.interfaces.mock_objects import MockOptimizer, mock_cost_function
 from zquantum.core.interfaces.optimizer_test import NESTED_OPTIMIZER_CONTRACTS
 from zquantum.core.symbolic_simulator import SymbolicSimulator
@@ -51,7 +52,7 @@ def cost_function_factory(hamiltonian):
         return create_cost_function(
             backend=SymbolicSimulator(),
             estimation_tasks_factory=estimation_tasks_factory,
-            estimation_method=calculate_exact_expectation_values,
+            estimation_method=calculate_exact_expectation_values,  # type: ignore
             parameter_preprocessors=None,
         )
 
@@ -70,7 +71,7 @@ def inner_optimizer():
         result = MockOptimizer()._minimize(cost_function, initial_params, keep_history)
 
         # Call the gradient function to make sure it works properly.
-        if hasattr(cost_function, "gradient"):
+        if isinstance(cost_function, CallableWithGradient):
             result.gradient_history = cost_function.gradient(initial_params)
 
         return result

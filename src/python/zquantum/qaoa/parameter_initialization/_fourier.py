@@ -1,7 +1,7 @@
 import copy
 import warnings
 from collections import defaultdict
-from typing import Callable, Dict, List, Union
+from typing import Callable, Dict, List, Union, cast
 
 import numpy as np
 from scipy.optimize import OptimizeResult
@@ -10,16 +10,13 @@ from zquantum.core.history.recorder import HistoryEntry
 from zquantum.core.history.recorder import recorder as _recorder
 from zquantum.core.interfaces.ansatz import Ansatz
 from zquantum.core.interfaces.cost_function import CostFunction
-from zquantum.core.interfaces.functions import (
-    CallableWithGradient,
-    FunctionWithGradient,
-)
+from zquantum.core.interfaces.functions import FunctionWithGradient
 from zquantum.core.interfaces.optimizer import (
     NestedOptimizer,
     Optimizer,
     extend_histories,
 )
-from zquantum.core.typing import RecorderFactory
+from zquantum.core.typing import AnyRecorder, RecorderFactory
 
 
 class FourierOptimizer(NestedOptimizer):
@@ -178,7 +175,9 @@ class FourierOptimizer(NestedOptimizer):
             nit += layer_results.nit
 
             if keep_history:
-                histories = extend_histories(cost_function, histories)
+                histories = extend_histories(
+                    cast(AnyRecorder, cost_function), histories
+                )
 
         del layer_results["history"]
         del layer_results["gradient_history"]
