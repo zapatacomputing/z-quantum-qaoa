@@ -62,7 +62,7 @@ class FourierOptimizer(NestedOptimizer):
                 infinity. If q = infinity, then q = n_layers and grows unbounded. The
                 authors of the original paper used q = infinity.
             R: the number of random perturbations we add to the parameters so that we
-                can sometimes escape a local optimum. Can be any integer 0 or above. The
+                can sometimes escape a local optimum. Can be any non-negative integer. The
                 authors of the original paper used R = 10. See paragraph 2 of Appendix
                 B2 for more details.
 
