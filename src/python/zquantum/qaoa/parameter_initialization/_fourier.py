@@ -1,7 +1,7 @@
 import copy
 import warnings
 from collections import defaultdict
-from typing import Callable, Dict, List, Union
+from typing import Callable, Dict, List, Union, cast
 
 import numpy as np
 from scipy.optimize import OptimizeResult
@@ -16,7 +16,7 @@ from zquantum.core.interfaces.optimizer import (
     Optimizer,
     extend_histories,
 )
-from zquantum.core.typing import RecorderFactory
+from zquantum.core.typing import AnyRecorder, RecorderFactory
 
 
 class FourierOptimizer(NestedOptimizer):
@@ -62,9 +62,9 @@ class FourierOptimizer(NestedOptimizer):
                 infinity. If q = infinity, then q = n_layers and grows unbounded. The
                 authors of the original paper used q = infinity.
             R: the number of random perturbations we add to the parameters so that we
-                can sometimes escape a local optimum. Can be any integer 0 or above. The
-                authors of the original paper used R = 10. See paragraph 2 of Appendix
-                B2 for more details.
+                can sometimes escape a local optimum. Can be any non-negative integer.
+                The authors of the original paper used R = 10. See paragraph 2 of
+                Appendix B2 for more details.
 
         """
 
@@ -175,7 +175,9 @@ class FourierOptimizer(NestedOptimizer):
             nit += layer_results.nit
 
             if keep_history:
-                histories = extend_histories(cost_function, histories)
+                histories = extend_histories(
+                    cast(AnyRecorder, cost_function), histories
+                )
 
         del layer_results["history"]
         del layer_results["gradient_history"]
@@ -207,7 +209,7 @@ class FourierOptimizer(NestedOptimizer):
 
         def u_v_cost_function(parameters: np.ndarray) -> float:
             gamma_beta = convert_u_v_to_gamma_beta(n_layers, parameters)
-            return gamma_beta_cost_function(gamma_beta)
+            return gamma_beta_cost_function(gamma_beta)  # type: ignore
 
         # Add gradient to `u_v_cost_function` if `gamma_beta_cost_function` has gradient
         if hasattr(gamma_beta_cost_function, "gradient"):
@@ -223,11 +225,9 @@ class FourierOptimizer(NestedOptimizer):
                 )
                 return gradient_function(parameters)
 
-            u_v_cost_function = function_with_gradient(
-                u_v_cost_function, gradient_function
-            )
-
-        return u_v_cost_function
+            return function_with_gradient(u_v_cost_function, gradient_function)
+        else:
+            return u_v_cost_function
 
     def _get_u_v_for_next_layer(self, u_v: np.ndarray) -> np.ndarray:
         """When q = infinity, u_v is extended at the increment of each layer such that
@@ -306,7 +306,7 @@ def _perturb_params_randomly(u_v: np.ndarray, alpha: float = 0.6) -> np.ndarray:
 
     Alpha is a free parameter corresponding to the strength of the perturbation. A value
     of 0.6 is what was found to work best by the authors of the original paper and is
-    what we use in this implementation of Fourier.
+    what we use as default in this implementation of Fourier.
     """
     stdev = np.sqrt(np.abs(u_v))
     return u_v + alpha * np.random.normal(0, stdev)
