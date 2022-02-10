@@ -80,7 +80,7 @@ def inner_optimizer():
     return inner_optimizer
 
 
-class TestFouier:
+class TestFourier:
     @pytest.mark.parametrize("contract", NESTED_OPTIMIZER_CONTRACTS)
     def test_if_satisfies_contracts(
         self, contract, ansatz, initial_params, inner_optimizer, cost_function_factory
