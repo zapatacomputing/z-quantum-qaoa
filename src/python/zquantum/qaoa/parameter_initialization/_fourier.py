@@ -306,7 +306,7 @@ def _perturb_params_randomly(u_v: np.ndarray, alpha: float = 0.6) -> np.ndarray:
 
     Alpha is a free parameter corresponding to the strength of the perturbation. A value
     of 0.6 is what was found to work best by the authors of the original paper and is
-    what we use in this implementation of Fourier.
+    what we use as default in this implementation of Fourier.
     """
     stdev = np.sqrt(np.abs(u_v))
     return u_v + alpha * np.random.normal(0, stdev)
