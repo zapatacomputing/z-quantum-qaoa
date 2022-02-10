@@ -267,15 +267,17 @@ class TestPerturbations:
         num_repetitions = 1000
         params = np.arange(-2, 8)
 
-        sample = [
-            (params - _perturb_params_randomly(params, alpha))
-            for _ in range(num_repetitions)
-        ]
-        avg_variance = np.var(sample, axis=0) / alpha
+        sample = np.array(
+            [
+                (params - _perturb_params_randomly(params, alpha))
+                for _ in range(num_repetitions)
+            ]
+        )
+        avg_variance = np.var(sample / alpha, axis=0)
 
         # According to https://arxiv.org/abs/1812.01041 (pg 17 last paragraph), the
         # variance of the perturbations is given by the input params.
-        np.testing.assert_allclose(avg_variance, np.abs(params), rtol=3e-01 / alpha)
+        np.testing.assert_allclose(avg_variance, np.abs(params), rtol=1e-01)
 
     def test_does_not_mutate_parameters(self):
         params = np.ones(4)
