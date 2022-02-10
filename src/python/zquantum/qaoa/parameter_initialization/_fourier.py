@@ -10,7 +10,7 @@ from zquantum.core.history.recorder import HistoryEntry
 from zquantum.core.history.recorder import recorder as _recorder
 from zquantum.core.interfaces.ansatz import Ansatz
 from zquantum.core.interfaces.cost_function import CostFunction
-from zquantum.core.interfaces.functions import FunctionWithGradient
+from zquantum.core.interfaces.functions import function_with_gradient
 from zquantum.core.interfaces.optimizer import (
     NestedOptimizer,
     Optimizer,
@@ -143,9 +143,9 @@ class FourierOptimizer(NestedOptimizer):
                         for _ in range(self._R)
                     ]
                     perturbed_params.append(best_u_v_so_far)
-                    # `perturbed_params` is of size `self._R + 1` and includes
-                    # the best params from the previous layer, and `self._R` perturbed
-                    # params. These perturbed params are the result of adding random
+                    # `perturbed_params` is of size `self._R + 1`. It includes the best
+                    # params from the previous layer and `self._R` perturbed params.
+                    # These perturbed params are the result of adding random
                     # perturbations from the best params of prev layer. See figure 10
 
                     (
@@ -223,7 +223,7 @@ class FourierOptimizer(NestedOptimizer):
                 )
                 return gradient_function(parameters)
 
-            u_v_cost_function = FunctionWithGradient(
+            u_v_cost_function = function_with_gradient(
                 u_v_cost_function, gradient_function
             )
 
