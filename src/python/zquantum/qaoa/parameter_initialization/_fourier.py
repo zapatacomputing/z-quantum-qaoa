@@ -1,7 +1,7 @@
 import copy
 import warnings
 from collections import defaultdict
-from typing import Callable, Dict, List, Union, cast
+from typing import Callable, Dict, List, Optional, cast
 
 import numpy as np
 from scipy.optimize import OptimizeResult
@@ -35,7 +35,7 @@ class FourierOptimizer(NestedOptimizer):
         min_layer: int,
         max_layer: int,
         n_layers_per_iteration: int = 1,
-        q: Union[int, float] = np.inf,
+        q: Optional[int] = None,
         R: int = 10,
         recorder: RecorderFactory = _recorder,
     ) -> None:
@@ -59,8 +59,9 @@ class FourierOptimizer(NestedOptimizer):
             max_layer: maximum number of layers, at which optimization should stop.
             n_layers_per_iteration: number of layers added for each iteration.
             q: length of each of the u and v parameters. Can be any positive integer or
-                infinity. If q = infinity, then q = n_layers and grows unbounded. The
-                authors of the original paper used q = infinity.
+                None. If q is None, then q = n_layers and grows unbounded. The
+                authors of the original paper used q = None.
+                NOTE: In the paper, infinity is used to denote None.
             R: the number of random perturbations we add to the parameters so that we
                 can sometimes escape a local optimum. Can be any non-negative integer.
                 The authors of the original paper used R = 10. See paragraph 2 of
@@ -70,8 +71,7 @@ class FourierOptimizer(NestedOptimizer):
 
         assert 0 < min_layer <= max_layer
         assert n_layers_per_iteration > 0
-        assert q > 0
-        assert isinstance(q, int) or q == np.inf
+        assert q is None or q > 0
         assert R >= 0
         self._ansatz = ansatz
         self._inner_optimizer = inner_optimizer
@@ -192,11 +192,11 @@ class FourierOptimizer(NestedOptimizer):
     def _validate_initial_params(self, initial_params: np.ndarray) -> None:
         if len(initial_params.shape) != 1:
             raise ValueError("Initial params should be a 1d array.")
-        elif self._q == np.inf and initial_params.size != self._min_layer * 2:
+        elif self._q is None and initial_params.size != self._min_layer * 2:
             raise ValueError(
                 "When q = infinity, initial params should of size min_layer * 2."
             )
-        elif self._q != np.inf and initial_params.size != self._q * 2:
+        elif self._q is not None and initial_params.size != self._q * 2:
             raise ValueError("Initial params should of size q * 2.")
 
     def _create_u_v_cost_function(
@@ -236,7 +236,7 @@ class FourierOptimizer(NestedOptimizer):
 
         """
         # Increment the length of u and v if q = infinity
-        if self._q == np.inf:
+        if self._q is None:
             return np.append(u_v, np.zeros(2 * self._n_layers_per_iteration))
         else:
             return u_v
