@@ -127,10 +127,7 @@ class RecursiveQAOA(NestedOptimizer):
 
         ansatz.cost_hamiltonian = cost_hamiltonian
 
-        cost_function = cost_function_factory(
-            cost_hamiltonian,
-            ansatz,
-        )
+        cost_function = cost_function_factory(cost_hamiltonian, ansatz)
 
         if keep_history:
             cost_function = self.recorder(cost_function)
