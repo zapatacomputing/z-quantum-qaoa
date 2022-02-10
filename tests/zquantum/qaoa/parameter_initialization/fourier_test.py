@@ -2,12 +2,12 @@ import numpy as np
 import pytest
 from openfermion import IsingOperator
 from zquantum.core.cost_function import (
-    CostFunction,
     create_cost_function,
     substitution_based_estimation_tasks_factory,
 )
 from zquantum.core.estimation import calculate_exact_expectation_values
 from zquantum.core.interfaces.ansatz import Ansatz
+from zquantum.core.interfaces.cost_function import CostFunction
 from zquantum.core.interfaces.functions import CallableWithGradient
 from zquantum.core.interfaces.mock_objects import MockOptimizer, mock_cost_function
 from zquantum.core.interfaces.optimizer_test import NESTED_OPTIMIZER_CONTRACTS
@@ -97,7 +97,7 @@ class TestFourier:
 
     @pytest.mark.parametrize(
         ["initial_params", "q"],
-        [([[1, 2], [3, 4]], 2), ([1, 2], 2), ([1, 2, 3, 4], np.inf)],
+        [([[1, 2], [3, 4]], 2), ([1, 2], 2), ([1, 2, 3, 4], None)],
     )
     def test_raises_exception_when_initial_param_size_is_wrong(
         self, ansatz, inner_optimizer, cost_function_factory, initial_params, q
@@ -174,7 +174,7 @@ class TestFourier:
         assert np.allclose(u_v_params, new_params)
 
     @pytest.mark.parametrize("n_layers_per_iter", [1, 3])
-    def test_get_new_layer_params_returns_correct_params_when_q_is_infinity(
+    def test_get_new_layer_params_returns_correct_params_when_q_is_none(
         self, n_layers_per_iter, ansatz, inner_optimizer
     ):
         # Given
@@ -185,7 +185,7 @@ class TestFourier:
             min_layer=min_layer,
             max_layer=1,
             n_layers_per_iteration=n_layers_per_iter,
-            q=np.inf,
+            q=None,
             R=0,
         )
         u_v_params = np.random.uniform(-np.pi, np.pi, min_layer * 2)
