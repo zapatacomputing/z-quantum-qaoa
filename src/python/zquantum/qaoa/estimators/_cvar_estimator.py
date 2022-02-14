@@ -1,9 +1,10 @@
-from typing import Dict, List, Optional, Sequence, TypeVar
+from typing import Dict, List, Optional, Sequence, Tuple, TypeVar
 
 import numpy as np
 from openfermion import IsingOperator
+from typing_extensions import overload
 from zquantum.core.bitstring_distribution import BitstringDistribution
-from zquantum.core.interfaces.backend import QuantumBackend
+from zquantum.core.interfaces.backend import QuantumBackend, QuantumSimulator
 from zquantum.core.interfaces.estimation import (
     EstimateExpectationValues,
     EstimationTask,
@@ -12,7 +13,6 @@ from zquantum.core.measurement import ExpectationValues, check_parity_of_vector
 from zquantum.core.utils import dec2bin
 from zquantum.core.wavefunction import Wavefunction
 
-Bitstring = TypeVar("Bitstring", str, Sequence[int], int)
 PROBABILITY_CUTOFF = 1e-8
 
 
@@ -62,7 +62,30 @@ class CvarEstimator(EstimateExpectationValues):
             *[(e.circuit, e.operator, e.number_of_shots) for e in estimation_tasks]
         )
 
-        if not self.use_exact_expectation_values:
+        if self.use_exact_expectation_values:
+            if not isinstance(backend, QuantumSimulator):
+                raise TypeError(
+                    "In order to use exact expectation values "
+                    "you need to use QuantumSimulator."
+                )
+
+            wavefunctions_list = [
+                backend.get_wavefunction(circuit) for circuit in circuits
+            ]
+
+            return [
+                ExpectationValues(
+                    np.array(
+                        [
+                            _calculate_expectation_value_for_wavefunction(
+                                distribution, operator, self.alpha
+                            )
+                        ]
+                    )
+                )
+                for distribution, operator in zip(wavefunctions_list, operators)
+            ]
+        else:
             distributions_list = [
                 backend.get_bitstring_distribution(circuit, n_samples=n_shots)
                 for circuit, n_shots in zip(circuits, shots_per_circuit)
@@ -81,24 +104,6 @@ class CvarEstimator(EstimateExpectationValues):
                 for distribution, operator in zip(distributions_list, operators)
             ]
 
-        else:
-            wavefunctions_list = [
-                backend.get_wavefunction(circuit) for circuit in circuits
-            ]
-
-            return [
-                ExpectationValues(
-                    np.array(
-                        [
-                            _calculate_expectation_value_for_wavefunction(
-                                distribution, operator, self.alpha
-                            )
-                        ]
-                    )
-                )
-                for distribution, operator in zip(wavefunctions_list, operators)
-            ]
-
 
 def _calculate_expectation_value_for_distribution(
     distribution: BitstringDistribution, operator: IsingOperator, alpha: float
@@ -110,10 +115,9 @@ def _calculate_expectation_value_for_distribution(
 
     # Map expectation values back to original bitstrings
     expectation_values_dict = {
-        bitstring: expectation_values[i]
+        bitstring: float(expectation_values[i])
         for i, bitstring in enumerate(distribution.distribution_dict.keys())
     }
-
     return _sum_expectation_values(
         expectation_values_dict, distribution.distribution_dict, alpha
     )
@@ -142,9 +146,27 @@ def _calculate_expectation_value_for_wavefunction(
     )
 
 
+@overload
 def _sum_expectation_values(
-    expectation_values_per_bitstring: Dict[Bitstring, float],
-    probability_per_bitstring: Dict[Bitstring, float],
+    expectation_values_per_bitstring: Dict[Tuple[int, ...], float],
+    probability_per_bitstring: Dict[Tuple[int, ...], float],
+    alpha: float,
+) -> float:
+    """Variant for calculating expectation values from distribution."""
+
+
+@overload
+def _sum_expectation_values(
+    expectation_values_per_bitstring: Dict[int, float],
+    probability_per_bitstring: np.ndarray,
+    alpha: float,
+) -> float:
+    """Variant for calculating expectation values from wavefunction."""
+
+
+def _sum_expectation_values(
+    expectation_values_per_bitstring,
+    probability_per_bitstring,
     alpha: float,
 ) -> float:
     """Compute cumulative sum of expectation values until probability exceeds alpha.
@@ -191,4 +213,4 @@ def _calculate_expectation_values(
         * (check_parity_of_vector(bitstrings, [op[0] for op in term]) * 2 - 1)
         for term, coefficient in operator.terms.items()
     ]
-    return np.array(expectation_values_list).sum(axis=0)
+    return np.array(np.array(expectation_values_list).sum(axis=0))

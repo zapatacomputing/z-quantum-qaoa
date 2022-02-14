@@ -85,7 +85,7 @@ class WarmStartQAOAAnsatz(Ansatz):
             circuit += create_layer_of_gates(
                 self.number_of_qubits,
                 RZ,
-                [-2 * sympy.Symbol(f"beta_{i}")] * self.number_of_qubits,
+                np.array([-2 * sympy.Symbol(f"beta_{i}")] * self.number_of_qubits),
             )
             circuit += create_layer_of_gates(self.number_of_qubits, RY, self._thetas)
 
