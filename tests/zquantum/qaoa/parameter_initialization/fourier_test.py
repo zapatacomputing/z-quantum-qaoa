@@ -277,7 +277,7 @@ class TestPerturbations:
 
         # According to https://arxiv.org/abs/1812.01041 (pg 17 last paragraph), the
         # variance of the perturbations is given by the input params.
-        np.testing.assert_allclose(avg_variance, np.abs(params), rtol=1e-01)
+        np.testing.assert_allclose(avg_variance, np.abs(params), rtol=1.5e-1)
 
     def test_does_not_mutate_parameters(self):
         params = np.ones(4)
