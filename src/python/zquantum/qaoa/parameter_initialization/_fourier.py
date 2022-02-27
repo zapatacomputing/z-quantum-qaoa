@@ -108,7 +108,7 @@ class FourierOptimizer(NestedOptimizer):
             cost_function_factory: a function that returns a cost function that depends
                 on the provided ansatz.
             inital_params: initial parameters u and v. Should be a 1d array of size
-                `q * 2`. Or, if q = infinity, it should be of size `min_layer`.
+                `q * 2`. Or, if q = infinity, it should be of size `min_layer * 2`.
             keep_history: flag indicating whether history of cost function
                 evaluations should be recorded.
 
