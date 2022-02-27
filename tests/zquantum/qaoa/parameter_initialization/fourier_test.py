@@ -252,7 +252,7 @@ class TestFourier:
 
 class TestPerturbations:
     def test_finds_best_params_from_list(self, ansatz, inner_optimizer):
-        params_list = [np.array([i]) for i in range(2, 10)]
+        params_list = [np.array([i]) for i in [-5, -4, -3, 2, 3, 4, 7, 9]]
         expected_best_params = np.array([2])
 
         optimizer = FourierOptimizer(
