@@ -8,7 +8,10 @@ from zquantum.core.cost_function import (
 from zquantum.core.estimation import calculate_exact_expectation_values
 from zquantum.core.interfaces.ansatz import Ansatz
 from zquantum.core.interfaces.cost_function import CostFunction
-from zquantum.core.interfaces.functions import CallableWithGradient
+from zquantum.core.interfaces.functions import (
+    CallableWithGradient,
+    function_with_gradient,
+)
 from zquantum.core.interfaces.mock_objects import MockOptimizer, mock_cost_function
 from zquantum.core.interfaces.optimizer_test import NESTED_OPTIMIZER_CONTRACTS
 from zquantum.core.symbolic_simulator import SymbolicSimulator
@@ -222,6 +225,29 @@ class TestFourier:
         assert (
             opt_result.nit == opt_result.nfev == len(opt_result.history) == expected_nit
         )
+
+    def test_raises_warning_when_gradient_is_not_finite_differences(
+        self, ansatz, inner_optimizer, cost_function_factory
+    ):
+        def my_gradient(params: np.ndarray) -> np.ndarray:
+            return np.sqrt(params)
+
+        def cost_function_with_gradients_factory(*args, **kwargs):
+            cost_function = cost_function_factory(*args, **kwargs)
+            return function_with_gradient(cost_function, my_gradient)
+
+        optimizer = FourierOptimizer(
+            ansatz=ansatz,
+            inner_optimizer=inner_optimizer,
+            min_layer=1,
+            max_layer=1,
+            R=0,
+        )
+
+        initial_params = np.ones(2)
+
+        with pytest.warns(Warning):
+            optimizer.minimize(cost_function_with_gradients_factory, initial_params)
 
 
 class TestPerturbations:
