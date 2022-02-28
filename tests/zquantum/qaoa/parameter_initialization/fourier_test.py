@@ -13,6 +13,7 @@ from zquantum.core.interfaces.functions import (
     function_with_gradient,
 )
 from zquantum.core.interfaces.mock_objects import MockOptimizer, mock_cost_function
+from zquantum.core.interfaces.optimizer import optimization_result
 from zquantum.core.interfaces.optimizer_test import NESTED_OPTIMIZER_CONTRACTS
 from zquantum.core.symbolic_simulator import SymbolicSimulator
 from zquantum.qaoa.ansatzes import QAOAFarhiAnsatz
@@ -71,7 +72,13 @@ def inner_optimizer():
         initial_params: np.ndarray,
         keep_history: bool = False,
     ):
-        result = MockOptimizer()._minimize(cost_function, initial_params, keep_history)
+        result = optimization_result(
+            opt_params=initial_params,
+            opt_value=cost_function(initial_params),  # type: ignore
+            nit=1,
+            nfev=1,
+            history=[],
+        )
 
         # Call the gradient function to make sure it works properly.
         if isinstance(cost_function, CallableWithGradient):
