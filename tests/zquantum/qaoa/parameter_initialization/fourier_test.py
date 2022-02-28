@@ -8,8 +8,12 @@ from zquantum.core.cost_function import (
 from zquantum.core.estimation import calculate_exact_expectation_values
 from zquantum.core.interfaces.ansatz import Ansatz
 from zquantum.core.interfaces.cost_function import CostFunction
-from zquantum.core.interfaces.functions import CallableWithGradient
+from zquantum.core.interfaces.functions import (
+    CallableWithGradient,
+    function_with_gradient,
+)
 from zquantum.core.interfaces.mock_objects import MockOptimizer, mock_cost_function
+from zquantum.core.interfaces.optimizer import optimization_result
 from zquantum.core.interfaces.optimizer_test import NESTED_OPTIMIZER_CONTRACTS
 from zquantum.core.symbolic_simulator import SymbolicSimulator
 from zquantum.qaoa.ansatzes import QAOAFarhiAnsatz
@@ -68,7 +72,13 @@ def inner_optimizer():
         initial_params: np.ndarray,
         keep_history: bool = False,
     ):
-        result = MockOptimizer()._minimize(cost_function, initial_params, keep_history)
+        result = optimization_result(
+            opt_params=initial_params,
+            opt_value=cost_function(initial_params),  # type: ignore
+            nit=1,
+            nfev=1,
+            history=[],
+        )
 
         # Call the gradient function to make sure it works properly.
         if isinstance(cost_function, CallableWithGradient):
@@ -223,10 +233,33 @@ class TestFourier:
             opt_result.nit == opt_result.nfev == len(opt_result.history) == expected_nit
         )
 
+    def test_raises_warning_when_gradient_is_not_finite_differences(
+        self, ansatz, inner_optimizer, cost_function_factory
+    ):
+        def my_gradient(params: np.ndarray) -> np.ndarray:
+            return np.sqrt(params)
+
+        def cost_function_with_gradients_factory(*args, **kwargs):
+            cost_function = cost_function_factory(*args, **kwargs)
+            return function_with_gradient(cost_function, my_gradient)
+
+        optimizer = FourierOptimizer(
+            ansatz=ansatz,
+            inner_optimizer=inner_optimizer,
+            min_layer=1,
+            max_layer=1,
+            R=0,
+        )
+
+        initial_params = np.ones(2)
+
+        with pytest.warns(Warning):
+            optimizer.minimize(cost_function_with_gradients_factory, initial_params)
+
 
 class TestPerturbations:
     def test_finds_best_params_from_list(self, ansatz, inner_optimizer):
-        params_list = [np.array([i]) for i in range(2, 10)]
+        params_list = [np.array([i]) for i in [-5, -4, -3, 2, 3, 4, 7, 9]]
         expected_best_params = np.array([2])
 
         optimizer = FourierOptimizer(
@@ -277,7 +310,7 @@ class TestPerturbations:
 
         # According to https://arxiv.org/abs/1812.01041 (pg 17 last paragraph), the
         # variance of the perturbations is given by the input params.
-        np.testing.assert_allclose(avg_variance, np.abs(params), rtol=1e-01)
+        np.testing.assert_allclose(avg_variance, np.abs(params), rtol=1.5e-1)
 
     def test_does_not_mutate_parameters(self):
         params = np.ones(4)
