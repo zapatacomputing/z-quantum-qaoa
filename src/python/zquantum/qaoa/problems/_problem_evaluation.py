@@ -3,9 +3,9 @@ from typing import Callable, List, Tuple
 
 import networkx as nx
 import numpy as np
-from openfermion import IsingOperator
-from openfermion.ops.operators.qubit_operator import QubitOperator
-from openfermion.utils import count_qubits
+from zquantum.core.openfermion import IsingOperator
+from zquantum.core.openfermion.ops.operators.qubit_operator import QubitOperator
+from zquantum.core.openfermion.utils import count_qubits
 from zquantum.core.measurement import Measurements, expectation_values_to_real
 from zquantum.core.openfermion import change_operator_type
 from zquantum.core.utils import dec2bin

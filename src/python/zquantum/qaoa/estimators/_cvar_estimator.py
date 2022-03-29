@@ -1,7 +1,7 @@
 from typing import Dict, List, Optional, Sequence, Tuple, TypeVar
 
 import numpy as np
-from openfermion import IsingOperator
+from zquantum.core.openfermion import IsingOperator
 from typing_extensions import overload
 from zquantum.core.bitstring_distribution import BitstringDistribution
 from zquantum.core.interfaces.backend import QuantumBackend, QuantumSimulator

@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from openfermion import IsingOperator
+from zquantum.core.openfermion import IsingOperator
 from zquantum.core.cost_function import (
     create_cost_function,
     substitution_based_estimation_tasks_factory,

@@ -2,7 +2,7 @@ from typing import Callable, Dict, List
 
 import networkx as nx
 import numpy as np
-from openfermion import IsingOperator, QubitOperator
+from zquantum.core.openfermion import IsingOperator, QubitOperator
 from zquantum.core.graph import generate_graph_from_specs
 
 

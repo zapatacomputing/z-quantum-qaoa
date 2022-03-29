@@ -1,7 +1,7 @@
 from typing import List
 
 import numpy as np
-from openfermion import IsingOperator
+from zquantum.core.openfermion import IsingOperator
 from zquantum.core.bitstring_distribution import BitstringDistribution
 from zquantum.core.interfaces.backend import QuantumBackend
 from zquantum.core.interfaces.estimation import (

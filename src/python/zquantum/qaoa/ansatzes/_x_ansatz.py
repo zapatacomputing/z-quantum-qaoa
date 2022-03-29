@@ -3,7 +3,7 @@ from typing import Optional, Union
 
 import numpy as np
 import sympy
-from openfermion import IsingOperator, QubitOperator
+from zquantum.core.openfermion import IsingOperator, QubitOperator
 from overrides import overrides
 from zquantum.core.circuits import Circuit
 from zquantum.core.evolution import time_evolution

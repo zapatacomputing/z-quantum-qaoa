@@ -3,7 +3,7 @@ from typing import Callable, List, Tuple
 
 import numpy as np
 import pytest
-from openfermion import IsingOperator, SymbolicOperator
+from zquantum.core.openfermion import IsingOperator, SymbolicOperator
 from zquantum.core.cost_function import (
     create_cost_function,
     substitution_based_estimation_tasks_factory,

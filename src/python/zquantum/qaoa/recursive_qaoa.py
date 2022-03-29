@@ -3,8 +3,8 @@ from copy import copy, deepcopy
 from typing import Callable, Dict, List, Tuple
 
 import numpy as np
-from openfermion import IsingOperator, QubitOperator
-from openfermion.utils import count_qubits
+from zquantum.core.openfermion import IsingOperator, QubitOperator
+from zquantum.core.openfermion.utils import count_qubits
 from scipy.optimize import OptimizeResult
 from zquantum.core.history.recorder import HistoryEntry
 from zquantum.core.history.recorder import recorder as _recorder
