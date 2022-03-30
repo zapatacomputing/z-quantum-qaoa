@@ -87,7 +87,7 @@ def _solve_bitstring_problem_by_exhaustive_search(
 
     best_value = np.inf
 
-    for i in range(2 ** num_nodes):
+    for i in range(2**num_nodes):
         trial_solution: Tuple[int, ...] = tuple(dec2bin(i, num_nodes))
         current_value = cost_function(trial_solution)
         if current_value == best_value:

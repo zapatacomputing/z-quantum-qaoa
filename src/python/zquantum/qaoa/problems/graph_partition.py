@@ -33,7 +33,7 @@ class GraphPartitioning(Problem):
         ham_a = QubitOperator()
         for i in graph.nodes:
             ham_a += QubitOperator(f"Z{i}")
-        ham_a = ham_a ** 2
+        ham_a = ham_a**2
 
         ham_b = QubitOperator()
         for i, j in graph.edges:
