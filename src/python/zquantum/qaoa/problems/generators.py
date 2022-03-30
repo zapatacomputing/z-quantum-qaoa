@@ -2,8 +2,8 @@ from typing import Callable, Dict, List
 
 import networkx as nx
 import numpy as np
-from zquantum.core.openfermion import IsingOperator, QubitOperator
 from zquantum.core.graph import generate_graph_from_specs
+from zquantum.core.openfermion import IsingOperator, QubitOperator
 
 
 def get_random_hamiltonians_for_problem(

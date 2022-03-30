@@ -1,10 +1,10 @@
 import numpy as np
 import pytest
-from zquantum.core.openfermion import IsingOperator, QubitOperator
 from zquantum.core.circuits import Circuit, H, X
 from zquantum.core.interfaces.estimation import EstimationTask
 from zquantum.core.interfaces.estimator_contract import ESTIMATOR_CONTRACTS
 from zquantum.core.interfaces.mock_objects import MockQuantumBackend
+from zquantum.core.openfermion import IsingOperator, QubitOperator
 from zquantum.qaoa.estimators import GibbsObjectiveEstimator
 
 

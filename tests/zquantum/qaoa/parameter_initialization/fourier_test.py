@@ -1,6 +1,5 @@
 import numpy as np
 import pytest
-from zquantum.core.openfermion import IsingOperator
 from zquantum.core.cost_function import (
     create_cost_function,
     substitution_based_estimation_tasks_factory,
@@ -15,6 +14,7 @@ from zquantum.core.interfaces.functions import (
 from zquantum.core.interfaces.mock_objects import MockOptimizer, mock_cost_function
 from zquantum.core.interfaces.optimizer import optimization_result
 from zquantum.core.interfaces.optimizer_test import NESTED_OPTIMIZER_CONTRACTS
+from zquantum.core.openfermion import IsingOperator
 from zquantum.core.symbolic_simulator import SymbolicSimulator
 from zquantum.qaoa.ansatzes import QAOAFarhiAnsatz
 from zquantum.qaoa.parameter_initialization import (

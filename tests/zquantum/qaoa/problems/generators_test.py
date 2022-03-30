@@ -1,7 +1,6 @@
 import pytest
-from zquantum.core.openfermion import QubitOperator
+from zquantum.core.openfermion import QubitOperator, change_operator_type
 from zquantum.core.openfermion.utils import count_qubits
-from zquantum.core.openfermion import change_operator_type
 from zquantum.qaoa.problems import (
     MaxCut,
     get_random_hamiltonians_for_problem,
