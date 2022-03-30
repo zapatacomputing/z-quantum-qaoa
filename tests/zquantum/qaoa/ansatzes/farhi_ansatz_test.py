@@ -1,10 +1,9 @@
 import numpy as np
 import pytest
 import sympy
-from openfermion import IsingOperator, QubitOperator
 from zquantum.core.circuits import RX, RZ, Circuit, H
 from zquantum.core.interfaces.ansatz_test import AnsatzTests
-from zquantum.core.openfermion import change_operator_type
+from zquantum.core.openfermion import IsingOperator, QubitOperator, change_operator_type
 from zquantum.core.utils import compare_unitary
 from zquantum.qaoa.ansatzes.farhi_ansatz import (
     QAOAFarhiAnsatz,

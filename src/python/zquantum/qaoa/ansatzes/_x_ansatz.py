@@ -1,13 +1,13 @@
 from itertools import combinations
-from typing import Optional, Union
+from typing import Optional
 
 import numpy as np
 import sympy
-from openfermion import IsingOperator, QubitOperator
 from overrides import overrides
 from zquantum.core.circuits import Circuit
 from zquantum.core.evolution import time_evolution
 from zquantum.core.interfaces.ansatz import Ansatz, ansatz_property
+from zquantum.core.openfermion import QubitOperator
 
 
 class XAnsatz(Ansatz):
@@ -57,7 +57,7 @@ class XZAnsatz(Ansatz):
     def __init__(
         self,
         number_of_layers: int,
-        number_of_qubits: Union[QubitOperator, IsingOperator],
+        number_of_qubits: int,
         use_k_body_z_operators: bool = True,
     ):
         """This is implementation of the XZ Ansatzes.

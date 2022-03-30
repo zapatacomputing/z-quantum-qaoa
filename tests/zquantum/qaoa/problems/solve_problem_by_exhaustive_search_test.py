@@ -1,5 +1,5 @@
 import pytest
-from openfermion import QubitOperator
+from zquantum.core.openfermion import QubitOperator
 from zquantum.qaoa.problems import solve_problem_by_exhaustive_search
 
 HAMILTONIAN_SOLUTION_COST_LIST = [

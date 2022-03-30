@@ -1,5 +1,5 @@
 import networkx as nx
-from openfermion import QubitOperator
+from zquantum.core.openfermion import QubitOperator
 
 from .problem import Problem
 
