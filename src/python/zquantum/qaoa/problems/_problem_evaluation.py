@@ -1,13 +1,12 @@
 from functools import partial
-from typing import Callable, List, Tuple
+from typing import Callable, List, Tuple, cast
 
 import networkx as nx
 import numpy as np
-from openfermion import IsingOperator
-from openfermion.ops.operators.qubit_operator import QubitOperator
-from openfermion.utils import count_qubits
 from zquantum.core.measurement import Measurements, expectation_values_to_real
-from zquantum.core.openfermion import change_operator_type
+from zquantum.core.openfermion import IsingOperator, change_operator_type
+from zquantum.core.openfermion.ops.operators.qubit_operator import QubitOperator
+from zquantum.core.openfermion.utils import count_qubits
 from zquantum.core.utils import dec2bin
 
 
@@ -87,7 +86,7 @@ def _solve_bitstring_problem_by_exhaustive_search(
 
     best_value = np.inf
 
-    for i in range(2 ** num_nodes):
+    for i in range(2**num_nodes):
         trial_solution: Tuple[int, ...] = tuple(dec2bin(i, num_nodes))
         current_value = cost_function(trial_solution)
         if current_value == best_value:
@@ -135,7 +134,10 @@ def _evaluate_solution_for_hamiltonian(
         float: value of a solution.
     """
     hamiltonian = change_operator_type(hamiltonian, IsingOperator)
+
     expectation_values = expectation_values_to_real(
-        Measurements([solution]).get_expectation_values(hamiltonian)
+        Measurements([solution]).get_expectation_values(
+            cast(IsingOperator, hamiltonian)
+        )
     )
     return sum(expectation_values.values)

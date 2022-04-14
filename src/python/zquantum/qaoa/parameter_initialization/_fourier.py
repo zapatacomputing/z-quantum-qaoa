@@ -10,7 +10,10 @@ from zquantum.core.history.recorder import HistoryEntry
 from zquantum.core.history.recorder import recorder as _recorder
 from zquantum.core.interfaces.ansatz import Ansatz
 from zquantum.core.interfaces.cost_function import CostFunction
-from zquantum.core.interfaces.functions import function_with_gradient
+from zquantum.core.interfaces.functions import (
+    CallableWithGradient,
+    function_with_gradient,
+)
 from zquantum.core.interfaces.optimizer import (
     NestedOptimizer,
     Optimizer,
@@ -105,7 +108,7 @@ class FourierOptimizer(NestedOptimizer):
             cost_function_factory: a function that returns a cost function that depends
                 on the provided ansatz.
             inital_params: initial parameters u and v. Should be a 1d array of size
-                `q * 2`. Or, if q = infinity, it should be of size `min_layer`.
+                `q * 2`. Or, if q = infinity, it should be of size `min_layer * 2`.
             keep_history: flag indicating whether history of cost function
                 evaluations should be recorded.
 
@@ -212,17 +215,20 @@ class FourierOptimizer(NestedOptimizer):
             return gamma_beta_cost_function(gamma_beta)  # type: ignore
 
         # Add gradient to `u_v_cost_function` if `gamma_beta_cost_function` has gradient
-        if hasattr(gamma_beta_cost_function, "gradient"):
-
-            def gradient_function(parameters: np.ndarray) -> np.ndarray:
-                gradient_function = finite_differences_gradient(u_v_cost_function)
+        if isinstance(gamma_beta_cost_function, CallableWithGradient):
+            if (
+                "finite_differences_gradient"
+                not in gamma_beta_cost_function.gradient.__repr__()
+            ):
                 warnings.warn(
                     "FourierOptimizer currently supports only finite differences "
                     "gradient and will overwrite whatever gradient method you provide. "
                     "If you wish to use it with other types of gradients, please "
-                    "contact Orquestra support. If you provided a finite differences "
-                    "gradient, please ignore this message."
+                    "contact Orquestra support."
                 )
+
+            def gradient_function(parameters: np.ndarray) -> np.ndarray:
+                gradient_function = finite_differences_gradient(u_v_cost_function)
                 return gradient_function(parameters)
 
             return function_with_gradient(u_v_cost_function, gradient_function)

@@ -2,13 +2,12 @@ from typing import Optional, Union
 
 import numpy as np
 import sympy
-from openfermion import IsingOperator, QubitOperator
-from openfermion.utils import count_qubits
 from overrides import overrides
 from zquantum.core.circuits import RY, RZ, Circuit, create_layer_of_gates
 from zquantum.core.evolution import time_evolution
 from zquantum.core.interfaces.ansatz import Ansatz, ansatz_property
-from zquantum.core.openfermion import change_operator_type
+from zquantum.core.openfermion import IsingOperator, QubitOperator, change_operator_type
+from zquantum.core.openfermion.utils import count_qubits
 
 
 class WarmStartQAOAAnsatz(Ansatz):

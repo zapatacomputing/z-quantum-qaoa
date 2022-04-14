@@ -1,10 +1,11 @@
+import json
+from typing import Dict, List, Optional, Union
+
 import numpy as np
 from zquantum.core.circuits import save_circuit
-from zquantum.core.serialization import load_array
 from zquantum.core.openfermion import load_qubit_operator
+from zquantum.core.serialization import load_array
 from zquantum.core.utils import create_object, load_from_specs, load_list
-from typing import Union, List, Optional, Dict
-import json
 
 Specs = Union[str, Dict]
 

@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import List, Tuple
 
 import networkx as nx
-from openfermion import QubitOperator
+from zquantum.core.openfermion import QubitOperator
 
 from ._problem_evaluation import (
     evaluate_solution,
