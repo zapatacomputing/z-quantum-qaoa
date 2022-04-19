@@ -1,3 +1,6 @@
+################################################################################
+# © Copyright 2021-2022 Zapata Computing Inc.
+################################################################################
 from functools import partial
 from typing import Callable, List, Tuple, cast
 

@@ -1,3 +1,6 @@
+################################################################################
+# © Copyright 2021-2022 Zapata Computing Inc.
+################################################################################
 from abc import ABC, abstractmethod
 from typing import List, Tuple
 
