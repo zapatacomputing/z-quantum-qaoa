@@ -1,3 +1,6 @@
+################################################################################
+# © Copyright 2021-2022 Zapata Computing Inc.
+################################################################################
 from typing import Optional, Union
 
 import numpy as np
@@ -69,7 +72,9 @@ class WarmStartQAOAAnsatz(Ansatz):
         circuit = Circuit()
 
         # Prepare initial state
-        circuit += create_layer_of_gates(self.number_of_qubits, RY, self._thetas)
+        circuit += create_layer_of_gates(
+            self.number_of_qubits, RY, self._thetas.reshape(-1, 1)
+        )
 
         # Add time evolution layers
         cost_circuit = time_evolution(
@@ -80,13 +85,19 @@ class WarmStartQAOAAnsatz(Ansatz):
             circuit += cost_circuit.bind(
                 {sympy.Symbol("gamma"): sympy.Symbol(f"gamma_{i}")}
             )
-            circuit += create_layer_of_gates(self.number_of_qubits, RY, -self._thetas)
+            circuit += create_layer_of_gates(
+                self.number_of_qubits, RY, -self._thetas.reshape(-1, 1)
+            )
             circuit += create_layer_of_gates(
                 self.number_of_qubits,
                 RZ,
-                np.array([-2 * sympy.Symbol(f"beta_{i}")] * self.number_of_qubits),
+                np.array(
+                    [-2 * sympy.Symbol(f"beta_{i}")] * self.number_of_qubits
+                ).reshape(-1, 1),
             )
-            circuit += create_layer_of_gates(self.number_of_qubits, RY, self._thetas)
+            circuit += create_layer_of_gates(
+                self.number_of_qubits, RY, self._thetas.reshape(-1, 1)
+            )
 
         return circuit
 

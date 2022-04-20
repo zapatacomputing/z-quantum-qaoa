@@ -1,3 +1,6 @@
+################################################################################
+# © Copyright 2021-2022 Zapata Computing Inc.
+################################################################################
 import pytest
 from zquantum.core.openfermion import QubitOperator, change_operator_type
 from zquantum.core.openfermion.utils import count_qubits

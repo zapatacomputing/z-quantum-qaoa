@@ -1,3 +1,6 @@
+################################################################################
+# © Copyright 2021-2022 Zapata Computing Inc.
+################################################################################
 import pytest
 from zquantum.core.circuits import Circuit, H, X
 from zquantum.core.interfaces.estimation import EstimationTask
