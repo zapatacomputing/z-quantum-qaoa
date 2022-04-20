@@ -186,7 +186,8 @@ class FourierOptimizer(NestedOptimizer):
                 )
 
         del layer_results["history"]
-        del layer_results["gradient_history"]
+        if "gradient_history" in layer_results.keys():
+            del layer_results["gradient_history"]
         del layer_results["nit"]
         del layer_results["nfev"]
         del layer_results["opt_params"]

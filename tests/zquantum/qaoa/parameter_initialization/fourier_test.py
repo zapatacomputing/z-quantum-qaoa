@@ -49,9 +49,7 @@ def ansatz(hamiltonian):
 
 @pytest.fixture
 def cost_function_factory(hamiltonian):
-    def _cf_factory(
-        ansatz: Ansatz,
-    ):
+    def _cf_factory(ansatz: Ansatz):
         estimation_tasks_factory = substitution_based_estimation_tasks_factory(
             hamiltonian,
             ansatz,
@@ -258,6 +256,21 @@ class TestFourier:
 
         with pytest.warns(Warning):
             optimizer.minimize(cost_function_with_gradients_factory, initial_params)
+
+    def test_fourier_works_when_cost_function_has_no_gradient(
+        self, cost_function_factory, ansatz, inner_optimizer
+    ):
+        def cost_function_without_gradients_factory(ansatz: Ansatz):
+            return cost_function_factory(ansatz).function
+
+        optimizer = FourierOptimizer(
+            ansatz=ansatz,
+            inner_optimizer=inner_optimizer,
+            min_layer=1,
+            max_layer=1,
+            R=0,
+        )
+        optimizer.minimize(cost_function_without_gradients_factory, np.ones(2))
 
 
 class TestPerturbations:
