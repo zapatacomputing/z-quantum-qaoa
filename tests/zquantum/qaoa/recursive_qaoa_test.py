@@ -1,9 +1,11 @@
+################################################################################
+# © Copyright 2021-2022 Zapata Computing Inc.
+################################################################################
 from functools import wraps
 from typing import Callable, List, Tuple
 
 import numpy as np
 import pytest
-from openfermion import IsingOperator, SymbolicOperator
 from zquantum.core.cost_function import (
     create_cost_function,
     substitution_based_estimation_tasks_factory,
@@ -18,6 +20,7 @@ from zquantum.core.interfaces.estimation import EstimationTask
 from zquantum.core.interfaces.mock_objects import MockOptimizer
 from zquantum.core.interfaces.optimizer import optimization_result
 from zquantum.core.interfaces.optimizer_test import NESTED_OPTIMIZER_CONTRACTS
+from zquantum.core.openfermion import IsingOperator, SymbolicOperator
 from zquantum.core.symbolic_simulator import SymbolicSimulator
 from zquantum.qaoa.ansatzes import QAOAFarhiAnsatz
 from zquantum.qaoa.recursive_qaoa import (

@@ -1,3 +1,6 @@
+################################################################################
+# © Copyright 2022 Zapata Computing Inc.
+################################################################################
 import numpy as np
 import pytest
 from zquantum.qaoa.parameter_initialization import get_new_layer_params_using_interp

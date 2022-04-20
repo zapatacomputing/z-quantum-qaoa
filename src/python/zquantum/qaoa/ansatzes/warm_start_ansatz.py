@@ -1,14 +1,16 @@
+################################################################################
+# © Copyright 2021-2022 Zapata Computing Inc.
+################################################################################
 from typing import Optional, Union
 
 import numpy as np
 import sympy
-from openfermion import IsingOperator, QubitOperator
-from openfermion.utils import count_qubits
 from overrides import overrides
 from zquantum.core.circuits import RY, RZ, Circuit, create_layer_of_gates
 from zquantum.core.evolution import time_evolution
 from zquantum.core.interfaces.ansatz import Ansatz, ansatz_property
-from zquantum.core.openfermion import change_operator_type
+from zquantum.core.openfermion import IsingOperator, QubitOperator, change_operator_type
+from zquantum.core.openfermion.utils import count_qubits
 
 
 class WarmStartQAOAAnsatz(Ansatz):
@@ -70,7 +72,9 @@ class WarmStartQAOAAnsatz(Ansatz):
         circuit = Circuit()
 
         # Prepare initial state
-        circuit += create_layer_of_gates(self.number_of_qubits, RY, self._thetas)
+        circuit += create_layer_of_gates(
+            self.number_of_qubits, RY, self._thetas.reshape(-1, 1)
+        )
 
         # Add time evolution layers
         cost_circuit = time_evolution(
@@ -81,13 +85,19 @@ class WarmStartQAOAAnsatz(Ansatz):
             circuit += cost_circuit.bind(
                 {sympy.Symbol("gamma"): sympy.Symbol(f"gamma_{i}")}
             )
-            circuit += create_layer_of_gates(self.number_of_qubits, RY, -self._thetas)
+            circuit += create_layer_of_gates(
+                self.number_of_qubits, RY, -self._thetas.reshape(-1, 1)
+            )
             circuit += create_layer_of_gates(
                 self.number_of_qubits,
                 RZ,
-                np.array([-2 * sympy.Symbol(f"beta_{i}")] * self.number_of_qubits),
+                np.array(
+                    [-2 * sympy.Symbol(f"beta_{i}")] * self.number_of_qubits
+                ).reshape(-1, 1),
             )
-            circuit += create_layer_of_gates(self.number_of_qubits, RY, self._thetas)
+            circuit += create_layer_of_gates(
+                self.number_of_qubits, RY, self._thetas.reshape(-1, 1)
+            )
 
         return circuit
 

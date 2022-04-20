@@ -1,21 +1,25 @@
-from zquantum.qaoa.problems import (
-    MaxCut,
-    GraphPartitioning,
-    get_random_hamiltonians_for_problem,
-)
-from zquantum.qaoa.ansatzes import farhi_ansatz, warm_start_ansatz
+################################################################################
+# © Copyright 2020-2022 Zapata Computing Inc.
+################################################################################
+import json
+from typing import List, Union
+
+import numpy as np
 from zquantum.core.circuits import save_circuit, save_circuitset
 from zquantum.core.graph import load_graph
-from zquantum.core.utils import load_list, save_list
 from zquantum.core.openfermion import (
-    save_qubit_operator_set,
     load_qubit_operator,
     load_qubit_operator_set,
     save_qubit_operator,
+    save_qubit_operator_set,
 )
-import json
-from typing import List, Union
-import numpy as np
+from zquantum.core.utils import load_list, save_list
+from zquantum.qaoa.ansatzes import farhi_ansatz, warm_start_ansatz
+from zquantum.qaoa.problems import (
+    GraphPartitioning,
+    MaxCut,
+    get_random_hamiltonians_for_problem,
+)
 
 
 def get_random_maxcut_hamiltonians(graph_specs, number_of_instances, number_of_qubits):

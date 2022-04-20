@@ -1,5 +1,8 @@
+################################################################################
+# © Copyright 2021-2022 Zapata Computing Inc.
+################################################################################
 import networkx as nx
-from openfermion import QubitOperator
+from zquantum.core.openfermion import QubitOperator
 
 from .problem import Problem
 

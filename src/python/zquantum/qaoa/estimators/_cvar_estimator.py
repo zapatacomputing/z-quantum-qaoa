@@ -1,7 +1,9 @@
+################################################################################
+# © Copyright 2021-2022 Zapata Computing Inc.
+################################################################################
 from typing import Dict, List, Optional, Sequence, Tuple, TypeVar
 
 import numpy as np
-from openfermion import IsingOperator
 from typing_extensions import overload
 from zquantum.core.bitstring_distribution import BitstringDistribution
 from zquantum.core.interfaces.backend import QuantumBackend, QuantumSimulator
@@ -10,6 +12,7 @@ from zquantum.core.interfaces.estimation import (
     EstimationTask,
 )
 from zquantum.core.measurement import ExpectationValues, check_parity_of_vector
+from zquantum.core.openfermion import IsingOperator
 from zquantum.core.utils import dec2bin
 from zquantum.core.wavefunction import Wavefunction
 

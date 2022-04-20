@@ -1,7 +1,9 @@
+################################################################################
+# © Copyright 2021-2022 Zapata Computing Inc.
+################################################################################
 from typing import List
 
 import numpy as np
-from openfermion import IsingOperator
 from zquantum.core.bitstring_distribution import BitstringDistribution
 from zquantum.core.interfaces.backend import QuantumBackend
 from zquantum.core.interfaces.estimation import (
@@ -9,6 +11,7 @@ from zquantum.core.interfaces.estimation import (
     EstimationTask,
 )
 from zquantum.core.measurement import ExpectationValues, Measurements
+from zquantum.core.openfermion import IsingOperator
 
 
 class GibbsObjectiveEstimator(EstimateExpectationValues):

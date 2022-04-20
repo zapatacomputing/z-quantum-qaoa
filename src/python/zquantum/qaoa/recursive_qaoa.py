@@ -1,10 +1,11 @@
+################################################################################
+# © Copyright 2021-2022 Zapata Computing Inc.
+################################################################################
 from collections import defaultdict
 from copy import copy, deepcopy
 from typing import Callable, Dict, List, Tuple
 
 import numpy as np
-from openfermion import IsingOperator, QubitOperator
-from openfermion.utils import count_qubits
 from scipy.optimize import OptimizeResult
 from zquantum.core.history.recorder import HistoryEntry
 from zquantum.core.history.recorder import recorder as _recorder
@@ -16,7 +17,8 @@ from zquantum.core.interfaces.optimizer import (
     extend_histories,
     optimization_result,
 )
-from zquantum.core.openfermion import change_operator_type
+from zquantum.core.openfermion import IsingOperator, QubitOperator, change_operator_type
+from zquantum.core.openfermion.utils import count_qubits
 from zquantum.core.typing import RecorderFactory
 from zquantum.qaoa.problems import solve_problem_by_exhaustive_search
 
@@ -315,11 +317,11 @@ def _update_qubit_map(
 
 
 def _get_new_qubit_indice(
-    old_indice: int, term_with_largest_expval: IsingOperator
+    old_indice: int, operator_with_largest_expval: IsingOperator
 ) -> int:
-    assert len(term_with_largest_expval.terms.keys()) == 1
+    assert len(operator_with_largest_expval.terms.keys()) == 1
 
-    term_with_largest_expval = [*term_with_largest_expval.terms][0]
+    term_with_largest_expval = [*operator_with_largest_expval.terms][0]
     # term_with_largest_expval is now a subscriptable tuple like ((0, 'Z'), (1, 'Z'))
 
     qubit_to_get_rid_of: int = term_with_largest_expval[1][0]
